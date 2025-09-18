@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>签到记录 - 深圳大学考勤签到</title>
+    <link rel="stylesheet" href="css/common.css">
+    <link rel="stylesheet" href="css/records.css">
+</head>
+<body>
+    <div class="container">
+        <!-- 顶部导航 -->
+        <header class="header">
+            <div class="header-left">
+                <h1 class="title" data-zh="签到记录" data-en="Records">签到记录</h1>
+            </div>
+            <div class="header-right">
+                <div class="language-switch">
+                    <span class="lang-option active" data-lang="zh">中</span>
+                    <span class="lang-divider">/</span>
+                    <span class="lang-option" data-lang="en">EN</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- 出勤率概览 -->
+        <div class="attendance-overview">
+            <div class="overview-card">
+                <div class="overview-header">
+                    <h2 data-zh="出勤率统计" data-en="Attendance Statistics">出勤率统计</h2>
+                    <div class="time-range">
+                        <select id="timeRange" class="time-range-select">
+                            <option value="week" data-zh="本周" data-en="This Week">本周</option>
+                            <option value="month" data-zh="本月" data-en="This Month" selected>本月</option>
+                            <option value="semester" data-zh="本学期" data-en="This Semester">本学期</option>
+                            <option value="year" data-zh="本年" data-en="This Year">本年</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="attendance-chart">
+                    <div class="chart-container">
+                        <div class="progress-ring">
+                            <svg class="progress-svg" width="120" height="120">
+                                <circle class="progress-bg" cx="60" cy="60" r="50"></circle>
+                                <circle class="progress-bar" cx="60" cy="60" r="50" id="progressCircle"></circle>
+                            </svg>
+                            <div class="progress-text">
+                                <span class="progress-percentage" id="attendancePercentage">85%</span>
+                                <span class="progress-label" data-zh="出勤率" data-en="Rate">出勤率</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="attendance-stats">
+                        <div class="stat-item">
+                            <div class="stat-dot attended"></div>
+                            <span class="stat-label" data-zh="正常签到" data-en="Normal">正常签到</span>
+                            <span class="stat-value" id="normalCount">17</span>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-dot late"></div>
+                            <span class="stat-label" data-zh="迟到" data-en="Late">迟到</span>
+                            <span class="stat-value" id="lateCount">2</span>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-dot absent"></div>
+                            <span class="stat-label" data-zh="缺勤" data-en="Absent">缺勤</span>
+                            <span class="stat-value" id="absentCount">1</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 筛选和导出 -->
+        <div class="filter-section">
+            <div class="filter-controls">
+                <div class="search-box">
+                    <input type="text" id="searchInput" placeholder="搜索课程或教室" 
+                           data-placeholder-zh="搜索课程或教室" data-placeholder-en="Search course or classroom">
+                    <svg class="search-icon" width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/>
+                    </svg>
+                </div>
+                
+                <div class="filter-dropdown">
+                    <select id="statusFilter" class="status-filter">
+                        <option value="all" data-zh="全部状态" data-en="All Status">全部状态</option>
+                        <option value="attended" data-zh="正常" data-en="Normal">正常</option>
+                        <option value="late" data-zh="迟到" data-en="Late">迟到</option>
+                        <option value="absent" data-zh="缺勤" data-en="Absent">缺勤</option>
+                    </select>
+                </div>
+            </div>
+            
+            <button class="export-btn" id="exportBtn">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                </svg>
+                <span data-zh="导出" data-en="Export">导出</span>
+            </button>
+        </div>
+
+        <!-- 记录表格 -->
+        <div class="records-table-container">
+            <div class="table-wrapper">
+                <table class="records-table" id="recordsTable">
+                    <thead>
+                        <tr>
+                            <th data-zh="姓名" data-en="Name">姓名</th>
+                            <th data-zh="学号" data-en="Student ID">学号</th>
+                            <th data-zh="课程" data-en="Course">课程</th>
+                            <th data-zh="位置" data-en="Location">位置</th>
+                            <th data-zh="状态" data-en="Status">状态</th>
+                            <th data-zh="时间" data-en="Time">时间</th>
+                            <th data-zh="照片" data-en="Photo">照片</th>
+                        </tr>
+                    </thead>
+                    <tbody id="recordsTableBody">
+                        <!-- 记录数据将通过JavaScript动态生成 -->
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- 分页 -->
+            <div class="pagination" id="pagination">
+                <button class="page-btn prev" id="prevPage" disabled>
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                        <path fill-rule="evenodd" d="M11.354 1.646a.5.5 0 010 .708L5.707 8l5.647 5.646a.5.5 0 01-.708.708l-6-6a.5.5 0 010-.708l6-6a.5.5 0 01.708 0z"/>
+                    </svg>
+                </button>
+                
+                <div class="page-info">
+                    <span id="pageInfo">第 1 页，共 1 页</span>
+                </div>
+                
+                <button class="page-btn next" id="nextPage">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                        <path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 01.708 0l6 6a.5.5 0 010 .708l-6 6a.5.5 0 01-.708-.708L10.293 8 4.646 2.354a.5.5 0 010-.708z"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- 空状态 -->
+        <div class="empty-state" id="emptyState" style="display: none;">
+            <svg width="80" height="80" viewBox="0 0 80 80" fill="none">
+                <rect x="10" y="20" width="60" height="40" rx="4" stroke="currentColor" stroke-width="2" fill="none"/>
+                <path d="M20 30h40M20 40h40M20 50h20" stroke="currentColor" stroke-width="2"/>
+                <circle cx="40" cy="40" r="25" stroke="currentColor" stroke-width="2" fill="none" opacity="0.3"/>
+            </svg>
+            <h3 data-zh="暂无记录" data-en="No Records">暂无记录</h3>
+            <p data-zh="还没有任何签到记录" data-en="No sign-in records yet">还没有任何签到记录</p>
+        </div>
+
+        <!-- 底部导航 -->
+        <nav class="bottom-nav">
+            <a href="index.html" class="nav-item">
+                <div class="nav-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 2L2 7v10c0 5.55 3.84 10 9 11 1.09-.21 2.09-.64 3-1.1 .91.46 1.91.89 3 1.1 5.16-1 9-5.45 9-11V7l-10-5z"/>
+                    </svg>
+                </div>
+                <span data-zh="签到" data-en="Sign">签到</span>
+            </a>
+            <a href="statistics.html" class="nav-item">
+                <div class="nav-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M9 11H7v6h2v-6zm4-4h-2v10h2V7zm4-4h-2v14h2V3z"/>
+                    </svg>
+                </div>
+                <span data-zh="统计" data-en="Statistics">统计</span>
+            </a>
+            <a href="records.html" class="nav-item active">
+                <div class="nav-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 2 2h8c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>
+                    </svg>
+                </div>
+                <span data-zh="记录" data-en="Records">记录</span>
+            </a>
+            <a href="feedback.html" class="nav-item">
+                <div class="nav-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-7 12h-2v-2h2v2zm0-4h-2V6h2v4z"/>
+                    </svg>
+                </div>
+                <span data-zh="反馈" data-en="Feedback">反馈</span>
+            </a>
+        </nav>
+    </div>
+
+    <!-- 照片查看模态框 -->
+    <div class="modal" id="photoModal">
+        <div class="modal-content photo-modal-content">
+            <div class="modal-header">
+                <h3 data-zh="签到照片" data-en="Sign-in Photo">签到照片</h3>
+                <button class="close-btn" id="closePhotoModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <img id="modalPhoto" src="" alt="签到照片" class="modal-photo">
+            </div>
+        </div>
+    </div>
+
+    <script src="js/common.js"></script>
+    <script src="js/records.js"></script>
+</body>
+</html>

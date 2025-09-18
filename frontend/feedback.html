@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-i18n="feedback.title">反馈 - 考勤签到系统</title>
+    <link rel="stylesheet" href="css/common.css">
+    <link rel="stylesheet" href="css/feedback.css">
+</head>
+<body>
+    <!-- 顶部导航 -->
+    <header class="header">
+        <div class="header-left">
+            <h1 class="title" data-i18n="feedback.title">反馈</h1>
+        </div>
+        <div class="header-right">
+            <div class="language-switch">
+                <span class="lang-option active" data-lang="zh">中</span>
+                <span class="lang-divider">/</span>
+                <span class="lang-option" data-lang="en">EN</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主要内容 -->
+    <main class="main-content">
+        <!-- 反馈表单 -->
+        <div class="feedback-container">
+            <div class="feedback-card">
+                <div class="feedback-header">
+                    <div class="feedback-icon">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                        </svg>
+                    </div>
+                    <h2 data-i18n="feedback.header">您的反馈对我们很重要</h2>
+                    <p data-i18n="feedback.description">请告诉我们您的使用体验，帮助我们改进产品</p>
+                </div>
+
+                <form class="feedback-form" id="feedbackForm">
+                    <!-- 评分区域 -->
+                    <div class="form-group">
+                        <label class="form-label" data-i18n="feedback.rating">整体评分</label>
+                        <div class="rating-container">
+                            <div class="star-rating" id="starRating">
+                                <span class="star" data-rating="1">★</span>
+                                <span class="star" data-rating="2">★</span>
+                                <span class="star" data-rating="3">★</span>
+                                <span class="star" data-rating="4">★</span>
+                                <span class="star" data-rating="5">★</span>
+                            </div>
+                            <span class="rating-text" id="ratingText" data-i18n="feedback.selectRating">请选择评分</span>
+                        </div>
+                    </div>
+
+                    <!-- 反馈类型 -->
+                    <div class="form-group">
+                        <label class="form-label" data-i18n="feedback.type">反馈类型</label>
+                        <div class="feedback-types">
+                            <label class="type-option">
+                                <input type="radio" name="feedbackType" value="bug" id="typeBug">
+                                <span class="type-card">
+                                    <div class="type-icon bug">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M8 2v4l-2 2-2-2V2M16 2v4l2 2 2-2V2M8 22v-4l-2-2 2-2v4M16 22v-4l2-2-2-2v4"/>
+                                            <rect x="8" y="6" width="8" height="12" rx="2"/>
+                                        </svg>
+                                    </div>
+                                    <span data-i18n="feedback.typeBug">问题反馈</span>
+                                </span>
+                            </label>
+                            <label class="type-option">
+                                <input type="radio" name="feedbackType" value="suggestion" id="typeSuggestion">
+                                <span class="type-card">
+                                    <div class="type-icon suggestion">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M9 12l2 2 4-4M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9 9 4.03 9 9z"/>
+                                        </svg>
+                                    </div>
+                                    <span data-i18n="feedback.typeSuggestion">功能建议</span>
+                                </span>
+                            </label>
+                            <label class="type-option">
+                                <input type="radio" name="feedbackType" value="praise" id="typePraise">
+                                <span class="type-card">
+                                    <div class="type-icon praise">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/>
+                                        </svg>
+                                    </div>
+                                    <span data-i18n="feedback.typePraise">表扬鼓励</span>
+                                </span>
+                            </label>
+                            <label class="type-option">
+                                <input type="radio" name="feedbackType" value="other" id="typeOther">
+                                <span class="type-card">
+                                    <div class="type-icon other">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <circle cx="12" cy="12" r="10"/>
+                                            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01"/>
+                                        </svg>
+                                    </div>
+                                    <span data-i18n="feedback.typeOther">其他</span>
+                                </span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- 反馈内容 -->
+                    <div class="form-group">
+                        <label class="form-label" for="feedbackContent" data-i18n="feedback.content">反馈内容</label>
+                        <textarea 
+                            id="feedbackContent" 
+                            name="feedbackContent" 
+                            class="form-textarea" 
+                            rows="6" 
+                            data-i18n-placeholder="feedback.contentPlaceholder"
+                            placeholder="请详细描述您的反馈内容..."
+                            required
+                        ></textarea>
+                        <div class="char-count">
+                            <span id="charCount">0</span>/500
+                        </div>
+                    </div>
+
+                    <!-- 联系方式 -->
+                    <div class="form-group">
+                        <label class="form-label" for="contactInfo" data-i18n="feedback.contact">联系方式（可选）</label>
+                        <input 
+                            type="text" 
+                            id="contactInfo" 
+                            name="contactInfo" 
+                            class="form-input" 
+                            data-i18n-placeholder="feedback.contactPlaceholder"
+                            placeholder="邮箱或手机号，便于我们回复您"
+                        >
+                    </div>
+
+                    <!-- 图片上传 -->
+                    <div class="form-group">
+                        <label class="form-label" data-i18n="feedback.images">相关图片（可选）</label>
+                        <div class="image-upload-container">
+                            <div class="image-preview" id="imagePreview"></div>
+                            <button type="button" class="upload-btn" id="uploadBtn">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
+                                </svg>
+                                <span data-i18n="feedback.uploadImage">上传图片</span>
+                            </button>
+                            <input type="file" id="imageInput" accept="image/*" multiple style="display: none;">
+                            <p class="upload-hint" data-i18n="feedback.uploadHint">支持JPG、PNG格式，最多3张，每张不超过5MB</p>
+                        </div>
+                    </div>
+
+                    <!-- 提交按钮 -->
+                    <div class="form-actions">
+                        <button type="button" class="btn-secondary" id="resetBtn" data-i18n="feedback.reset">重置</button>
+                        <button type="submit" class="btn-primary" id="submitBtn">
+                            <span class="btn-text" data-i18n="feedback.submit">提交反馈</span>
+                            <div class="btn-loading" style="display: none;">
+                                <div class="loading-spinner"></div>
+                                <span data-i18n="feedback.submitting">提交中...</span>
+                            </div>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- 成功提示 -->
+        <div class="success-message" id="successMessage" style="display: none;">
+            <div class="success-card">
+                <div class="success-icon">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                        <polyline points="22,4 12,14.01 9,11.01"/>
+                    </svg>
+                </div>
+                <h3 data-i18n="feedback.successTitle">反馈提交成功！</h3>
+                <p data-i18n="feedback.successMessage">感谢您的反馈，我们会认真处理并持续改进产品体验</p>
+                <button class="btn-primary" id="backToHomeBtn" data-i18n="feedback.backToHome">返回首页</button>
+            </div>
+        </div>
+    </main>
+
+    <!-- 底部导航 -->
+    <nav class="bottom-nav">
+        <a href="index.html" class="nav-item">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+            </svg>
+            <span data-i18n="nav.signin">签到</span>
+        </a>
+        <a href="statistics.html" class="nav-item">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                <rect x="7" y="7" width="10" height="10" rx="1" ry="1"/>
+            </svg>
+            <span data-i18n="nav.statistics">统计</span>
+        </a>
+        <a href="records.html" class="nav-item">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14,2 14,8 20,8"/>
+                <line x1="16" y1="13" x2="8" y2="13"/>
+                <line x1="16" y1="17" x2="8" y2="17"/>
+                <polyline points="10,9 9,9 8,9"/>
+            </svg>
+            <span data-i18n="nav.records">记录</span>
+        </a>
+        <a href="feedback.html" class="nav-item active">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+            </svg>
+            <span data-i18n="nav.feedback">反馈</span>
+        </a>
+    </nav>
+
+    <script src="js/common.js"></script>
+    <script src="js/feedback.js"></script>
+</body>
+</html>

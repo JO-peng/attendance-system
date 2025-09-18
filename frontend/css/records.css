@@ -1,0 +1,584 @@
+/* 记录页面专用样式 */
+
+/* 出勤率概览 */
+.attendance-overview {
+    padding: var(--spacing-5);
+    background: var(--gray-50);
+}
+
+.overview-card {
+    background: var(--white);
+    border-radius: var(--radius-xl);
+    padding: var(--spacing-6);
+    box-shadow: var(--shadow-md);
+    border: 1px solid var(--gray-100);
+}
+
+.overview-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-6);
+}
+
+.overview-header h2 {
+    font-size: var(--font-size-xl);
+    font-weight: 600;
+    color: var(--gray-800);
+}
+
+.time-range-select {
+    background: var(--gray-50);
+    border: 1px solid var(--gray-300);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-2) var(--spacing-3);
+    font-size: var(--font-size-sm);
+    color: var(--gray-700);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.time-range-select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(229, 62, 62, 0.1);
+}
+
+/* 出勤率图表 */
+.attendance-chart {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-8);
+}
+
+.chart-container {
+    position: relative;
+}
+
+.progress-ring {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.progress-svg {
+    transform: rotate(-90deg);
+}
+
+.progress-bg {
+    fill: none;
+    stroke: var(--gray-200);
+    stroke-width: 8;
+}
+
+.progress-bar {
+    fill: none;
+    stroke: var(--primary-color);
+    stroke-width: 8;
+    stroke-linecap: round;
+    stroke-dasharray: 314;
+    stroke-dashoffset: 47; /* 85% = 314 - (314 * 0.85) */
+    transition: stroke-dashoffset 1s ease;
+}
+
+.progress-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+}
+
+.progress-percentage {
+    display: block;
+    font-size: var(--font-size-2xl);
+    font-weight: 700;
+    color: var(--primary-color);
+    line-height: 1;
+}
+
+.progress-label {
+    display: block;
+    font-size: var(--font-size-sm);
+    color: var(--gray-600);
+    margin-top: var(--spacing-1);
+}
+
+/* 出勤统计 */
+.attendance-stats {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-4);
+    flex: 1;
+}
+
+.stat-item {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-3);
+}
+
+.stat-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: var(--radius-full);
+    flex-shrink: 0;
+}
+
+.stat-dot.attended {
+    background: var(--success-color);
+}
+
+.stat-dot.late {
+    background: var(--warning-color);
+}
+
+.stat-dot.absent {
+    background: var(--error-color);
+}
+
+.stat-label {
+    font-size: var(--font-size-sm);
+    color: var(--gray-600);
+    flex: 1;
+}
+
+.stat-value {
+    font-size: var(--font-size-base);
+    font-weight: 600;
+    color: var(--gray-800);
+}
+
+/* 筛选区域 */
+.filter-section {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-5);
+    background: var(--white);
+    border-bottom: 1px solid var(--gray-200);
+    gap: var(--spacing-4);
+}
+
+.filter-controls {
+    display: flex;
+    gap: var(--spacing-3);
+    flex: 1;
+}
+
+.search-box {
+    position: relative;
+    flex: 1;
+    max-width: 300px;
+}
+
+.search-box input {
+    width: 100%;
+    padding: var(--spacing-3) var(--spacing-10) var(--spacing-3) var(--spacing-3);
+    border: 1px solid var(--gray-300);
+    border-radius: var(--radius-md);
+    font-size: var(--font-size-sm);
+    transition: border-color 0.2s ease;
+}
+
+.search-box input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(229, 62, 62, 0.1);
+}
+
+.search-icon {
+    position: absolute;
+    right: var(--spacing-3);
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--gray-400);
+    pointer-events: none;
+}
+
+.status-filter {
+    background: var(--gray-50);
+    border: 1px solid var(--gray-300);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-3);
+    font-size: var(--font-size-sm);
+    color: var(--gray-700);
+    cursor: pointer;
+    min-width: 120px;
+}
+
+.status-filter:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(229, 62, 62, 0.1);
+}
+
+.export-btn {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-2);
+    background: var(--primary-color);
+    color: var(--white);
+    border: none;
+    padding: var(--spacing-3) var(--spacing-4);
+    border-radius: var(--radius-md);
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.export-btn:hover {
+    background: var(--primary-dark);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+}
+
+/* 记录表格 */
+.records-table-container {
+    background: var(--white);
+    margin: 0 var(--spacing-5) var(--spacing-5);
+    border-radius: var(--radius-xl);
+    overflow: hidden;
+    box-shadow: var(--shadow-md);
+    border: 1px solid var(--gray-100);
+    margin-bottom: 100px; /* 为底部导航留空间 */
+}
+
+.table-wrapper {
+    overflow-x: auto;
+}
+
+.records-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--font-size-sm);
+}
+
+.records-table th {
+    background: var(--gray-50);
+    color: var(--gray-700);
+    font-weight: 600;
+    padding: var(--spacing-4) var(--spacing-3);
+    text-align: left;
+    border-bottom: 2px solid var(--gray-200);
+    white-space: nowrap;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.records-table td {
+    padding: var(--spacing-4) var(--spacing-3);
+    border-bottom: 1px solid var(--gray-100);
+    vertical-align: middle;
+}
+
+.records-table tbody tr {
+    transition: background-color 0.2s ease;
+}
+
+.records-table tbody tr:hover {
+    background: var(--gray-50);
+}
+
+/* 状态标签 */
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: var(--spacing-1) var(--spacing-2);
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-xs);
+    font-weight: 600;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.status-badge.attended {
+    background: var(--success-color);
+    color: var(--white);
+}
+
+.status-badge.late {
+    background: var(--warning-color);
+    color: var(--white);
+}
+
+.status-badge.absent {
+    background: var(--error-color);
+    color: var(--white);
+}
+
+/* 照片缩略图 */
+.photo-thumbnail {
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-md);
+    object-fit: cover;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 2px solid var(--gray-200);
+}
+
+.photo-thumbnail:hover {
+    transform: scale(1.1);
+    border-color: var(--primary-color);
+    box-shadow: var(--shadow-md);
+}
+
+/* 分页 */
+.pagination {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-4) var(--spacing-5);
+    border-top: 1px solid var(--gray-200);
+    background: var(--gray-50);
+}
+
+.page-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border: 1px solid var(--gray-300);
+    background: var(--white);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    color: var(--gray-600);
+}
+
+.page-btn:hover:not(:disabled) {
+    background: var(--primary-color);
+    border-color: var(--primary-color);
+    color: var(--white);
+}
+
+.page-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.page-info {
+    font-size: var(--font-size-sm);
+    color: var(--gray-600);
+}
+
+/* 空状态 */
+.empty-state {
+    text-align: center;
+    padding: var(--spacing-12) var(--spacing-6);
+    color: var(--gray-500);
+    margin: var(--spacing-5);
+    background: var(--white);
+    border-radius: var(--radius-xl);
+    border: 2px dashed var(--gray-300);
+}
+
+.empty-state svg {
+    margin-bottom: var(--spacing-4);
+    opacity: 0.5;
+}
+
+.empty-state h3 {
+    font-size: var(--font-size-lg);
+    margin-bottom: var(--spacing-2);
+    color: var(--gray-600);
+}
+
+.empty-state p {
+    font-size: var(--font-size-sm);
+    line-height: 1.5;
+}
+
+/* 照片模态框 */
+.photo-modal-content {
+    max-width: 90vw;
+    max-height: 90vh;
+}
+
+.modal-photo {
+    width: 100%;
+    height: auto;
+    max-height: 70vh;
+    object-fit: contain;
+    border-radius: var(--radius-lg);
+}
+
+/* 加载状态 */
+.loading-row {
+    text-align: center;
+    padding: var(--spacing-8);
+    color: var(--gray-500);
+}
+
+.loading-spinner {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--gray-300);
+    border-top: 2px solid var(--primary-color);
+    border-radius: var(--radius-full);
+    animation: spin 1s linear infinite;
+    margin-right: var(--spacing-2);
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .attendance-chart {
+        flex-direction: column;
+        gap: var(--spacing-6);
+        text-align: center;
+    }
+    
+    .filter-section {
+        flex-direction: column;
+        gap: var(--spacing-3);
+        align-items: stretch;
+    }
+    
+    .filter-controls {
+        flex-direction: column;
+    }
+    
+    .search-box {
+        max-width: none;
+    }
+    
+    .records-table {
+        font-size: var(--font-size-xs);
+    }
+    
+    .records-table th,
+    .records-table td {
+        padding: var(--spacing-2);
+    }
+    
+    .photo-thumbnail {
+        width: 32px;
+        height: 32px;
+    }
+}
+
+@media (max-width: 375px) {
+    .attendance-overview {
+        padding: var(--spacing-4) var(--spacing-3);
+    }
+    
+    .overview-card {
+        padding: var(--spacing-4);
+    }
+    
+    .overview-header {
+        flex-direction: column;
+        gap: var(--spacing-3);
+        align-items: flex-start;
+    }
+    
+    .records-table-container {
+        margin: 0 var(--spacing-3) var(--spacing-3);
+    }
+    
+    .filter-section {
+        padding: var(--spacing-4) var(--spacing-3);
+    }
+}
+
+/* 暗色模式支持 */
+@media (prefers-color-scheme: dark) {
+    .overview-card {
+        background: var(--gray-800);
+        border-color: var(--gray-700);
+    }
+    
+    .overview-header h2 {
+        color: var(--white);
+    }
+    
+    .time-range-select {
+        background: var(--gray-700);
+        border-color: var(--gray-600);
+        color: var(--white);
+    }
+    
+    .progress-bg {
+        stroke: var(--gray-600);
+    }
+    
+    .progress-label {
+        color: var(--gray-300);
+    }
+    
+    .stat-label {
+        color: var(--gray-300);
+    }
+    
+    .stat-value {
+        color: var(--white);
+    }
+    
+    .filter-section {
+        background: var(--gray-800);
+        border-color: var(--gray-700);
+    }
+    
+    .search-box input {
+        background: var(--gray-700);
+        border-color: var(--gray-600);
+        color: var(--white);
+    }
+    
+    .status-filter {
+        background: var(--gray-700);
+        border-color: var(--gray-600);
+        color: var(--white);
+    }
+    
+    .records-table-container {
+        background: var(--gray-800);
+        border-color: var(--gray-700);
+    }
+    
+    .records-table th {
+        background: var(--gray-700);
+        color: var(--gray-300);
+        border-color: var(--gray-600);
+    }
+    
+    .records-table td {
+        border-color: var(--gray-700);
+        color: var(--gray-300);
+    }
+    
+    .records-table tbody tr:hover {
+        background: var(--gray-700);
+    }
+    
+    .pagination {
+        background: var(--gray-700);
+        border-color: var(--gray-600);
+    }
+    
+    .page-btn {
+        background: var(--gray-800);
+        border-color: var(--gray-600);
+        color: var(--gray-300);
+    }
+    
+    .page-info {
+        color: var(--gray-300);
+    }
+    
+    .empty-state {
+        background: var(--gray-800);
+        border-color: var(--gray-600);
+    }
+    
+    .empty-state h3 {
+        color: var(--white);
+    }
+}

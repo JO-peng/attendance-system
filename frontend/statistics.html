@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>签到统计 - 深圳大学考勤签到</title>
+    <link rel="stylesheet" href="css/common.css">
+    <link rel="stylesheet" href="css/statistics.css">
+</head>
+<body>
+    <div class="container">
+        <!-- 顶部导航 -->
+        <header class="header">
+            <div class="header-left">
+                <h1 class="title" data-zh="签到统计" data-en="Statistics">签到统计</h1>
+            </div>
+            <div class="header-right">
+                <div class="language-switch">
+                    <span class="lang-option active" data-lang="zh">中</span>
+                    <span class="lang-divider">/</span>
+                    <span class="lang-option" data-lang="en">EN</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- 年月选择器 -->
+        <div class="date-selector">
+            <div class="year-month-picker">
+                <select id="yearSelect" class="year-select">
+                    <!-- 年份选项将通过JavaScript动态生成 -->
+                </select>
+                <span class="date-separator" data-zh="年" data-en="">年</span>
+                <select id="monthSelect" class="month-select">
+                    <option value="1" data-zh="1月" data-en="Jan">1月</option>
+                    <option value="2" data-zh="2月" data-en="Feb">2月</option>
+                    <option value="3" data-zh="3月" data-en="Mar">3月</option>
+                    <option value="4" data-zh="4月" data-en="Apr">4月</option>
+                    <option value="5" data-zh="5月" data-en="May">5月</option>
+                    <option value="6" data-zh="6月" data-en="Jun">6月</option>
+                    <option value="7" data-zh="7月" data-en="Jul">7月</option>
+                    <option value="8" data-zh="8月" data-en="Aug">8月</option>
+                    <option value="9" data-zh="9月" data-en="Sep">9月</option>
+                    <option value="10" data-zh="10月" data-en="Oct">10月</option>
+                    <option value="11" data-zh="11月" data-en="Nov">11月</option>
+                    <option value="12" data-zh="12月" data-en="Dec">12月</option>
+                </select>
+                <span class="date-separator" data-zh="月" data-en="">月</span>
+            </div>
+        </div>
+
+        <!-- 统计概览 -->
+        <div class="stats-overview">
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+                <div class="stat-content">
+                    <div class="stat-number" id="attendedDays">0</div>
+                    <div class="stat-label" data-zh="已签到" data-en="Attended">已签到</div>
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon absent">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+                <div class="stat-content">
+                    <div class="stat-number" id="missedDays">0</div>
+                    <div class="stat-label" data-zh="未签到" data-en="Missed">未签到</div>
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon rate">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                    </svg>
+                </div>
+                <div class="stat-content">
+                    <div class="stat-number" id="attendanceRate">0%</div>
+                    <div class="stat-label" data-zh="出勤率" data-en="Rate">出勤率</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 日历 -->
+        <div class="calendar-container">
+            <div class="calendar-header">
+                <div class="weekday" data-zh="日" data-en="Sun">日</div>
+                <div class="weekday" data-zh="一" data-en="Mon">一</div>
+                <div class="weekday" data-zh="二" data-en="Tue">二</div>
+                <div class="weekday" data-zh="三" data-en="Wed">三</div>
+                <div class="weekday" data-zh="四" data-en="Thu">四</div>
+                <div class="weekday" data-zh="五" data-en="Fri">五</div>
+                <div class="weekday" data-zh="六" data-en="Sat">六</div>
+            </div>
+            <div class="calendar-body" id="calendarBody">
+                <!-- 日历日期将通过JavaScript动态生成 -->
+            </div>
+        </div>
+
+        <!-- 签到详情 -->
+        <div class="signin-details" id="signinDetails" style="display: none;">
+            <div class="details-header">
+                <h3 data-zh="签到详情" data-en="Sign-in Details">签到详情</h3>
+                <button class="close-details" id="closeDetails">&times;</button>
+            </div>
+            <div class="details-content" id="detailsContent">
+                <!-- 详情内容将通过JavaScript动态生成 -->
+            </div>
+        </div>
+
+        <!-- 底部导航 -->
+        <nav class="bottom-nav">
+            <a href="index.html" class="nav-item">
+                <div class="nav-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 2L2 7v10c0 5.55 3.84 10 9 11 1.09-.21 2.09-.64 3-1.1 .91.46 1.91.89 3 1.1 5.16-1 9-5.45 9-11V7l-10-5z"/>
+                    </svg>
+                </div>
+                <span data-zh="签到" data-en="Sign">签到</span>
+            </a>
+            <a href="statistics.html" class="nav-item active">
+                <div class="nav-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M9 11H7v6h2v-6zm4-4h-2v10h2V7zm4-4h-2v14h2V3z"/>
+                    </svg>
+                </div>
+                <span data-zh="统计" data-en="Statistics">统计</span>
+            </a>
+            <a href="records.html" class="nav-item">
+                <div class="nav-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 2 2h8c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>
+                    </svg>
+                </div>
+                <span data-zh="记录" data-en="Records">记录</span>
+            </a>
+            <a href="feedback.html" class="nav-item">
+                <div class="nav-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-7 12h-2v-2h2v2zm0-4h-2V6h2v4z"/>
+                    </svg>
+                </div>
+                <span data-zh="反馈" data-en="Feedback">反馈</span>
+            </a>
+        </nav>
+    </div>
+
+    <script src="js/common.js"></script>
+    <script src="js/statistics.js"></script>
+</body>
+</html>

@@ -1,0 +1,23 @@
+# Flask核心框架
+Flask==2.3.3
+Werkzeug==2.3.7
+
+# 数据库相关
+Flask-SQLAlchemy==3.0.5
+SQLAlchemy==2.0.21
+
+# 跨域支持
+Flask-CORS==4.0.0
+
+# 其他工具库
+requests==2.31.0
+Pillow==10.0.1
+python-dotenv==1.0.0
+
+# 开发和测试工具（可选）
+pytest==7.4.2
+pytest-flask==1.2.0
+flake8==6.1.0
+
+# 生产环境服务器（可选）
+gunicorn==21.2.0
