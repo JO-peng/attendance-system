@@ -9,15 +9,26 @@ SQLAlchemy==2.0.21
 # 跨域支持
 Flask-CORS==4.0.0
 
-# 其他工具库
+# HTTP请求
 requests==2.31.0
+
+# 图像处理
 Pillow==10.0.1
+
+# 配置管理
 python-dotenv==1.0.0
 
-# 开发和测试工具（可选）
-pytest==7.4.2
-pytest-flask==1.2.0
-flake8==6.1.0
+# 企业微信API相关
+cryptography==41.0.3
+pyjwt==2.8.0
 
-# 生产环境服务器（可选）
+# 时间和地理位置处理
+pytz==2023.3
+geopy==2.3.0
+
+# 生产环境服务器
 gunicorn==21.2.0
+waitress==2.1.2
+
+# HTTPS支持
+pyOpenSSL==23.2.0

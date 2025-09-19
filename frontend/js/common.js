@@ -316,7 +316,7 @@ const WeChatAPI = {
     // 获取配置信息
     async getConfig() {
         try {
-            return await Utils.request('/wechat/config', {
+            return await Utils.request('/api/wechat/config', {
                 method: 'POST',
                 body: JSON.stringify({
                     url: window.location.href.split('#')[0]
@@ -335,7 +335,7 @@ const WeChatAPI = {
             const code = urlParams.get('code');
             
             if (code) {
-                const response = await Utils.request('/wechat/userinfo', {
+                const response = await Utils.request('/api/wechat/userinfo', {
                     method: 'POST',
                     body: JSON.stringify({ code })
                 });

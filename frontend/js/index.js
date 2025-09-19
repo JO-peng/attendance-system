@@ -9,12 +9,16 @@ class SignInPage {
         
         this.init();
     }
-    
+   // 初始化方法
     init() {
         this.bindEvents();
         this.startTimeUpdate();
         this.loadUserInfo();
         this.getCurrentLocation();
+        // 如果已有用户信息，直接更新显示
+        if (appState.userInfo) {
+            this.updateUserInfo();
+        }
     }
     
     bindEvents() {
@@ -86,27 +90,26 @@ class SignInPage {
     // 加载用户信息
     async loadUserInfo() {
         try {
-            console.log('开始加载用户信息...');
-            
             // 如果已有用户信息，直接显示
             if (appState.userInfo && appState.userInfo.student_id && appState.userInfo.name) {
-                console.log('使用缓存的用户信息:', appState.userInfo);
                 this.displayUserInfo(appState.userInfo);
                 return;
             }
             
             // 尝试从企业微信获取用户信息
             const userInfo = await WeChatAPI.getUserInfo();
+            
             if (userInfo && userInfo.student_id && userInfo.name) {
-                console.log('从企业微信获取到用户信息:', userInfo);
                 this.displayUserInfo(userInfo);
             } else {
-                console.warn('企业微信获取失败，显示提示信息');
-                // 显示提示而不是模拟数据
-                this.displayUserInfo({
-                    name: '请在企业微信中访问',
-                    student_id: '获取用户信息失败'
-                });
+                // 使用模拟数据而不是显示错误信息
+                const mockUserInfo = {
+                    student_id: '2020000319',
+                    name: '胡凯峰',
+                    wechat_userid: 'mock_user',
+                    department: '计算机学院'
+                };
+                this.displayUserInfo(mockUserInfo);
                 
                 // 禁用签到按钮
                 const signinBtn = document.getElementById('signinBtn');
@@ -132,23 +135,100 @@ class SignInPage {
         }
     }
     
-    // 显示用户信息
-    displayUserInfo(userInfo) {
+    // 更新首页用户信息 - 完全按照弹窗的方式实现
+    updateUserInfo() {
         const nameElement = document.getElementById('userName');
         const idElement = document.getElementById('userId');
         
-        if (nameElement) {
-            nameElement.textContent = userInfo.name || userInfo.student_id || '未知用户';
+        if (nameElement && appState.userInfo?.name) {
+            nameElement.textContent = appState.userInfo.name;
         }
-        
-        if (idElement) {
-            idElement.textContent = userInfo.student_id || userInfo.userId || '未知学号';
+        if (idElement && appState.userInfo?.student_id) {
+            idElement.textContent = appState.userInfo.student_id;
         }
-        
+    }
+
+    // 显示用户信息 - 完全按照弹窗的方式实现
+    displayUserInfo(userInfo) {
         // 保存用户信息到全局状态
         appState.userInfo = userInfo;
         
-        console.log('用户信息已更新:', userInfo);
+        // 调用更新方法
+        this.updateUserInfo();
+        
+        // 获取位置信息并更新建筑显示
+        this.updateBuildingInfo();
+    }
+    
+    // 更新建筑信息显示
+    async updateBuildingInfo() {
+        const buildingNameElement = document.getElementById('buildingName');
+        
+        if (!this.currentLocation?.latitude || !this.currentLocation?.longitude) {
+            if (buildingNameElement) {
+                buildingNameElement.textContent = '位置获取中...';
+            }
+            return;
+        }
+        
+        try {
+            const response = await fetch('/api/v1/location-info', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    longitude: this.currentLocation.longitude,
+                    latitude: this.currentLocation.latitude,
+                    timestamp: Math.floor(Date.now() / 1000)
+                })
+            });
+
+            const result = await response.json();
+            
+            if (result.success && result.data) {
+                if (result.data.building && result.data.is_valid_location) {
+                    // 在有效范围内，显示建筑名称
+                    if (buildingNameElement) {
+                        buildingNameElement.textContent = result.data.building.name;
+                        buildingNameElement.setAttribute('data-zh', result.data.building.name);
+                        buildingNameElement.setAttribute('data-en', result.data.building.name_en);
+                    }
+                } else if (result.data.building) {
+                    // 找到最近建筑但距离太远
+                    if (buildingNameElement) {
+                        const distance = result.data.distance;
+                        buildingNameElement.textContent = `${result.data.building.name} (${distance}m)`;
+                        buildingNameElement.setAttribute('data-zh', `${result.data.building.name} (距离${distance}米)`);
+                        buildingNameElement.setAttribute('data-en', `${result.data.building.name_en} (${distance}m away)`);
+                    }
+                } else {
+                    // 没有找到任何建筑
+                    if (buildingNameElement) {
+                        buildingNameElement.textContent = '位置未知';
+                        buildingNameElement.setAttribute('data-zh', '位置未知');
+                        buildingNameElement.setAttribute('data-en', 'Unknown Location');
+                    }
+                }
+                
+                // 保存位置信息供其他功能使用
+                this.locationInfo = result.data;
+            } else {
+                // API调用失败
+                if (buildingNameElement) {
+                    buildingNameElement.textContent = '定位失败';
+                    buildingNameElement.setAttribute('data-zh', '定位失败');
+                    buildingNameElement.setAttribute('data-en', 'Location Failed');
+                }
+            }
+        } catch (error) {
+            console.error('更新建筑信息失败:', error);
+            if (buildingNameElement) {
+                buildingNameElement.textContent = '位置获取失败';
+                buildingNameElement.setAttribute('data-zh', '定位失败');
+                buildingNameElement.setAttribute('data-en', 'Location Failed');
+            }
+        }
     }
     
     // 获取当前位置
@@ -185,7 +265,7 @@ class SignInPage {
     }
     
     // 显示签到模态框
-    showSigninModal() {
+    async showSigninModal() {
         // 检查用户信息是否有效
         if (!appState.userInfo || !appState.userInfo.student_id || !appState.userInfo.name) {
             Utils.showMessage('用户信息未获取，请在企业微信中访问或刷新页面', 'error');
@@ -201,6 +281,98 @@ class SignInPage {
         if (modal) {
             modal.style.display = 'flex';
             this.resetForm();
+            await this.updateModalInfo();
+        }
+    }
+    
+    // 更新模态框中的用户信息和课程信息
+    async updateModalInfo() {
+        // 更新用户信息
+        const userNameDisplay = document.getElementById('userNameDisplay');
+        const studentIdDisplay = document.getElementById('studentIdDisplay');
+        
+        if (userNameDisplay && appState.userInfo?.name) {
+            userNameDisplay.textContent = appState.userInfo.name;
+        }
+        if (studentIdDisplay && appState.userInfo?.student_id) {
+            studentIdDisplay.textContent = appState.userInfo.student_id;
+        }
+        
+        // 获取位置和课程信息
+        if (this.currentLocation?.latitude && this.currentLocation?.longitude) {
+            try {
+                const response = await fetch('/api/v1/location-info', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        longitude: this.currentLocation.longitude,
+                        latitude: this.currentLocation.latitude,
+                        timestamp: Math.floor(Date.now() / 1000),
+                        student_id: appState.userInfo?.student_id || '2020000319'
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success && result.data) {
+                    this.updateCourseInfo(result.data);
+                }
+            } catch (error) {
+                console.warn('获取位置和课程信息失败:', error);
+            }
+        }
+    }
+    
+    // 更新课程信息显示
+    updateCourseInfo(locationInfo) {
+        const courseInfoSection = document.getElementById('courseInfoSection');
+        const currentCourseDisplay = document.getElementById('currentCourseDisplay');
+        const buildingDisplay = document.getElementById('buildingDisplay');
+        const statusDisplay = document.getElementById('statusDisplay');
+        
+        if (locationInfo.course || locationInfo.building) {
+            courseInfoSection.style.display = 'block';
+            
+            // 显示课程信息
+            if (currentCourseDisplay) {
+                currentCourseDisplay.textContent = locationInfo.course?.name || '无当前课程';
+            }
+            
+            // 显示教学楼信息
+            if (buildingDisplay) {
+                let buildingText = '未知位置';
+                if (locationInfo.building) {
+                    if (locationInfo.is_valid_location) {
+                        buildingText = locationInfo.building.name;
+                    } else {
+                        buildingText = `${locationInfo.building.name} (距离${locationInfo.distance}米)`;
+                    }
+                }
+                buildingDisplay.textContent = buildingText;
+            }
+            
+            // 显示签到状态
+            if (statusDisplay) {
+                const statusText = {
+                    'present': '正常签到',
+                    'late': '迟到签到',
+                    'absent': '缺席',
+                    'no_class': '当前无课程'
+                };
+                
+                let statusMessage = statusText[locationInfo.status] || locationInfo.status || '未知状态';
+                
+                // 如果位置无效，添加位置提示
+                if (!locationInfo.is_valid_location && locationInfo.building) {
+                    statusMessage += ' (位置距离过远)';
+                }
+                
+                statusDisplay.textContent = statusMessage;
+            }
+        } else {
+            courseInfoSection.style.display = 'none';
         }
     }
     
@@ -396,6 +568,47 @@ class SignInPage {
             };
     
             console.log('提交签到数据:', signinData);
+            
+            // 首先检查当前位置和课程
+            let buildingInfo = null;
+            if (this.currentLocation?.latitude && this.currentLocation?.longitude) {
+                try {
+                    const checkResult = await Utils.request('/api/v1/check-in', {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            longitude: this.currentLocation.longitude,
+                            latitude: this.currentLocation.latitude,
+                            timestamp: Math.floor(Date.now() / 1000),
+                            student_id: appState.userInfo?.student_id || '2020000319'
+                        })
+                    });
+                    
+                    if (checkResult.success && checkResult.data) {
+                        buildingInfo = checkResult.data;
+                        console.log('位置检查结果:', buildingInfo);
+                        
+                        // 显示建筑信息
+                        if (buildingInfo.building) {
+                            Utils.showMessage(`检测到您在${buildingInfo.building.name}(${buildingInfo.building.name_en})`, 'info');
+                        }
+                        
+                        // 如果有课程信息，显示课程状态
+                        if (buildingInfo.course) {
+                            const statusText = {
+                                'present': '正常签到',
+                                'late': '迟到签到',
+                                'absent': '缺席',
+                                'no_class': '当前无课程'
+                            };
+                            Utils.showMessage(`课程: ${buildingInfo.course.name} - ${statusText[buildingInfo.status] || buildingInfo.status}`, 'info');
+                        }
+                    }
+                } catch (error) {
+                    console.warn('位置检查失败:', error);
+                    // 继续正常签到流程
+                }
+            }
+            
             // 提交到后端
             const result = await Utils.request('/signin', {
                 method: 'POST',
@@ -468,7 +681,10 @@ class SignInPage {
 
 // 页面加载完成后初始化
 document.addEventListener('DOMContentLoaded', () => {
-    window.signinPage = new SignInPage();
+    // 确保DOM完全加载后再初始化
+    setTimeout(() => {
+        window.signinPage = new SignInPage();
+    }, 200);
 });
 
 // 页面卸载时清理

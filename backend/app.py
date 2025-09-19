@@ -32,6 +32,50 @@ db = SQLAlchemy(app)
 # 配置CORS以支持ngrok等穿透工具
 CORS(app, origins=['*'], allow_headers=['*'], methods=['*'])
 
+# 错误处理装饰器
+def handle_errors(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        try:
+            return f(*args, **kwargs)
+        except Exception as e:
+            # 使用基本的print，因为logger可能还没初始化
+            print(f"API错误: {str(e)}")
+            return jsonify({
+                'success': False,
+                'message': '服务器内部错误',
+                'error': str(e)
+            }), 500
+    return decorated_function
+
+@app.route('/api/v1/location-info', methods=['POST'])
+@handle_errors
+def location_info():
+    """获取位置信息"""
+    data = request.get_json()
+    latitude = data.get('latitude')
+    longitude = data.get('longitude')
+    
+    if not latitude or not longitude:
+        return jsonify({
+            'success': False,
+            'message': '缺少位置参数'
+        }), 400
+    
+    # 这里可以集成地理编码服务来获取详细地址
+    # 暂时返回基本信息
+    location_info = {
+        'latitude': latitude,
+        'longitude': longitude,
+        'address': f'位置: {latitude}, {longitude}',
+        'accuracy': data.get('accuracy', 0)
+    }
+    
+    return jsonify({
+        'success': True,
+        'data': location_info
+    })
+
 # 配置日志
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -136,21 +180,6 @@ class Feedback(db.Model):
             'ip_address': self.ip_address,
             'created_at': self.created_at.isoformat() if self.created_at else None
         }
-
-# 错误处理装饰器
-def handle_errors(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        try:
-            return f(*args, **kwargs)
-        except Exception as e:
-            logger.error(f"API错误: {str(e)}")
-            return jsonify({
-                'success': False,
-                'message': '服务器内部错误',
-                'error': str(e)
-            }), 500
-    return decorated_function
 
 @app.after_request
 def after_request(response):
@@ -278,6 +307,7 @@ def get_user_info():
 
 @app.route('/api/attendance/sign', methods=['POST'])
 @app.route('/signin', methods=['POST'])  # 添加前端使用的路由
+@app.route('/api/v1/check-in', methods=['POST'])  # 添加v1版本API路由
 @handle_errors
 def sign_attendance():
     """签到接口"""
@@ -628,5 +658,32 @@ def create_tables():
         logger.info("数据库表创建完成")
 
 if __name__ == '__main__':
-    # 开发环境运行
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    import ssl
+    import os
+    
+    # 检查是否存在SSL证书文件
+    cert_path = os.path.join('..', 'ca', 'cert.pem')
+    key_path = os.path.join('..', 'ca', 'key.pem')
+    
+    if os.path.exists(cert_path) and os.path.exists(key_path):
+        # 生产环境：使用HTTPS和443端口
+        context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+        context.load_cert_chain(cert_path, key_path)
+        
+        logger.info("启动HTTPS服务器，端口: 443")
+        logger.info(f"证书文件: {cert_path}")
+        logger.info(f"私钥文件: {key_path}")
+        
+        app.run(
+            debug=False,
+            host='0.0.0.0',
+            port=443,
+            ssl_context=context
+        )
+    else:
+        # 开发环境：使用HTTP和5000端口
+        logger.warning("未找到SSL证书文件，使用HTTP模式运行")
+        logger.warning(f"请将证书文件放置在: {cert_path}")
+        logger.warning(f"请将私钥文件放置在: {key_path}")
+        
+        app.run(debug=True, host='0.0.0.0', port=5000)
