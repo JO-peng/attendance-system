@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>深圳大学CAS登录测试</title>
+    <style>
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .status-card {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .user-info {
+            background: #e7f3ff;
+            border: 1px solid #b3d9ff;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .btn {
+            display: inline-block;
+            padding: 10px 20px;
+            margin: 5px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            text-decoration: none;
+            font-size: 14px;
+            transition: background-color 0.3s;
+        }
+        .btn-primary {
+            background-color: #007bff;
+            color: white;
+        }
+        .btn-primary:hover {
+            background-color: #0056b3;
+        }
+        .btn-danger {
+            background-color: #dc3545;
+            color: white;
+        }
+        .btn-danger:hover {
+            background-color: #c82333;
+        }
+        .btn-secondary {
+            background-color: #6c757d;
+            color: white;
+        }
+        .btn-secondary:hover {
+            background-color: #545b62;
+        }
+        .info-item {
+            margin-bottom: 10px;
+        }
+        .info-label {
+            font-weight: bold;
+            color: #495057;
+        }
+        .info-value {
+            color: #212529;
+        }
+        .loading {
+            text-align: center;
+            color: #6c757d;
+        }
+        .error {
+            color: #dc3545;
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            border-radius: 4px;
+            padding: 10px;
+            margin: 10px 0;
+        }
+        .success {
+            color: #155724;
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            border-radius: 4px;
+            padding: 10px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>深圳大学CAS统一身份认证</h1>
+            <p>考勤签到系统登录测试</p>
+        </div>
+
+        <div id="loading" class="loading" style="display: none;">
+            正在加载...
+        </div>
+
+        <div id="error-message" class="error" style="display: none;"></div>
+        <div id="success-message" class="success" style="display: none;"></div>
+
+        <div id="login-section" style="display: none;">
+            <div class="status-card">
+                <h3>未登录状态</h3>
+                <p>请点击下方按钮进行CAS统一身份认证登录</p>
+                <button class="btn btn-primary" onclick="casLogin()">CAS登录</button>
+            </div>
+        </div>
+
+        <div id="user-section" style="display: none;">
+            <div class="user-info">
+                <h3>用户信息</h3>
+                <div id="user-details"></div>
+            </div>
+            <div class="status-card">
+                <h3>操作</h3>
+                <button class="btn btn-secondary" onclick="refreshSession()">刷新会话</button>
+                <button class="btn btn-danger" onclick="casLogout()">退出登录</button>
+            </div>
+        </div>
+
+        <div class="status-card">
+            <h3>测试功能</h3>
+            <button class="btn btn-secondary" onclick="checkStatus()">检查登录状态</button>
+            <button class="btn btn-secondary" onclick="getUserInfo()">获取用户信息</button>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:5000';
+
+        // 页面加载时检查登录状态
+        window.onload = function() {
+            checkStatus();
+        };
+
+        function showLoading() {
+            document.getElementById('loading').style.display = 'block';
+        }
+
+        function hideLoading() {
+            document.getElementById('loading').style.display = 'none';
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('error-message');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+            setTimeout(() => {
+                errorDiv.style.display = 'none';
+            }, 5000);
+        }
+
+        function showSuccess(message) {
+            const successDiv = document.getElementById('success-message');
+            successDiv.textContent = message;
+            successDiv.style.display = 'block';
+            setTimeout(() => {
+                successDiv.style.display = 'none';
+            }, 3000);
+        }
+
+        function showLoginSection() {
+            document.getElementById('login-section').style.display = 'block';
+            document.getElementById('user-section').style.display = 'none';
+        }
+
+        function showUserSection(user) {
+            document.getElementById('login-section').style.display = 'none';
+            document.getElementById('user-section').style.display = 'block';
+            
+            const userDetails = document.getElementById('user-details');
+            userDetails.innerHTML = `
+                <div class="info-item">
+                    <span class="info-label">学工号:</span>
+                    <span class="info-value">${user.username || '未知'}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">姓名:</span>
+                    <span class="info-value">${user.name || '未知'}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">校园卡号:</span>
+                    <span class="info-value">${user.alias || '未知'}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">单位:</span>
+                    <span class="info-value">${user.org_dn || '未知'}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">用户类型:</span>
+                    <span class="info-value">${user.user_type || '未知'}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">容器ID:</span>
+                    <span class="info-value">${user.container_id || '未知'}</span>
+                </div>
+            `;
+        }
+
+        async function checkStatus() {
+            showLoading();
+            try {
+                const response = await fetch(`${API_BASE}/cas/status`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    if (data.logged_in && data.user) {
+                        showUserSection(data.user);
+                        showSuccess('用户已登录');
+                    } else {
+                        showLoginSection();
+                    }
+                } else {
+                    showError(data.message || '检查登录状态失败');
+                    showLoginSection();
+                }
+            } catch (error) {
+                console.error('检查登录状态失败:', error);
+                showError('网络错误，请检查后端服务是否启动');
+                showLoginSection();
+            } finally {
+                hideLoading();
+            }
+        }
+
+        async function casLogin() {
+            showLoading();
+            try {
+                const response = await fetch(`${API_BASE}/cas/login`, {
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+                const data = await response.json();
+                
+                if (data.success && data.login_url) {
+                    // 重定向到CAS登录页面
+                    window.location.href = data.login_url;
+                } else {
+                    showError(data.message || 'CAS登录失败');
+                }
+            } catch (error) {
+                console.error('CAS登录失败:', error);
+                showError('网络错误，请检查后端服务是否启动');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        async function casLogout() {
+            showLoading();
+            try {
+                const response = await fetch(`${API_BASE}/cas/logout`, {
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+                const data = await response.json();
+                
+                if (data.success && data.logout_url) {
+                    // 重定向到CAS登出页面
+                    window.location.href = data.logout_url;
+                } else {
+                    showError(data.message || 'CAS登出失败');
+                }
+            } catch (error) {
+                console.error('CAS登出失败:', error);
+                showError('网络错误，请检查后端服务是否启动');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        async function getUserInfo() {
+            showLoading();
+            try {
+                const response = await fetch(`${API_BASE}/cas/user`);
+                const data = await response.json();
+                
+                if (data.success && data.user) {
+                    showUserSection(data.user);
+                    showSuccess('用户信息获取成功');
+                } else {
+                    showError(data.message || '获取用户信息失败');
+                    if (response.status === 401) {
+                        showLoginSection();
+                    }
+                }
+            } catch (error) {
+                console.error('获取用户信息失败:', error);
+                showError('网络错误，请检查后端服务是否启动');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        async function refreshSession() {
+            showLoading();
+            try {
+                const response = await fetch(`${API_BASE}/cas/refresh`, {
+                    method: 'POST'
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    showSuccess('会话刷新成功');
+                } else {
+                    showError(data.message || '会话刷新失败');
+                    if (response.status === 401) {
+                        showLoginSection();
+                    }
+                }
+            } catch (error) {
+                console.error('会话刷新失败:', error);
+                showError('网络错误，请检查后端服务是否启动');
+            } finally {
+                hideLoading();
+            }
+        }
+    </script>
+</body>
+</html>

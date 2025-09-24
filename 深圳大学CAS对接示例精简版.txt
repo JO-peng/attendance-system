@@ -1,0 +1,77 @@
+<%@Language=JScript%>
+<%
+//本代码保存为caslogin.asp，功能包括登录、获取用户信息和注销退出等，仅供参考
+//MyServer是您的应用URL，须通过申请流程在信息中心备案授权：
+//【企业微信—>工作台—>统一身份认证CAS接口】申请—>单位领导审批—>信息中心受理
+
+//用户信息默认为XML格式
+//用户信息支持返回JSON格式，读取用户信息时需增加参数format=json，下方代码改为：
+//var url=CAS_Server+"serviceValidate?format=json&ticket="+ticket+"&service="+MyServer+MyPage;
+
+var MyPage="caslogin.asp";
+var MyServer="http://www1.szu.edu.cn/myinfo/";
+var CAS_Server="https://authserver.szu.edu.cn/authserver/";
+
+//注销登录
+if(Request.QueryString.Item("refresh").Item=="logout")
+{
+	Session.Abandon();
+	Response.Redirect(CAS_Server+"logout?service="+MyServer+MyPage);
+	Response.End;
+}
+
+var ticket=Request.QueryString.Item("ticket").Item;
+//跳转用户登录
+if(!ticket)
+{
+	Response.Redirect(CAS_Server+"login?service="+MyServer+MyPage);
+	Response.End;
+}
+
+//根据ticket获取用户信息
+else
+{
+	var userID = "-";//学工号，即教师工号或学生学号
+	var userName = "-";//姓名
+	var userCardid = "-";//校园卡号
+	var userOrgname = "-";//学院
+
+	var http=Server.CreateObject("MSXML2.ServerXMLHTTP.4.0");
+	http.setOption(2,13056);
+	var url=CAS_Server+"serviceValidate?ticket="+ticket+"&service="+MyServer+MyPage;
+	http.open("GET",url,false);
+	http.send();
+
+	//读取学工号姓名卡号单位
+	var resp = http.responseXML;
+	resp.setProperty("SelectionNamespaces","xmlns:cas=\"http://www.yale.edu/tp/cas\"");
+	var snode=resp.selectSingleNode("//cas:user");
+	if(snode) userID = snode.nodeTypedValue;
+	var snode=resp.selectSingleNode("//cas:cn");
+	if(snode) userName = snode.nodeTypedValue;
+	var snode=resp.selectSingleNode("//cas:alias");
+	if(snode) userCardid = snode.nodeTypedValue;
+	var snode=resp.selectSingleNode("//cas:eduPersonOrgDN");
+	if(snode) userOrgname = snode.nodeTypedValue;
+
+//附：用户容器类似于用户类别（因随时调整，不建议使用）：
+//cas:containerId——用户容器，如本科生、研究生、教职工、其他学生和其他人员等
+//cas:containerId的值为字符串，格式为：ou=容器代码,ou=People
+//主要容器代码：
+//jzg在职教职工、lzjzg离职教职工、txjzg退休教职工、bks本科生、yjs研究生、qtxs其他学生
+//cjyg成教员工、xwds校外导师、kyry科研系统账号、qtry其他人员
+//bybks毕业本科生、byyjs毕业研究生、byqtxs毕业其他学生 ……等等
+
+}
+
+//在当前页显示用户信息
+Response.Write("<a href="+MyPage+">[刷新]</a> <a href="+MyPage+"?refresh=logout>[注销]</a><br>");
+Response.Write("用户信息:<br>学工号：");
+Response.Write(userID);
+Response.Write("<br>卡号：");
+Response.Write(userCardid);
+Response.Write("<br>姓名：");
+Response.Write(userName);
+Response.Write("<br>学院：");
+Response.Write(userOrgname);
+%>

@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>报到统计 - 深圳大学新生报到系统</title>
+    <link rel="stylesheet" href="/static/css/stats.css?v=20250829">
+    <!-- Chart.js 用于图表展示 -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="container">
+        <!-- 顶部导航栏 -->
+        <div class="top-nav">
+            <div class="nav-left">
+                <button id="backButton" class="back-button">
+                    <span class="back-icon">←</span>
+                    <span class="back-text">返回</span>
+                </button>
+            </div>
+            <div class="nav-center">
+                <h1 class="page-title">报到统计</h1>
+            </div>
+            <div class="nav-right">
+                <!-- 用户信息显示 -->
+                <div id="userInfoHeader" class="user-info-nav" style="display: none;">
+                    <div class="user-details">
+                        <span id="userName" class="user-name">加载中...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 主要内容区域 -->
+        <div class="main-container">
+            <!-- 统计概览 -->
+            <div class="stats-overview">
+                <div class="overview-card">
+                    <div class="overview-icon">👥</div>
+                    <div class="overview-content">
+                        <div class="overview-number" id="totalHandlers">-</div>
+                        <div class="overview-label">报到人员</div>
+                    </div>
+                </div>
+                <div class="overview-card">
+                    <div class="overview-icon">📊</div>
+                    <div class="overview-content">
+                        <div class="overview-number" id="totalRecords">-</div>
+                        <div class="overview-label">总报到数</div>
+                    </div>
+                </div>
+                <div class="overview-card">
+                    <div class="overview-icon">📈</div>
+                    <div class="overview-content">
+                        <div class="overview-number" id="avgRecords">-</div>
+                        <div class="overview-label">平均报到</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 图表展示 -->
+            <div class="chart-section">
+                <div class="section-header">
+                    <h3>报到数量分布</h3>
+                </div>
+                <div class="chart-container">
+                    <canvas id="statsChart"></canvas>
+                </div>
+            </div>
+
+            <!-- 排行榜 -->
+            <div class="ranking-section">
+                <div class="section-header">
+                    <h3>报到排行榜</h3>
+                    <div class="ranking-tabs">
+                        <button id="listViewTab" class="ranking-tab active">列表</button>
+                        <button id="chartViewTab" class="ranking-tab">图表</button>
+                    </div>
+                </div>
+                
+                <!-- 列表视图 -->
+                <div id="listView" class="ranking-content active">
+                    <div id="rankingList" class="ranking-list">
+                        <div class="loading-placeholder">正在加载统计数据...</div>
+                    </div>
+                </div>
+
+                <!-- 图表视图 -->
+                <div id="chartView" class="ranking-content">
+                    <div class="chart-container">
+                        <canvas id="rankingChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 详细数据表格 -->
+            <div class="table-section">
+                <div class="section-header">
+                    <h3>详细数据</h3>
+                    <button id="exportButton" class="export-button">
+                        <span class="button-icon">📥</span>
+                        <span class="button-text">导出</span>
+                    </button>
+                </div>
+                <div class="table-container">
+                    <table id="statsTable" class="stats-table">
+                        <thead>
+                            <tr>
+                                <th>排名</th>
+                                <th>姓名</th>
+                                <th>学工号</th>
+                                <th>核验数量</th>
+                                <th>占比</th>
+                            </tr>
+                        </thead>
+                        <tbody id="statsTableBody">
+                            <tr>
+                                <td colspan="5" class="loading-cell">正在加载...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 加载提示 -->
+        <div id="loading" class="loading">
+            <div class="spinner"></div>
+            <p>加载中...</p>
+        </div>
+
+        <!-- 错误提示 -->
+        <div id="errorModal" class="modal">
+            <div class="modal-content">
+                <h4>提示</h4>
+                <p id="errorMessage"></p>
+                <button id="errorOkButton" class="modal-button">确定</button>
+            </div>
+        </div>
+
+        <!-- 详情弹窗 -->
+        <div id="detailModal" class="modal">
+            <div class="modal-content detail-modal">
+                <div class="modal-header">
+                    <h4 id="detailTitle">报到详情</h4>
+                    <button id="detailCloseButton" class="close-button">×</button>
+                </div>
+                <div class="modal-body">
+                    <div id="detailContent" class="detail-content">
+                        <!-- 详情内容将在这里动态加载 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/stats.js?v=20250829"></script>
+</body>
+</html>

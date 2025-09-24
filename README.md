@@ -1,238 +1,212 @@
 # 深圳大学考勤签到系统
 
-基于Flask和企业微信的智能考勤签到系统，支持位置验证、课程管理和数据统计。
+## 项目简介
+基于H5前端和Python Flask后端的智能考勤签到系统，集成企业微信API，支持GPS定位验证、课程表管理、建筑识别等功能，为深圳大学提供完整的考勤解决方案。
 
 ## 功能特性
-
-- **智能签到**: 基于地理位置的自动签到验证
-- **企业微信集成**: 支持企业微信用户身份验证
-- **课程管理**: 完整的课程表和教学楼管理
-- **数据统计**: 签到记录查询和统计分析
-- **反馈系统**: 用户反馈收集和管理
-- **响应式设计**: 支持移动端和桌面端访问
+- 🔐 企业微信用户身份验证
+- 📍 GPS定位签到与建筑识别
+- 📷 拍照打卡功能
+- 📚 课程表管理与课程匹配
+- 🏢 建筑信息管理与位置验证
+- 📊 签到统计与记录查询
+- 🌐 中英文双语支持
+- 📋 数据导出功能
+- 💬 用户反馈系统
+- 🔒 HTTPS安全访问
 
 ## 技术栈
-
-### 后端
-- **Flask 2.3.3** - Web框架
-- **SQLAlchemy** - 数据库ORM
-- **Flask-CORS** - 跨域支持
-- **企业微信API** - 用户认证
-- **Geopy** - 地理位置处理
-
-### 前端
-- **原生JavaScript** - 前端逻辑
-- **CSS3** - 样式设计
-- **企业微信JSSDK** - 微信功能集成
+- **前端**: HTML5 + CSS3 + JavaScript (ES6+)
+- **后端**: Python 3.8+ + Flask 2.3.3
+- **数据库**: SQLite 3
+- **API集成**: 企业微信API
+- **地理位置**: Geopy + Haversine
+- **安全**: HTTPS + SSL证书
+- **部署**: Gunicorn + Waitress
 
 ## 项目结构
-
 ```
+├── frontend/                 # 前端代码
+│   ├── index.html           # 签到主界面
+│   ├── statistics.html      # 统计分析界面
+│   ├── records.html         # 签到记录界面
+│   ├── feedback.html        # 用户反馈界面
+│   ├── css/                 # 样式文件
+│   │   ├── common.css       # 通用样式
+│   │   ├── index.css        # 签到页面样式
+│   │   └── ...
+│   └── js/                  # JavaScript文件
+│       ├── common.js        # 通用功能
+│       ├── index.js         # 签到页面逻辑
+│       └── ...
 ├── backend/                 # 后端代码
-│   ├── app.py              # Flask应用主文件
+│   ├── app.py              # Flask主应用
 │   ├── config.py           # 配置文件
+│   ├── run.py              # 数据库初始化脚本
 │   ├── wechat_api.py       # 企业微信API
+│   ├── api/                # API接口
+│   │   └── attendance_api.py # 考勤相关API
 │   ├── models/             # 数据模型
+│   │   ├── building.py     # 建筑模型
+│   │   └── course_schedule.py # 课程表模型
 │   ├── services/           # 业务逻辑
-│   └── requirements.txt    # Python依赖
-├── frontend/               # 前端代码
-│   ├── index.html         # 主页面
-│   ├── css/               # 样式文件
-│   └── js/                # JavaScript文件
-├── ca/                    # SSL证书目录
-└── CAS集成/               # CAS认证集成文档
+│   │   └── attendance_service.py # 考勤服务
+│   ├── uploads/            # 文件上传目录
+│   └── instance/           # 数据库文件
+├── ca/                     # SSL证书目录
+├── CAS集成/                # CAS认证集成文档
+└── requirements.txt        # Python依赖
 ```
 
-## 快速开始
+## 安装部署
 
 ### 环境要求
-
 - Python 3.8+
-- Git
+- pip 包管理器
+- SSL证书（生产环境）
 
-### 1. 克隆项目
+### 本地开发
+1. **克隆项目**
+   ```bash
+   git clone <repository-url>
+   cd 考勤签到复现
+   ```
 
-```bash
-git clone <repository-url>
-cd 考勤签到复现
-```
+2. **安装依赖**
+   ```bash
+   cd backend
+   pip install -r requirements.txt
+   ```
 
-### 2. 安装依赖
+3. **初始化数据库**
+   ```bash
+   python run.py
+   ```
 
-```bash
-cd backend
-pip install -r requirements.txt
-```
+4. **启动服务**
+   ```bash
+   python app.py
+   ```
 
-### 3. 配置环境变量
+5. **访问应用**
+   - 开发环境: http://localhost:5000
+   - 生产环境: https://kpeak.szu.edu.cn
 
-创建 `.env` 文件：
+### 生产部署
+1. **配置SSL证书**
+   - 将证书文件放置在 `ca/` 目录下
+   - 配置 `config.py` 中的证书路径
 
-```env
-# 企业微信配置
-WECHAT_CORP_ID=your_corp_id
-WECHAT_CORP_SECRET=your_corp_secret
-WECHAT_AGENT_ID=your_agent_id
+2. **配置企业微信**
+   - 设置企业微信可信域名: `kpeak.szu.edu.cn`
+   - 配置企业微信应用参数
 
-# 数据库配置
-DATABASE_URL=sqlite:///instance/attendance.db
-
-# 应用配置
-SECRET_KEY=your_secret_key
-DEBUG=True
-```
-
-### 4. 初始化数据库
-
-```bash
-python run.py
-```
-
-### 5. 启动服务
-
-```bash
-python run.py
-```
-
-访问 http://localhost:5000
-
-## 生产部署
-
-### 1. 服务器要求
-
-- Linux服务器 (推荐Ubuntu 20.04+)
-- Python 3.8+
-- Nginx (可选，用于反向代理)
-- SSL证书 (用于HTTPS)
-
-### 2. 部署步骤
-
-```bash
-# 1. 克隆代码
-git clone <repository-url>
-cd 考勤签到复现
-
-# 2. 安装依赖
-cd backend
-pip install -r requirements.txt
-
-# 3. 配置SSL证书
-# 将证书文件放置在 ca/ 目录下
-# cert.pem - SSL证书
-# key.pem - 私钥文件
-
-# 4. 配置环境变量
-cp .env.example .env
-# 编辑 .env 文件，填入正确的配置
-
-# 5. 启动生产服务
-python run.py
-```
-
-### 3. 使用Gunicorn部署
-
-```bash
-# 安装Gunicorn
-pip install gunicorn
-
-# 启动服务
-gunicorn -w 4 -b 0.0.0.0:5000 app:app
-```
-
-### 4. Nginx配置 (可选)
-
-```nginx
-server {
-    listen 80;
-    server_name your-domain.com;
-    return 301 https://$server_name$request_uri;
-}
-
-server {
-    listen 443 ssl;
-    server_name your-domain.com;
-    
-    ssl_certificate /path/to/cert.pem;
-    ssl_certificate_key /path/to/key.pem;
-    
-    location / {
-        proxy_pass http://127.0.0.1:5000;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-    }
-}
-```
+3. **启动HTTPS服务**
+   ```bash
+   python app.py --port 443 --ssl
+   ```
 
 ## API接口
 
-### 核心接口
-
+### 考勤相关
+- `POST /api/v1/check-in` - 位置检查与课程匹配
 - `POST /api/v1/location-info` - 获取位置信息
-- `POST /api/v1/check-in` - 签到接口
-- `POST /api/wechat/config` - 企业微信配置
+
+### 企业微信
+- `POST /api/wechat/config` - 获取微信配置
 - `POST /api/wechat/userinfo` - 获取用户信息
-- `GET /api/attendance/records` - 签到记录
-- `GET /api/attendance/statistics` - 统计数据
-- `POST /api/feedback/submit` - 提交反馈
 
-### 响应格式
+### 签到管理
+- `GET /api/attendance/records` - 获取签到记录
+- `GET /api/attendance/statistics` - 获取签到统计
 
-```json
-{
-    "success": true,
-    "message": "操作成功",
-    "data": {}
-}
-```
+### 反馈系统
+- `POST /api/feedback/submit` - 提交用户反馈
 
 ## 配置说明
 
 ### 企业微信配置
-
-1. 在企业微信管理后台创建应用
-2. 获取 CorpID、Secret 和 AgentID
-3. 配置可信域名和回调URL
-4. 设置应用权限
+```python
+WECHAT_CORP_ID = 'wwf06fd389f66f0e0d'
+WECHAT_AGENT_ID = '1000003'
+WECHAT_SECRET = 'your_secret_here'
+```
 
 ### 数据库配置
+```python
+SQLALCHEMY_DATABASE_URI = 'sqlite:///instance/attendance.db'
+SQLALCHEMY_TRACK_MODIFICATIONS = False
+```
 
-系统默认使用SQLite数据库，生产环境建议使用PostgreSQL或MySQL。
+### HTTPS配置
+```python
+SSL_CERT_PATH = 'ca/cert.pem'
+SSL_KEY_PATH = 'ca/key.pem'
+```
+
+## 功能模块
+
+### 1. 用户认证
+- 企业微信OAuth2.0认证
+- 用户信息自动获取
+- 权限验证
+
+### 2. 位置服务
+- GPS定位获取
+- 建筑范围判断
+- 距离计算验证
+
+### 3. 课程管理
+- 课程表导入
+- 时间段匹配
+- 课程状态检查
+
+### 4. 签到流程
+- 拍照验证
+- 位置验证
+- 时间验证
+- 数据存储
 
 ## 开发指南
 
-### 添加新功能
+### 添加新建筑
+1. 在 `run.py` 中添加建筑数据
+2. 设置建筑坐标和范围
+3. 重新运行初始化脚本
 
-1. 在 `models/` 中定义数据模型
-2. 在 `services/` 中实现业务逻辑
-3. 在 `app.py` 中添加API路由
-4. 在前端添加相应的页面和逻辑
+### 添加新课程
+1. 修改 `models/course_schedule.py`
+2. 在 `run.py` 中添加课程数据
+3. 配置时间段和教室
 
-### 代码规范
-
-- 使用Python PEP 8编码规范
-- 添加适当的注释和文档
-- 编写单元测试
+### 自定义API
+1. 在 `api/` 目录创建新模块
+2. 在 `app.py` 中注册蓝图
+3. 添加相应的服务逻辑
 
 ## 故障排除
 
 ### 常见问题
+1. **企业微信配置错误**: 检查域名和应用配置
+2. **GPS定位失败**: 确认浏览器定位权限
+3. **数据库连接失败**: 检查数据库文件权限
+4. **SSL证书问题**: 验证证书文件路径和格式
 
-1. **企业微信认证失败**
-   - 检查CorpID、Secret配置
-   - 确认可信域名设置正确
+### 日志查看
+```bash
+tail -f backend/logs/app.log
+```
 
-2. **位置验证失败**
-   - 检查GPS权限
-   - 确认教学楼坐标配置
-
-3. **数据库连接错误**
-   - 检查数据库文件权限
-   - 确认数据库路径正确
+## 贡献指南
+1. Fork 项目
+2. 创建功能分支
+3. 提交更改
+4. 发起 Pull Request
 
 ## 许可证
-
-MIT License
+本项目采用 MIT 许可证
 
 ## 联系方式
-
-如有问题，请联系开发团队。
+- 项目维护: 深圳大学信息中心
+- 技术支持: kpeak.szu.edu.cn
+- 文档更新: 2024年9月

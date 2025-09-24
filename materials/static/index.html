@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>深圳大学新生报到系统</title>
+    <link rel="stylesheet" href="/static/css/style.css?v=20250829">
+    <!-- 企业微信JS-SDK 2.0 -->
+    <script src="https://wwcdn.weixin.qq.com/node/open/js/wecom-jssdk-2.0.2.js"></script>
+</head>
+<body>
+    <div class="container">
+        <!-- 主页面 -->
+        <div id="homePage" class="page active">
+            <!-- 顶部导航栏 -->
+            <div class="top-nav">
+                <div class="nav-left">
+                    <div class="logo">
+                        <span class="logo-icon">🏫</span>
+                        <span class="logo-text">深圳大学</span>
+                    </div>
+                </div>
+                <div class="nav-right">
+                    <!-- 用户信息显示 -->
+                    <div id="userInfoHeader" class="user-info-nav" style="display: none;">
+                        <div class="user-avatar">
+                            <span class="avatar-icon">👤</span>
+                        </div>
+                        <div class="user-details">
+                            <span id="userName" class="user-name">加载中...</span>
+                            <span id="userType" class="user-type"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 主要内容区域 -->
+            <div class="main-container">
+                <div class="content-header">
+                    <h1 class="page-title">新生报到系统</h1>
+                    <p class="page-subtitle">请选择报到方式</p>
+                </div>
+
+                <!-- 报到方式选择 -->
+                <div class="method-tabs">
+                    <button id="scanTab" class="method-tab active" data-method="scan">
+                        <span class="tab-icon">📱</span>
+                        <span class="tab-text">扫码报到</span>
+                    </button>
+                    <button id="manualTab" class="method-tab" data-method="manual">
+                        <span class="tab-icon">⌨️</span>
+                        <span class="tab-text">手动输入</span>
+                    </button>
+                </div>
+
+                <!-- 扫码报到区域 -->
+                <div id="scanSection" class="method-section active">
+                    <div class="scan-card">
+                        <div class="scan-icon-large">📱</div>
+                        <h3 class="scan-title">企业微信扫码</h3>
+                        <p class="scan-description">点击下方按钮开始扫码报到</p>
+                        <button id="weworkScanButton" class="scan-button-new">
+                            <span class="button-icon">🔍</span>
+                            <span class="button-text">开始扫码</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 手动输入区域 -->
+                <div id="manualSection" class="method-section">
+                    <div class="manual-card">
+                        <div class="manual-icon-large">⌨️</div>
+                        <h3 class="manual-title">手动输入学工号</h3>
+                        <p class="manual-description">适用于没有手机或无法扫码的用户</p>
+                        <div class="manual-input-group">
+                            <input type="text" id="cardNumberInput" class="manual-input" placeholder="请输入学工号" maxlength="20">
+                            <button id="manualLookupButton" class="manual-button">
+                                <span class="button-icon">🔍</span>
+                                <span class="button-text">查询</span>
+                            </button>
+                        </div>
+                        <div class="manual-tips">
+                            <p>💡 提示：请输入完整的学工号，如：2020000001</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 最近报到记录 -->
+                <div class="recent-records-section">
+                    <div class="recent-records-card">
+                        <h4>我的最近报到记录</h4>
+                        <div id="recentRecordsList" class="records-list">
+                            <div class="loading-placeholder">正在加载...</div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- 扫码页面已移除，只使用企业微信扫码 -->
+
+        <!-- 结果页面 -->
+        <div id="resultPage" class="page">
+            <div class="result-header">
+                <h3>查询结果</h3>
+            </div>
+            
+            <div class="result-content">
+                <div id="resultIcon" class="result-icon"></div>
+                <div id="resultMessage" class="result-message"></div>
+                <div id="userInfo" class="user-info"></div>
+                
+                <div class="result-actions">
+                    <button id="confirmButton" class="confirm-button" style="display: none;">确认报到</button>
+                    <button id="backToHomeButton" class="back-home-button">返回首页</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 加载提示 -->
+        <div id="loading" class="loading">
+            <div class="spinner"></div>
+            <p>处理中...</p>
+        </div>
+
+        <!-- 错误提示 -->
+        <div id="errorModal" class="modal">
+            <div class="modal-content">
+                <h4>提示</h4>
+                <p id="errorMessage"></p>
+                <button id="errorOkButton" class="modal-button">确定</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/app.js?v=20250829"></script>
+</body>
+</html>

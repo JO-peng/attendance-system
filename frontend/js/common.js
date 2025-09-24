@@ -346,39 +346,33 @@ const WeChatAPI = {
                 } else {
                     throw new Error(response.message || '获取用户信息失败');
                 }
-            } else {
-                // 检查是否在企业微信环境中
-                if (this.isInWeChatWork()) {
-                    // 重定向到企业微信授权页面
-                    const redirectUrl = encodeURIComponent(window.location.href.split('?')[0]);
-                    const authUrl = `https://open.weixin.qq.com/connect/oauth2/authorize?appid=${CONFIG.WECHAT_CORP_ID}&redirect_uri=${redirectUrl}&response_type=code&scope=snsapi_base&state=attendance#wechat_redirect`;
-                    window.location.href = authUrl;
-                    return null;
-                } else {
-                    // 非企业微信环境，使用模拟数据
-                    console.warn('Not in WeChat Work environment, using mock data');
-                    const mockUserInfo = {
-                        student_id: '2020000319',
-                        name: '胡凯峰',
-                        wechat_userid: 'mock_user',
-                        department: '计算机学院'
-                    };
-                    appState.userInfo = mockUserInfo;
-                    return mockUserInfo;
-                }
+            } else if (this.isInWeChatWork()) {
+                // 重定向到企业微信授权页面
+                const redirectUrl = encodeURIComponent(window.location.href.split('?')[0]);
+                const authUrl = `https://open.weixin.qq.com/connect/oauth2/authorize?appid=${CONFIG.WECHAT_CORP_ID}&redirect_uri=${redirectUrl}&response_type=code&scope=snsapi_base&state=attendance#wechat_redirect`;
+                window.location.href = authUrl;
+                return null;
             }
+            
+            // 非企业微信环境或出错时，使用模拟数据
+            return this._getMockUserInfo();
         } catch (error) {
             console.error('Failed to get user info:', error);
-            // 降级使用模拟数据
-            const mockUserInfo = {
-                student_id: '2020000319',
-                name: '胡凯峰',
-                wechat_userid: 'mock_user',
-                department: '计算机学院'
-            };
-            appState.userInfo = mockUserInfo;
-            return mockUserInfo;
+            return this._getMockUserInfo();
         }
+    },
+    
+    _getMockUserInfo() {
+        // 提供模拟用户数据
+        console.warn('Using mock user data');
+        const mockUserInfo = {
+            student_id: '2020000319',
+            name: '胡凯峰',
+            wechat_userid: 'mock_user',
+            department: '计算机学院'
+        };
+        appState.userInfo = mockUserInfo;
+        return mockUserInfo;
     },
     
     // 检查是否在企业微信环境中
