@@ -60,6 +60,7 @@ class StudentCourse(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     student_id = db.Column(db.String(20), nullable=False, index=True)
     course_id = db.Column(db.Integer, db.ForeignKey('courses.id'), nullable=False)
+    course_schedule_id = db.Column(db.Integer, db.ForeignKey('course_schedules.id'), nullable=True)
     status = db.Column(db.String(20), default='active')  # active, dropped, completed
     grade = db.Column(db.String(10), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.now)
@@ -67,6 +68,7 @@ class StudentCourse(db.Model):
     
     # 关联
     course = db.relationship('Course', backref='student_enrollments')
+    course_schedule = db.relationship('CourseSchedule', backref='student_enrollments')
     
     # 联合唯一约束
     __table_args__ = (

@@ -9,11 +9,8 @@ SQLAlchemy==2.0.21
 # 跨域支持
 Flask-CORS==4.0.0
 
-# HTTP请求
+# HTTP请求和API相关
 requests==2.31.0
-
-# 图像处理
-Pillow==10.0.1
 
 # 配置管理
 python-dotenv==1.0.0
@@ -25,6 +22,7 @@ pyjwt==2.8.0
 # 时间和地理位置处理
 pytz==2023.3
 geopy==2.3.0
+haversine==2.8.0
 
 # 生产环境服务器
 gunicorn==21.2.0

@@ -32,49 +32,9 @@ db = SQLAlchemy(app)
 # 配置CORS以支持ngrok等穿透工具
 CORS(app, origins=['*'], allow_headers=['*'], methods=['*'])
 
-# 错误处理装饰器
-def handle_errors(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        try:
-            return f(*args, **kwargs)
-        except Exception as e:
-            # 使用基本的print，因为logger可能还没初始化
-            print(f"API错误: {str(e)}")
-            return jsonify({
-                'success': False,
-                'message': '服务器内部错误',
-                'error': str(e)
-            }), 500
-    return decorated_function
-
-@app.route('/api/v1/location-info', methods=['POST'])
-@handle_errors
-def location_info():
-    """获取位置信息"""
-    data = request.get_json()
-    latitude = data.get('latitude')
-    longitude = data.get('longitude')
-    
-    if not latitude or not longitude:
-        return jsonify({
-            'success': False,
-            'message': '缺少位置参数'
-        }), 400
-    
-    # 这里可以集成地理编码服务来获取详细地址
-    # 暂时返回基本信息
-    location_info = {
-        'latitude': latitude,
-        'longitude': longitude,
-        'address': f'位置: {latitude}, {longitude}',
-        'accuracy': data.get('accuracy', 0)
-    }
-    
-    return jsonify({
-        'success': True,
-        'data': location_info
-    })
+# 注册API蓝图
+from api.attendance_api import attendance_api
+app.register_blueprint(attendance_api, url_prefix='/api/v1')
 
 # 配置日志
 logging.basicConfig(level=logging.INFO)
@@ -181,6 +141,21 @@ class Feedback(db.Model):
             'created_at': self.created_at.isoformat() if self.created_at else None
         }
 
+# 错误处理装饰器
+def handle_errors(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        try:
+            return f(*args, **kwargs)
+        except Exception as e:
+            logger.error(f"API错误: {str(e)}")
+            return jsonify({
+                'success': False,
+                'message': '服务器内部错误',
+                'error': str(e)
+            }), 500
+    return decorated_function
+
 @app.after_request
 def after_request(response):
     """添加CORS头部以支持ngrok等穿透工具"""
@@ -190,14 +165,6 @@ def after_request(response):
     return response
 
 # API路由
-@app.route('/api/health', methods=['GET'])
-def health_check():
-    """健康检查接口"""
-    return jsonify({
-        'success': True,
-        'message': '服务运行正常',
-        'timestamp': datetime.utcnow().isoformat()
-    })
 
 @app.route('/api/wechat/config', methods=['POST'])
 @handle_errors
@@ -266,214 +233,11 @@ def get_wechat_userinfo():
             'message': f'获取用户信息失败: {str(e)}'
         }), 500
 
-@app.route('/api/user/info', methods=['GET'])
-@handle_errors
-def get_user_info():
-    """获取用户信息（兼容接口，优先使用企业微信）"""
-    # 尝试从请求头获取用户ID
-    userid = request.headers.get('X-WeChat-UserID')
-    
-    if userid:
-        try:
-            wechat_api = get_wechat_api()
-            user_info = wechat_api.get_user_detail(userid)
-            formatted_user_info = {
-                'student_id': user_info.get('userid', ''),
-                'name': user_info.get('name', ''),
-                'wechat_userid': user_info.get('userid', ''),
-                'department': ', '.join([str(dept) for dept in user_info.get('department', [])]),
-                'avatar': user_info.get('avatar', '')
-            }
-            return jsonify({
-                'success': True,
-                'data': formatted_user_info
-            })
-        except Exception as e:
-            logger.warning(f"Failed to get WeChat user info, using mock data: {e}")
-    
-    # 模拟用户信息（开发测试用）
-    user_info = {
-        'student_id': '2020000319',
-        'name': '胡凯峰',
-        'wechat_userid': 'mock_wechat_user_id',
-        'department': '计算机学院',
-        'avatar': 'https://picsum.photos/100/100?random=1'
-    }
-    
-    return jsonify({
-        'success': True,
-        'data': user_info
-    })
 
-@app.route('/api/attendance/sign', methods=['POST'])
-@app.route('/signin', methods=['POST'])  # 添加前端使用的路由
-@app.route('/api/v1/check-in', methods=['POST'])  # 添加v1版本API路由
-@handle_errors
-def sign_attendance():
-    """签到接口"""
-    data = request.get_json()
-    logger.info(f"Received signin data: {data}")
-    
-    # 验证必需字段
-    required_fields = ['student_id', 'name', 'course_name', 'classroom']
-    for field in required_fields:
-        if not data.get(field):
-            return jsonify({
-                'success': False,
-                'message': f'缺少必需字段: {field}'
-            }), 400
-    
-    # 检查或创建用户
-    user = User.query.filter_by(student_id=data['student_id']).first()
-    if not user:
-        user = User(
-            student_id=data['student_id'],
-            name=data['name'],
-            wechat_userid=data.get('wechat_userid')
-        )
-        db.session.add(user)
-        db.session.commit()
-    
-    # 检查今天是否已经签到过相同课程
-    today = datetime.utcnow().date()
-    existing_attendance = Attendance.query.filter(
-        Attendance.user_id == user.id,
-        Attendance.course_name == data['course_name'],
-        db.func.date(Attendance.signed_at) == today
-    ).first()
-    
-    if existing_attendance:
-        return jsonify({
-            'success': False,
-            'message': '今天已经签到过该课程了'
-        }), 400
-    # # 判断签到状态（基于时间）
-    # current_time = datetime.utcnow().time()
-    # # 假设上课时间是8:00-18:00，迟到时间是课程开始后15分钟
-    # status = 'attended'
-    # if current_time.hour < 8 or current_time.hour >= 18:
-    #     status = 'late'  # 非正常上课时间视为迟到
 
-    status = 'attended'  # 全天都视为正常签到        先暂时这样
-    # 后续再根据实际情况调整
-    
-    # 处理照片数据
-    photo_path = None
-    if data.get('photo'):
-        try:
-            photo_data = data['photo']
-            if photo_data.startswith('data:image/'):
-                # 处理base64格式的照片
-                import base64
-                import mimetypes
-                
-                # 解析base64数据
-                header, encoded = photo_data.split(',', 1)
-                mime_type = header.split(';')[0].split(':')[1]
-                
-                # 获取文件扩展名
-                extension = mimetypes.guess_extension(mime_type) or '.jpg'
-                
-                # 生成唯一文件名
-                unique_filename = f"{uuid.uuid4().hex}{extension}"
-                file_path = os.path.join(app.config['UPLOAD_FOLDER'], 'photos', unique_filename)
-                
-                # 确保目录存在
-                os.makedirs(os.path.dirname(file_path), exist_ok=True)
-                
-                # 保存文件
-                with open(file_path, 'wb') as f:
-                    f.write(base64.b64decode(encoded))
-                
-                photo_path = f"photos/{unique_filename}"
-            else:
-                # 企业微信照片ID或其他格式，暂时保存为文本
-                photo_path = photo_data
-        except Exception as e:
-            print(f"Failed to process photo: {e}")
-            # 照片处理失败不影响签到
-    
-    # 创建签到记录
-    attendance = Attendance(
-        user_id=user.id,
-        course_name=data['course_name'],
-        classroom=data['classroom'],
-        latitude=data.get('latitude'),
-        longitude=data.get('longitude'),
-        location_address=data.get('location_address'),
-        photo_path=photo_path,
-        status=status
-    )
-    
-    db.session.add(attendance)
-    db.session.commit()
-    
-    return jsonify({
-        'success': True,
-        'message': '签到成功',
-        'data': attendance.to_dict()
-    })
 
-@app.route('/api/attendance/upload-photo', methods=['POST'])
-@handle_errors
-def upload_photo():
-    """上传签到照片"""
-    if 'photo' not in request.files:
-        return jsonify({
-            'success': False,
-            'message': '没有上传文件'
-        }), 400
-    
-    file = request.files['photo']
-    attendance_id = request.form.get('attendance_id')
-    
-    if file.filename == '':
-        return jsonify({
-            'success': False,
-            'message': '没有选择文件'
-        }), 400
-    
-    if not attendance_id:
-        return jsonify({
-            'success': False,
-            'message': '缺少签到记录ID'
-        }), 400
-    
-    if file and allowed_file(file.filename):
-        # 生成安全的文件名
-        filename = secure_filename(file.filename)
-        unique_filename = f"{uuid.uuid4().hex}_{filename}"
-        file_path = os.path.join(app.config['UPLOAD_FOLDER'], 'photos', unique_filename)
-        
-        # 保存文件
-        file.save(file_path)
-        
-        # 更新签到记录
-        attendance = Attendance.query.get(attendance_id)
-        if attendance:
-            attendance.photo_path = f"photos/{unique_filename}"
-            db.session.commit()
-            
-            return jsonify({
-                'success': True,
-                'message': '照片上传成功',
-                'data': {
-                    'photo_path': attendance.photo_path,
-                    'photo_url': f"/api/uploads/{attendance.photo_path}"
-                }
-            })
-        else:
-            # 删除已上传的文件
-            os.remove(file_path)
-            return jsonify({
-                'success': False,
-                'message': '签到记录不存在'
-            }), 404
-    
-    return jsonify({
-        'success': False,
-        'message': '不支持的文件格式'
-    }), 400
+
+
 
 @app.route('/api/attendance/records', methods=['GET'])
 @handle_errors
