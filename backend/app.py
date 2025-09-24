@@ -16,16 +16,14 @@ import json
 import logging
 from functools import wraps
 from wechat_api import get_wechat_api
+from config import get_config
 
 # 创建Flask应用
 app = Flask(__name__)
 
-# 配置
-app.config['SECRET_KEY'] = 'your-secret-key-here'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///attendance.db'
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['UPLOAD_FOLDER'] = 'uploads'
-app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
+# 加载配置
+config_class = get_config()
+app.config.from_object(config_class)
 
 # 初始化扩展
 db = SQLAlchemy(app)
@@ -34,7 +32,13 @@ CORS(app, origins=['*'], allow_headers=['*'], methods=['*'])
 
 # 注册API蓝图
 from api.attendance_api import attendance_api
+from api.cas_api import cas_api
 app.register_blueprint(attendance_api, url_prefix='/api/v1')
+app.register_blueprint(cas_api, url_prefix='/cas')
+
+# 初始化CAS客户端
+from cas_auth import init_cas_client
+init_cas_client(app)
 
 # 配置日志
 logging.basicConfig(level=logging.INFO)
@@ -421,6 +425,9 @@ def create_tables():
         db.create_all()
         logger.info("数据库表创建完成")
 
+# 注意：请使用 run.py 启动应用
+# 开发环境: python run.py
+# 生产环境: python run.py --production
 if __name__ == '__main__':
     import ssl
     import os

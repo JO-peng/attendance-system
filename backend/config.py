@@ -29,6 +29,19 @@ class Config:
     WECHAT_CORP_SECRET = os.environ.get('WECHAT_CORP_SECRET') or '2I5-PQsNfukQL_-9QZktIKuArYeWFBc2nIMiAmNCtbs'
     WECHAT_AGENT_ID = os.environ.get('WECHAT_AGENT_ID') or '1000003'
     
+    # 深圳大学CAS统一身份认证配置
+    CAS_SERVER_URL = os.environ.get('CAS_SERVER_URL') or 'https://authserver.szu.edu.cn/authserver'
+    CAS_SERVICE_URL = os.environ.get('CAS_SERVICE_URL') or 'http://localhost:5000'
+    CAS_LOGIN_PATH = '/cas/login'
+    CAS_LOGOUT_PATH = '/cas/logout'
+    CAS_CALLBACK_PATH = '/cas/callback'
+    CAS_SESSION_TIMEOUT = 24 * 60 * 60  # 24小时（秒）
+    
+    # HTTPS证书配置
+    SSL_CERT_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'ca', 'kpeak.szu.edu.cn-crt.pem')
+    SSL_KEY_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'ca', 'kpeak.szu.edu.cn-key.pem')
+    SSL_CA_BUNDLE_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'ca', 'kpeak.szu.edu.cn-chain.pem')
+    
     # API配置
     API_TITLE = '考勤签到系统API'
     API_VERSION = 'v1.0'
@@ -59,9 +72,9 @@ class DevelopmentConfig(Config):
     
     DEBUG = True
     
-    # 开发环境数据库
+    # 开发环境数据库 - 使用原来的attendance.db
     SQLALCHEMY_DATABASE_URI = os.environ.get('DEV_DATABASE_URL') or \
-        'sqlite:///' + os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data-dev.db')
+        'sqlite:///' + os.path.join(os.path.dirname(os.path.abspath(__file__)), 'instance', 'attendance.db')
     
     # 开发环境日志级别
     LOG_LEVEL = 'DEBUG'

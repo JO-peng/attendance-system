@@ -27,9 +27,8 @@ def init_database():
         db.create_all()
         print("数据库初始化完成")
         
-        # 创建示例数据（仅开发环境）
-        if app.config.get('DEBUG'):
-            create_sample_data()
+        # 不自动创建示例数据，保护用户的真实数据
+        # 如需创建示例数据，请使用: python run.py create-sample-data
 
 def create_sample_data():
     """创建示例数据"""
@@ -132,16 +131,61 @@ def create_sample_data():
 
 def run_server():
     """运行服务器"""
-    # 获取环境变量
-    host = os.environ.get('HOST', '0.0.0.0')
-    port = int(os.environ.get('PORT', 5000))
-    debug = os.environ.get('FLASK_ENV') == 'development'
+    # 检查是否为生产环境
+    is_production = '--production' in sys.argv or os.environ.get('PRODUCTION', 'false').lower() == 'true'
     
-    print(f"启动服务器: http://{host}:{port}")
+    # 获取环境变量
+    if is_production:
+        host = os.environ.get('HOST', '0.0.0.0')
+        port = int(os.environ.get('PORT', 443))  # 生产环境默认443端口
+        debug = False
+        os.environ['FLASK_ENV'] = 'production'
+        os.environ['USE_HTTPS'] = 'true'
+        # 设置生产环境的CAS服务URL
+        if not os.environ.get('CAS_SERVICE_URL'):
+            os.environ['CAS_SERVICE_URL'] = 'https://kpeak.szu.edu.cn'
+        
+        print("=" * 60)
+        print("生产环境模式")
+        print(f"端口: {port} (HTTPS标准端口)")
+        print("域名: kpeak.szu.edu.cn")
+        if port == 443:
+            print("注意: 需要管理员权限运行以绑定443端口")
+        print("=" * 60)
+    else:
+        host = os.environ.get('HOST', '0.0.0.0')
+        port = int(os.environ.get('PORT', 5000))
+        debug = os.environ.get('FLASK_ENV') == 'development'
+        
+        print("=" * 60)
+        print("开发环境模式")
+        print(f"端口: {port}")
+        print("使用 --production 参数启动生产环境")
+        print("=" * 60)
+    
+    # HTTPS配置
+    ssl_context = None
+    use_https = os.environ.get('USE_HTTPS', 'false').lower() == 'true'
+    
+    if use_https:
+        ssl_cert = app.config.get('SSL_CERT_PATH')
+        ssl_key = app.config.get('SSL_KEY_PATH')
+        
+        if ssl_cert and ssl_key and os.path.exists(ssl_cert) and os.path.exists(ssl_key):
+            ssl_context = (ssl_cert, ssl_key)
+            print(f"启动HTTPS服务器: https://{host}:{port}")
+            print(f"SSL证书: {ssl_cert}")
+            print(f"SSL密钥: {ssl_key}")
+        else:
+            print("SSL证书文件不存在，使用HTTP模式")
+            print(f"启动HTTP服务器: http://{host}:{port}")
+    else:
+        print(f"启动HTTP服务器: http://{host}:{port}")
+    
     print(f"调试模式: {debug}")
     print(f"环境: {os.environ.get('FLASK_ENV', 'development')}")
     
-    app.run(host=host, port=port, debug=debug)
+    app.run(host=host, port=port, debug=debug, ssl_context=ssl_context)
 
 def main():
     """主函数"""
@@ -150,22 +194,47 @@ def main():
     
     # 处理命令行参数
     if len(sys.argv) > 1:
-        command = sys.argv[1]
+        # 过滤掉 --production 参数，因为它在 run_server 中处理
+        args = [arg for arg in sys.argv[1:] if arg != '--production']
         
-        if command == 'init-db':
-            init_database()
-        elif command == 'create-sample-data':
-            with app.app_context():
-                create_sample_data()
-        elif command == 'shell':
-            # 启动交互式shell
-            import code
-            with app.app_context():
-                code.interact(local=dict(globals(), **locals()))
+        if args:
+            command = args[0]
+            
+            if command == 'init-db':
+                init_database()
+            elif command == 'create-sample-data':
+                with app.app_context():
+                    create_sample_data()
+            elif command == 'shell':
+                # 启动交互式shell
+                import code
+                with app.app_context():
+                    code.interact(local=dict(globals(), **locals()))
+            elif command == '--help' or command == '-h':
+                print("考勤签到系统启动脚本")
+                print("使用方法:")
+                print("  python run.py                    # 开发环境启动")
+                print("  python run.py --production       # 生产环境启动(443端口)")
+                print("  python run.py init-db            # 初始化数据库")
+                print("  python run.py create-sample-data # 创建示例数据")
+                print("  python run.py shell              # 启动交互式shell")
+                print("")
+                print("环境变量:")
+                print("  HOST=0.0.0.0                    # 监听地址")
+                print("  PORT=5000                       # 端口号")
+                print("  USE_HTTPS=true                  # 启用HTTPS")
+                print("  CAS_SERVICE_URL=https://...     # CAS服务URL")
+                return
+            else:
+                print(f"未知命令: {command}")
+                print("使用 'python run.py --help' 查看帮助")
+                return
         else:
-            print(f"未知命令: {command}")
-            print("可用命令: init-db, create-sample-data, shell")
-    else:
+            # 只有 --production 参数的情况
+            pass
+    
+    # 如果没有其他命令，则启动服务器
+    if not any(arg in ['init-db', 'create-sample-data', 'shell', '--help', '-h'] for arg in sys.argv[1:]):
         # 初始化数据库
         init_database()
         
