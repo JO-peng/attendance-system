@@ -432,9 +432,9 @@ if __name__ == '__main__':
     import ssl
     import os
     
-    # 检查是否存在SSL证书文件
-    cert_path = os.path.join('..', 'ca', 'cert.pem')
-    key_path = os.path.join('..', 'ca', 'key.pem')
+    # 检查是否存在SSL证书文件 - 使用正确的文件名
+    cert_path = os.path.join('..', 'ca', 'kpeak.szu.edu.cn-crt.pem')
+    key_path = os.path.join('..', 'ca', 'kpeak.szu.edu.cn-key.pem')
     
     if os.path.exists(cert_path) and os.path.exists(key_path):
         # 生产环境：使用HTTPS和443端口
