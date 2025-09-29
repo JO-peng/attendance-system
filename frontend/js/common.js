@@ -3,8 +3,8 @@
 // 全局配置
 const CONFIG = {
     API_BASE_URL: window.location.origin || 'http://localhost:5000',
-    WECHAT_CORP_ID: 'wwf06fd389f66f0e0d', // 企业微信CorpID
-    WECHAT_AGENT_ID: '1000003', // 企业微信AgentID
+    WECHAT_CORP_ID: 'ww563e8adbd544adf5', // 企业微信CorpID
+    WECHAT_AGENT_ID: '1000265', // 企业微信AgentID
     DEFAULT_LANGUAGE: 'zh',
     SUPPORTED_LANGUAGES: ['zh', 'en']
 };

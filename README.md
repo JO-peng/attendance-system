@@ -127,9 +127,9 @@
 
 ### 企业微信配置
 ```python
-WECHAT_CORP_ID = 'wwf06fd389f66f0e0d'
-WECHAT_AGENT_ID = '1000003'
-WECHAT_SECRET = 'your_secret_here'
+WECHAT_CORP_ID = 'ww563e8adbd544adf5'
+WECHAT_AGENT_ID = '1000265'
+WECHAT_SECRET = 'ui7lI26sXjVq7BKm_esRm_3s5ZTOpJPpxmf_AO8qPd0'
 ```
 
 ### 数据库配置
