@@ -432,13 +432,19 @@ if __name__ == '__main__':
     import ssl
     import os
     
-    # 检查是否存在SSL证书文件 - 使用正确的文件名
-    cert_path = os.path.join('..', 'ca', 'kpeak.szu.edu.cn-crt.pem')
+    # 检查是否存在SSL证书文件 - 使用完整证书链
+    cert_path = os.path.join('..', 'ca', 'kpeak.szu.edu.cn-chain.pem')  # 完整证书链
     key_path = os.path.join('..', 'ca', 'kpeak.szu.edu.cn-key.pem')
     
     if os.path.exists(cert_path) and os.path.exists(key_path):
         # 生产环境：使用HTTPS和443端口
         context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+        
+        # 设置更严格的SSL配置以提高兼容性
+        context.minimum_version = ssl.TLSVersion.TLSv1_2
+        context.set_ciphers('ECDHE+AESGCM:ECDHE+CHACHA20:DHE+AESGCM:DHE+CHACHA20:!aNULL:!MD5:!DSS')
+        
+        # 加载完整证书链
         context.load_cert_chain(cert_path, key_path)
         
         logger.info("启动HTTPS服务器，端口: 443")
