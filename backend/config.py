@@ -25,9 +25,9 @@ class Config:
     ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
     
     # 企业微信配置
-    WECHAT_CORP_ID = os.environ.get('WECHAT_CORP_ID') or 'wwf06fd389f66f0e0d'
-    WECHAT_CORP_SECRET = os.environ.get('WECHAT_CORP_SECRET') or '2I5-PQsNfukQL_-9QZktIKuArYeWFBc2nIMiAmNCtbs'
-    WECHAT_AGENT_ID = os.environ.get('WECHAT_AGENT_ID') or '1000003'
+    WECHAT_CORP_ID = os.environ.get('WECHAT_CORP_ID') or 'ww563e8adbd544adf5'
+    WECHAT_CORP_SECRET = os.environ.get('WECHAT_CORP_SECRET') or 'ui7lI26sXjVq7BKm_esRm_3s5ZTOpJPpxmf_AO8qPd0'
+    WECHAT_AGENT_ID = os.environ.get('WECHAT_AGENT_ID') or '1000265'
     
     # 深圳大学CAS统一身份认证配置
     CAS_SERVER_URL = os.environ.get('CAS_SERVER_URL') or 'https://authserver.szu.edu.cn/authserver'
