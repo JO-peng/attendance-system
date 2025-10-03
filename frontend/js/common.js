@@ -335,16 +335,48 @@ const WeChatAPI = {
             const code = urlParams.get('code');
             
             if (code) {
-                const response = await Utils.request('/api/wechat/userinfo', {
-                    method: 'POST',
-                    body: JSON.stringify({ code })
-                });
-                
-                if (response.success) {
-                    appState.userInfo = response.data;
-                    return response.data;
-                } else {
-                    throw new Error(response.message || '获取用户信息失败');
+                try {
+                    const response = await Utils.request('/api/wechat/userinfo', {
+                        method: 'POST',
+                        body: JSON.stringify({ code })
+                    });
+                    
+                    if (response.success) {
+                        appState.userInfo = response.data;
+                        console.log('Successfully got user info from WeChat:', response.data);
+                        return response.data;
+                    } else {
+                        console.error('WeChat API returned error:', response.message);
+                        // 在企业微信环境中，即使API失败也不使用模拟数据
+                        if (this.isInWeChatWork()) {
+                            // 创建基础用户信息，使用code作为标识
+                            const basicUserInfo = {
+                                student_id: code.substring(0, 10), // 使用code的前10位作为临时学号
+                                name: '企业微信用户',
+                                wechat_userid: code,
+                                department: '未知部门'
+                            };
+                            appState.userInfo = basicUserInfo;
+                            console.log('Using basic user info in WeChat environment:', basicUserInfo);
+                            return basicUserInfo;
+                        }
+                        throw new Error(response.message || '获取用户信息失败');
+                    }
+                } catch (apiError) {
+                    console.error('WeChat API request failed:', apiError);
+                    // 在企业微信环境中，即使API失败也不使用模拟数据
+                    if (this.isInWeChatWork()) {
+                        const basicUserInfo = {
+                            student_id: code.substring(0, 10),
+                            name: '企业微信用户',
+                            wechat_userid: code,
+                            department: '未知部门'
+                        };
+                        appState.userInfo = basicUserInfo;
+                        console.log('Using basic user info due to API error:', basicUserInfo);
+                        return basicUserInfo;
+                    }
+                    throw apiError;
                 }
             } else if (this.isInWeChatWork()) {
                 // 重定向到企业微信授权页面
@@ -354,11 +386,24 @@ const WeChatAPI = {
                 return null;
             }
             
-            // 非企业微信环境或出错时，使用模拟数据
+            // 非企业微信环境时，使用模拟数据
+            console.log('Not in WeChat environment, using mock data');
             return this._getMockUserInfo();
         } catch (error) {
             console.error('Failed to get user info:', error);
-            return this._getMockUserInfo();
+            // 只有在非企业微信环境中才使用模拟数据
+            if (!this.isInWeChatWork()) {
+                return this._getMockUserInfo();
+            }
+            // 企业微信环境中出错时，返回基础信息
+            const errorUserInfo = {
+                student_id: '未知',
+                name: '企业微信用户',
+                wechat_userid: 'unknown',
+                department: '未知部门'
+            };
+            appState.userInfo = errorUserInfo;
+            return errorUserInfo;
         }
     },
     

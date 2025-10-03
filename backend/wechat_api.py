@@ -75,7 +75,7 @@ class WeChatAPI:
         """通过授权码获取用户信息"""
         access_token = self.get_access_token()
         
-        # 1. 通过code获取用户ID
+        # 通过code获取用户信息（不需要通讯录权限）
         url = f"{self.base_url}/auth/getuserinfo"
         params = {
             'access_token': access_token,
@@ -93,8 +93,30 @@ class WeChatAPI:
         if not userid:
             raise Exception("No userid found in response")
         
-        # 2. 通过userid获取详细用户信息
-        return self.get_user_detail(userid)
+        # 构造用户信息（使用getuserinfo接口返回的基础信息）
+        user_info = {
+            'userid': userid,
+            'name': userid,  # 如果没有姓名，使用userid作为显示名称
+            'department': [],
+            'position': '',
+            'mobile': '',
+            'email': '',
+            'avatar': '',
+            'status': 1,
+            'extattr': {}
+        }
+        
+        # 尝试获取详细信息（如果有权限的话）
+        try:
+            detailed_info = self.get_user_detail(userid)
+            user_info.update(detailed_info)
+            current_app.logger.info(f"Successfully got detailed user info for userid: {userid}")
+        except Exception as e:
+            current_app.logger.warning(f"Failed to get detailed user info, using basic info only: {e}")
+            # 如果获取详细信息失败，使用基础信息
+            current_app.logger.info(f"Using basic user info for userid: {userid}")
+        
+        return user_info
     
     def get_user_detail(self, userid):
         """获取用户详细信息"""
