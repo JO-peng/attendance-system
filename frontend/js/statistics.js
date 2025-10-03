@@ -145,12 +145,13 @@ class StatisticsPage {
         } catch (error) {
             console.error('Failed to load attendance data:', error);
             
-            // 使用模拟数据
-            this.loadMockData();
+            // 显示空状态而不是模拟数据
+            this.attendanceData = {};
+            this.signinRecords = [];
             this.renderCalendar();
             this.updateStatistics();
             
-            Utils.showMessage('加载数据失败：' + error.message, 'warning');
+            Utils.showMessage('加载数据失败：' + error.message, 'error');
         }
     }
     

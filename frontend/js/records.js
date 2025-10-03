@@ -193,9 +193,10 @@ class RecordsPage {
                     photo: record.photo_path ? `/api/uploads/${record.photo_path}` : null
                 }));
             } else {
-                // 如果API调用失败，使用模拟数据作为后备
-                console.warn('API调用失败，使用模拟数据');
-                this.records = this.generateMockRecords(this.currentFilter.timeRange);
+                // 如果API调用失败，显示空状态
+                console.warn('API调用失败，无法获取记录数据');
+                this.records = [];
+                Utils.showMessage('无法获取记录数据，请检查网络连接', 'error');
             }
             
             this.filteredRecords = [...this.records];
@@ -207,13 +208,12 @@ class RecordsPage {
             
         } catch (error) {
             console.error('加载记录失败:', error);
-            // 使用模拟数据作为后备
-            this.records = this.generateMockRecords(this.currentFilter.timeRange);
-            this.filteredRecords = [...this.records];
-            this.totalRecords = this.records.length;
+            // 显示空状态而不是模拟数据
+            this.records = [];
+            this.filteredRecords = [];
+            this.totalRecords = 0;
             this.renderRecords();
-            this.loadAttendanceData(); // 重新计算出勤数据
-            Utils.showMessage('加载记录失败，显示模拟数据', 'warning');
+            Utils.showMessage(`加载记录失败: ${error.message}`, 'error');
             this.hideLoadingState('records');
         }
     }

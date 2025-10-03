@@ -93,18 +93,27 @@ class WeChatAPI:
         if not userid:
             raise Exception("No userid found in response")
         
+        # 记录完整的getuserinfo响应以便调试
+        current_app.logger.info(f"getuserinfo response: {result}")
+        
         # 构造用户信息（使用getuserinfo接口返回的基础信息）
+        # getuserinfo接口可能返回: userid, name, avatar, qr_code等字段
         user_info = {
             'userid': userid,
-            'name': userid,  # 如果没有姓名，使用userid作为显示名称
+            'name': result.get('name', userid),  # 优先使用返回的name，否则使用userid
             'department': [],
             'position': '',
             'mobile': '',
             'email': '',
-            'avatar': '',
+            'avatar': result.get('avatar', ''),  # 使用返回的头像
             'status': 1,
             'extattr': {}
         }
+        
+        # 如果userid看起来像学号，尝试从中提取更友好的显示名称
+        if user_info['name'] == userid and userid.isdigit():
+            # 如果userid是纯数字（可能是学号），生成一个更友好的显示名称
+            user_info['name'] = f"学生{userid[-4:]}"  # 使用学号后4位
         
         # 尝试获取详细信息（如果有权限的话）
         try:

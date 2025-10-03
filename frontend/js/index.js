@@ -102,14 +102,20 @@ class SignInPage {
             if (userInfo && userInfo.student_id && userInfo.name) {
                 this.displayUserInfo(userInfo);
             } else {
-                // 使用模拟数据而不是显示错误信息
-                const mockUserInfo = {
-                    student_id: '2020000319',
-                    name: '胡凯峰',
-                    wechat_userid: 'mock_user',
-                    department: '计算机学院'
-                };
-                this.displayUserInfo(mockUserInfo);
+                // 显示获取用户信息失败的状态
+                console.error('无法获取用户信息');
+                Utils.showMessage('无法获取用户信息，请在企业微信环境中访问', 'error');
+                
+                // 显示错误状态
+                const studentIdElement = document.getElementById('studentId');
+                const studentNameElement = document.getElementById('studentName');
+                
+                if (studentIdElement) {
+                    studentIdElement.textContent = '获取失败';
+                }
+                if (studentNameElement) {
+                    studentNameElement.textContent = '获取失败';
+                }
                 
                 // 禁用签到按钮
                 const signinBtn = document.getElementById('signinBtn');
@@ -234,17 +240,35 @@ class SignInPage {
     // 获取当前位置
     async getCurrentLocation() {
         try {
+            console.log('Starting location acquisition...');
             const location = await WeChatAPI.getLocation();
             this.currentLocation = location;
-            console.log('Location obtained:', location);
+            console.log('Location obtained successfully:', location);
+            
+            // 更新UI显示定位成功
+            const buildingNameElement = document.getElementById('buildingName');
+            if (buildingNameElement) {
+                buildingNameElement.textContent = Utils.t('location_getting');
+                buildingNameElement.setAttribute('data-zh', '正在获取位置信息...');
+                buildingNameElement.setAttribute('data-en', 'Getting location...');
+            }
+            
         } catch (error) {
-            console.warn('Failed to get location:', error);
-            // 使用模拟位置数据
-            this.currentLocation = {
-                latitude: 22.5431,
-                longitude: 114.0579,
-                accuracy: 10
-            };
+            console.error('Failed to get location:', error);
+            
+            // 更新UI显示定位失败
+            const buildingNameElement = document.getElementById('buildingName');
+            if (buildingNameElement) {
+                buildingNameElement.textContent = Utils.t('location_failed');
+                buildingNameElement.setAttribute('data-zh', '定位失败');
+                buildingNameElement.setAttribute('data-en', 'Location Failed');
+            }
+            
+            // 显示错误提示
+            Utils.showMessage(`定位获取失败: ${error.message}`, 'error');
+            
+            // 不再使用模拟位置，让用户知道定位失败了
+            this.currentLocation = null;
         }
     }
     

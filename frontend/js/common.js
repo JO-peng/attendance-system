@@ -386,24 +386,26 @@ const WeChatAPI = {
                 return null;
             }
             
-            // 非企业微信环境时，使用模拟数据
-            console.log('Not in WeChat environment, using mock data');
-            return this._getMockUserInfo();
+            // 非企业微信环境时，返回null表示无法获取用户信息
+            console.log('Not in WeChat environment, cannot get user info');
+            return null;
         } catch (error) {
             console.error('Failed to get user info:', error);
-            // 只有在非企业微信环境中才使用模拟数据
-            if (!this.isInWeChatWork()) {
-                return this._getMockUserInfo();
+            // 无论在什么环境中，都不使用模拟数据
+            if (this.isInWeChatWork()) {
+                // 企业微信环境中出错时，返回基础信息
+                const errorUserInfo = {
+                    student_id: '未知',
+                    name: '企业微信用户',
+                    wechat_userid: 'unknown',
+                    department: '未知部门'
+                };
+                appState.userInfo = errorUserInfo;
+                return errorUserInfo;
+            } else {
+                // 非企业微信环境中出错时，返回null
+                return null;
             }
-            // 企业微信环境中出错时，返回基础信息
-            const errorUserInfo = {
-                student_id: '未知',
-                name: '企业微信用户',
-                wechat_userid: 'unknown',
-                department: '未知部门'
-            };
-            appState.userInfo = errorUserInfo;
-            return errorUserInfo;
         }
     },
     
@@ -430,26 +432,71 @@ const WeChatAPI = {
     async getLocation() {
         return new Promise((resolve, reject) => {
             if (!appState.isWeChatReady) {
+                console.error('WeChat JS-SDK not ready for location');
                 reject(new Error('WeChat JS-SDK not ready'));
                 return;
             }
             
+            console.log('Attempting to get location via WeChat JS-SDK...');
+            
             wx.getLocation({
                 type: 'gcj02',
                 success: (res) => {
+                    console.log('WeChat location success:', res);
                     const location = {
                         latitude: res.latitude,
                         longitude: res.longitude,
-                        accuracy: res.accuracy
+                        accuracy: res.accuracy,
+                        speed: res.speed,
+                        altitude: res.altitude
                     };
                     appState.location = location;
                     resolve(location);
                 },
                 fail: (error) => {
-                    console.error('Failed to get location:', error);
-                    reject(new Error('Failed to get location'));
+                    console.error('WeChat getLocation failed:', error);
+                    // 尝试使用浏览器原生定位API作为备选
+                    this._getBrowserLocation().then(resolve).catch(() => {
+                        reject(new Error(`WeChat location failed: ${JSON.stringify(error)}`));
+                    });
                 }
             });
+        });
+    },
+    
+    // 浏览器原生定位API备选方案
+    async _getBrowserLocation() {
+        return new Promise((resolve, reject) => {
+            if (!navigator.geolocation) {
+                reject(new Error('Browser geolocation not supported'));
+                return;
+            }
+            
+            console.log('Trying browser geolocation as fallback...');
+            
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    console.log('Browser location success:', position);
+                    const location = {
+                        latitude: position.coords.latitude,
+                        longitude: position.coords.longitude,
+                        accuracy: position.coords.accuracy,
+                        altitude: position.coords.altitude,
+                        speed: position.coords.speed
+                    };
+                    appState.location = location;
+                    resolve(location);
+                },
+                (error) => {
+                    console.error('Browser geolocation failed:', error);
+                    reject(new Error(`Browser location failed: ${error.message}`));
+                },
+                {
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+                    maximumAge: 60000
+                }
+            );
         });
     },
     
