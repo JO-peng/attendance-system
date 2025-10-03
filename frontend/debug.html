@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>网络诊断 - 深圳大学考勤系统</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .info-item {
+            margin: 10px 0;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            border-left: 4px solid #007bff;
+        }
+        .error {
+            border-left-color: #dc3545;
+            background: #f8d7da;
+        }
+        .success {
+            border-left-color: #28a745;
+            background: #d4edda;
+        }
+        .warning {
+            border-left-color: #ffc107;
+            background: #fff3cd;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        #results {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 网络诊断工具</h1>
+        <p>此页面用于诊断企业微信访问问题</p>
+        
+        <div class="info-item">
+            <strong>当前环境信息：</strong>
+            <div id="envInfo">正在检测...</div>
+        </div>
+        
+        <div class="info-item">
+            <strong>网络连接测试：</strong>
+            <div>
+                <button onclick="testConnection()">测试服务器连接</button>
+                <button onclick="testAPI()">测试API接口</button>
+                <button onclick="testWeChatConfig()">测试企业微信配置</button>
+            </div>
+        </div>
+        
+        <div id="results"></div>
+    </div>
+
+    <script>
+        // 检测环境信息
+        function detectEnvironment() {
+            const ua = navigator.userAgent;
+            const info = {
+                userAgent: ua,
+                isWxWork: ua.toLowerCase().includes('wxwork'),
+                isWeChat: ua.toLowerCase().includes('micromessenger'),
+                isHTTPS: window.location.protocol === 'https:',
+                currentURL: window.location.href,
+                timestamp: new Date().toISOString()
+            };
+            
+            document.getElementById('envInfo').innerHTML = `
+                <div>User-Agent: ${info.userAgent}</div>
+                <div>企业微信环境: ${info.isWxWork ? '✅ 是' : '❌ 否'}</div>
+                <div>微信环境: ${info.isWeChat ? '✅ 是' : '❌ 否'}</div>
+                <div>HTTPS: ${info.isHTTPS ? '✅ 是' : '❌ 否'}</div>
+                <div>当前URL: ${info.currentURL}</div>
+                <div>检测时间: ${info.timestamp}</div>
+            `;
+            
+            return info;
+        }
+        
+        // 测试服务器连接
+        async function testConnection() {
+            addResult('开始测试服务器连接...', 'info');
+            
+            try {
+                const response = await fetch('/');
+                if (response.ok) {
+                    addResult('✅ 服务器连接正常', 'success');
+                } else {
+                    addResult(`❌ 服务器响应异常: ${response.status}`, 'error');
+                }
+            } catch (error) {
+                addResult(`❌ 服务器连接失败: ${error.message}`, 'error');
+            }
+        }
+        
+        // 测试API接口
+        async function testAPI() {
+            addResult('开始测试API接口...', 'info');
+            
+            try {
+                const response = await fetch('/api/wechat/config', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        url: window.location.href
+                    })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    addResult('✅ 企业微信API接口正常', 'success');
+                    addResult(`配置信息: ${JSON.stringify(data, null, 2)}`, 'info');
+                } else {
+                    addResult(`❌ API接口异常: ${response.status}`, 'error');
+                }
+            } catch (error) {
+                addResult(`❌ API接口连接失败: ${error.message}`, 'error');
+            }
+        }
+        
+        // 测试企业微信配置
+        async function testWeChatConfig() {
+            addResult('开始测试企业微信配置...', 'info');
+            
+            const config = {
+                CORP_ID: 'ww563e8adbd544adf5',
+                AGENT_ID: '1000265'
+            };
+            
+            addResult(`企业微信配置: ${JSON.stringify(config, null, 2)}`, 'info');
+            
+            // 测试域名验证文件
+            try {
+                const response = await fetch('/WW_verify_HZhKHto1m81jm29P.txt');
+                if (response.ok) {
+                    const text = await response.text();
+                    addResult(`✅ 域名验证文件正常: ${text}`, 'success');
+                } else {
+                    addResult(`❌ 域名验证文件异常: ${response.status}`, 'error');
+                }
+            } catch (error) {
+                addResult(`❌ 域名验证文件访问失败: ${error.message}`, 'error');
+            }
+        }
+        
+        // 添加结果
+        function addResult(message, type = 'info') {
+            const results = document.getElementById('results');
+            const div = document.createElement('div');
+            div.className = `info-item ${type}`;
+            div.innerHTML = `<div>${new Date().toLocaleTimeString()}: ${message}</div>`;
+            results.appendChild(div);
+            results.scrollTop = results.scrollHeight;
+        }
+        
+        // 页面加载时自动检测环境
+        window.onload = function() {
+            detectEnvironment();
+        };
+    </script>
+</body>
+</html>
