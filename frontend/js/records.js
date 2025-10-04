@@ -391,7 +391,7 @@ class RecordsPage {
     updateAttendanceStats(data) {
         // 更新出勤率环形图
         const progressBar = document.querySelector('.progress-bar');
-        const progressPercentage = document.getElementById('attendancePercentage');
+        const progressPercentage = document.querySelector('.progress-percentage');
         
         if (progressBar && progressPercentage) {
             const circumference = 314; // 2 * π * 50
@@ -409,8 +409,6 @@ class RecordsPage {
         if (attendedValue) attendedValue.textContent = data.attendedDays;
         if (lateValue) lateValue.textContent = data.lateDays;
         if (absentValue) absentValue.textContent = data.absentDays;
-        
-        console.log('统计数据已更新:', data);
     }
     
     filterRecords() {

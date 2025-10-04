@@ -572,79 +572,14 @@ class SignInPage {
         this.validateForm();
     }
     
-    // 拍照
+    // 拍照 - 直接使用系统相机
     async takePhoto() {
         try {
-            console.log('takePhoto called, checking environment...');
+            console.log('takePhoto called, using system camera...');
+            Utils.showMessage('正在打开相机...', 'info', 1000);
             
-            // 详细的环境检测
-            const isInWeChatWork = WeChatAPI.isInWeChatWork();
-            const isWeChatReady = appState.isWeChatReady;
-            
-            console.log('Environment check results:', {
-                isInWeChatWork,
-                isWeChatReady,
-                userAgent: navigator.userAgent
-            });
-            
-            // 检查是否在企业微信环境中且JS-SDK已准备好
-            if (isInWeChatWork && isWeChatReady) {
-                console.log('Attempting WeChat photo...');
-                const loadingMessage = Utils.showLoading('正在调用企业微信相机...');
-                
-                try {
-                    const localId = await WeChatAPI.chooseImage();
-                    Utils.hideLoading(loadingMessage);
-                    
-                    console.log('WeChat photo success, localId:', localId);
-                    
-                    // 显示照片预览
-                    const photoUpload = document.getElementById('photoUpload');
-                    if (photoUpload) {
-                        photoUpload.innerHTML = `
-                            <img src="${localId}" alt="签到照片" class="photo-preview">
-                        `;
-                        photoUpload.classList.add('has-photo');
-                    }
-                    
-                    this.currentPhoto = localId;
-                    this.validateForm();
-                    Utils.showMessage('企业微信拍照成功', 'success', 2000);
-                    
-                } catch (wechatError) {
-                    Utils.hideLoading(loadingMessage);
-                    console.error('WeChat photo failed:', wechatError);
-                    
-                    // 根据错误类型显示不同提示
-                    if (wechatError.message && wechatError.message.includes('cancel')) {
-                        Utils.showMessage('已取消拍照', 'info', 2000);
-                        return;
-                    } else if (wechatError.message && wechatError.message.includes('permission')) {
-                        Utils.showMessage('相机权限被拒绝，请在企业微信中允许相机权限', 'warning', 4000);
-                        return;
-                    } else if (wechatError.message && wechatError.message.includes('not support')) {
-                        Utils.showMessage('当前设备不支持企业微信拍照功能', 'warning', 3000);
-                    } else {
-                        Utils.showMessage('企业微信拍照失败，尝试使用本地相机', 'warning', 3000);
-                    }
-                    
-                    // 降级到HTML5文件选择
-                    console.log('Falling back to HTML5 file selection...');
-                    setTimeout(() => this.chooseImageFallback(), 500);
-                }
-            } else {
-                // 显示为什么不能使用企业微信拍照的原因
-                if (!isInWeChatWork) {
-                    console.log('Not in WeChat Work environment, using HTML5 fallback');
-                    Utils.showMessage('检测到非企业微信环境，使用本地相机', 'info', 2000);
-                } else if (!isWeChatReady) {
-                    console.log('WeChat JS-SDK not ready, using HTML5 fallback');
-                    Utils.showMessage('企业微信JS-SDK未就绪，使用本地相机', 'info', 2000);
-                }
-                
-                // 降级到HTML5文件选择
-                this.chooseImageFallback();
-            }
+            // 直接使用HTML5文件选择和相机功能
+            this.chooseImageFallback();
             
         } catch (error) {
             console.error('Failed to take photo:', error);
