@@ -128,6 +128,9 @@ class WeChatAPI:
             'extattr': {}
         }
         
+        # 记录用户信息构造结果
+        current_app.logger.info(f"Constructed user_info: {user_info}")
+        
         # 如果userid看起来像学号，尝试从中提取更友好的显示名称
         if user_info['name'] == userid and userid.isdigit():
             # 如果userid是纯数字（可能是学号），生成一个更友好的显示名称

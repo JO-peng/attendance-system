@@ -331,10 +331,24 @@ const WeChatAPI = {
     // 获取用户信息
     async getUserInfo() {
         try {
+            // 首先检查是否已经有缓存的用户信息
+            if (appState.userInfo && appState.userInfo.student_id && appState.userInfo.student_id !== '未知') {
+                console.log('Using cached user info:', appState.userInfo);
+                return appState.userInfo;
+            }
+            
             const urlParams = new URLSearchParams(window.location.search);
             const code = urlParams.get('code');
             
             if (code) {
+                // 检查是否已经使用过这个授权码
+                const usedCode = sessionStorage.getItem('used_wechat_code');
+                if (usedCode === code) {
+                    console.log('Authorization code already used, redirecting to re-authorize...');
+                    this._redirectToWeChatAuth();
+                    return null;
+                }
+                
                 try {
                     const response = await Utils.request('/api/wechat/userinfo', {
                         method: 'POST',
@@ -342,8 +356,15 @@ const WeChatAPI = {
                     });
                     
                     if (response.success) {
+                        // 标记授权码已使用
+                        sessionStorage.setItem('used_wechat_code', code);
+                        
                         appState.userInfo = response.data;
                         console.log('Successfully got user info from WeChat:', response.data);
+                        
+                        // 清除URL中的code参数，避免重复使用
+                        this._clearCodeFromUrl();
+                        
                         return response.data;
                     } else {
                         console.error('WeChat API returned error:', response.message);
@@ -351,46 +372,37 @@ const WeChatAPI = {
                         // 检查是否是授权码失效错误
                         if (response.message && response.message.includes('授权码已失效')) {
                             console.log('Authorization code expired, redirecting to re-authorize...');
+                            sessionStorage.setItem('used_wechat_code', code);
                             this._redirectToWeChatAuth();
                             return null;
                         }
                         
-                        // 在企业微信环境中，即使API失败也不使用模拟数据
+                        // 在企业微信环境中，如果API失败，提示用户重新授权
                         if (this.isInWeChatWork()) {
-                            // 创建基础用户信息，使用code作为标识
-                            const basicUserInfo = {
-                                student_id: code.substring(0, 10), // 使用code的前10位作为临时学号
-                                name: '企业微信用户',
-                                wechat_userid: code,
-                                department: '未知部门'
-                            };
-                            appState.userInfo = basicUserInfo;
-                            console.log('Using basic user info in WeChat environment:', basicUserInfo);
-                            return basicUserInfo;
+                            console.log('WeChat API failed, redirecting to re-authorize...');
+                            this._redirectToWeChatAuth();
+                            return null;
                         }
                         throw new Error(response.message || '获取用户信息失败');
                     }
                 } catch (apiError) {
                     console.error('WeChat API request failed:', apiError);
                     
+                    // 标记授权码已使用（避免重复尝试）
+                    sessionStorage.setItem('used_wechat_code', code);
+                    
                     // 检查是否是网络错误或授权码相关错误
-                    if (apiError.message && apiError.message.includes('授权码')) {
+                    if (apiError.message && (apiError.message.includes('授权码') || apiError.message.includes('Invalid'))) {
                         console.log('Authorization code related error, redirecting to re-authorize...');
                         this._redirectToWeChatAuth();
                         return null;
                     }
                     
-                    // 在企业微信环境中，即使API失败也不使用模拟数据
+                    // 在企业微信环境中，API失败时重新授权
                     if (this.isInWeChatWork()) {
-                        const basicUserInfo = {
-                            student_id: code.substring(0, 10),
-                            name: '企业微信用户',
-                            wechat_userid: code,
-                            department: '未知部门'
-                        };
-                        appState.userInfo = basicUserInfo;
-                        console.log('Using basic user info due to API error:', basicUserInfo);
-                        return basicUserInfo;
+                        console.log('API error in WeChat environment, redirecting to re-authorize...');
+                        this._redirectToWeChatAuth();
+                        return null;
                     }
                     throw apiError;
                 }
@@ -405,17 +417,11 @@ const WeChatAPI = {
             return await this._handleCASAuthentication();
         } catch (error) {
             console.error('Failed to get user info:', error);
-            // 无论在什么环境中，都不使用模拟数据
+            // 在企业微信环境中出错时，重新授权
             if (this.isInWeChatWork()) {
-                // 企业微信环境中出错时，返回基础信息
-                const errorUserInfo = {
-                    student_id: '未知',
-                    name: '企业微信用户',
-                    wechat_userid: 'unknown',
-                    department: '未知部门'
-                };
-                appState.userInfo = errorUserInfo;
-                return errorUserInfo;
+                console.log('Error in WeChat environment, redirecting to re-authorize...');
+                this._redirectToWeChatAuth();
+                return null;
             } else {
                 // 非企业微信环境中出错时，返回null
                 return null;
@@ -483,6 +489,14 @@ const WeChatAPI = {
         const redirectUrl = encodeURIComponent(window.location.href.split('?')[0]);
         const authUrl = `https://open.weixin.qq.com/connect/oauth2/authorize?appid=${CONFIG.WECHAT_CORP_ID}&redirect_uri=${redirectUrl}&response_type=code&scope=snsapi_base&state=attendance#wechat_redirect`;
         window.location.href = authUrl;
+    },
+    
+    // 清除URL中的code参数
+    _clearCodeFromUrl() {
+        const url = new URL(window.location);
+        url.searchParams.delete('code');
+        url.searchParams.delete('state');
+        window.history.replaceState({}, document.title, url.toString());
     },
     
     // 检查是否在企业微信环境中

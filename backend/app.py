@@ -215,16 +215,31 @@ def get_wechat_userinfo():
         user_info = wechat_api.get_user_info_by_code(code)
         
         # 转换为系统需要的格式
+        userid = user_info.get('userid', '')
+        name = user_info.get('name', '')
+        
+        # 如果userid是学号格式（10位数字），直接使用作为学号
+        if userid.isdigit() and len(userid) == 10:
+            student_id = userid
+            # 如果name就是userid，生成更友好的显示名称
+            if name == userid:
+                name = f"学生{userid[-4:]}"
+        else:
+            # 否则使用userid作为学号
+            student_id = userid
+        
         formatted_user_info = {
-            'student_id': user_info.get('userid', ''),
-            'name': user_info.get('name', ''),
-            'wechat_userid': user_info.get('userid', ''),
+            'student_id': student_id,
+            'name': name,
+            'wechat_userid': userid,
             'department': ', '.join([str(dept) for dept in user_info.get('department', [])]),
             'position': user_info.get('position', ''),
             'mobile': user_info.get('mobile', ''),
             'email': user_info.get('email', ''),
             'avatar': user_info.get('avatar', '')
         }
+        
+        logger.info(f"Formatted user info: {formatted_user_info}")
         
         return jsonify({
             'success': True,
