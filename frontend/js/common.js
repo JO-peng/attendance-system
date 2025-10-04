@@ -347,6 +347,14 @@ const WeChatAPI = {
                         return response.data;
                     } else {
                         console.error('WeChat API returned error:', response.message);
+                        
+                        // 检查是否是授权码失效错误
+                        if (response.message && response.message.includes('授权码已失效')) {
+                            console.log('Authorization code expired, redirecting to re-authorize...');
+                            this._redirectToWeChatAuth();
+                            return null;
+                        }
+                        
                         // 在企业微信环境中，即使API失败也不使用模拟数据
                         if (this.isInWeChatWork()) {
                             // 创建基础用户信息，使用code作为标识
@@ -364,6 +372,14 @@ const WeChatAPI = {
                     }
                 } catch (apiError) {
                     console.error('WeChat API request failed:', apiError);
+                    
+                    // 检查是否是网络错误或授权码相关错误
+                    if (apiError.message && apiError.message.includes('授权码')) {
+                        console.log('Authorization code related error, redirecting to re-authorize...');
+                        this._redirectToWeChatAuth();
+                        return null;
+                    }
+                    
                     // 在企业微信环境中，即使API失败也不使用模拟数据
                     if (this.isInWeChatWork()) {
                         const basicUserInfo = {
@@ -380,15 +396,13 @@ const WeChatAPI = {
                 }
             } else if (this.isInWeChatWork()) {
                 // 重定向到企业微信授权页面
-                const redirectUrl = encodeURIComponent(window.location.href.split('?')[0]);
-                const authUrl = `https://open.weixin.qq.com/connect/oauth2/authorize?appid=${CONFIG.WECHAT_CORP_ID}&redirect_uri=${redirectUrl}&response_type=code&scope=snsapi_base&state=attendance#wechat_redirect`;
-                window.location.href = authUrl;
+                this._redirectToWeChatAuth();
                 return null;
             }
             
-            // 非企业微信环境时，返回null表示无法获取用户信息
-            console.log('Not in WeChat environment, cannot get user info');
-            return null;
+            // 非企业微信环境时，尝试CAS认证
+            console.log('Not in WeChat environment, trying CAS authentication...');
+            return await this._handleCASAuthentication();
         } catch (error) {
             console.error('Failed to get user info:', error);
             // 无论在什么环境中，都不使用模拟数据
@@ -420,6 +434,55 @@ const WeChatAPI = {
         };
         appState.userInfo = mockUserInfo;
         return mockUserInfo;
+    },
+
+    // 处理CAS认证
+    async _handleCASAuthentication() {
+        try {
+            // 首先检查是否已经登录
+            const statusResponse = await fetch(`${CONFIG.API_BASE_URL}/cas/status`);
+            const statusData = await statusResponse.json();
+            
+            if (statusData.success && statusData.logged_in && statusData.user) {
+                // 已经登录，返回用户信息
+                console.log('User already logged in via CAS:', statusData.user);
+                const userInfo = {
+                    student_id: statusData.user.username || statusData.user.student_id,
+                    name: statusData.user.name,
+                    wechat_userid: statusData.user.username,
+                    department: statusData.user.org_dn || '未知部门'
+                };
+                appState.userInfo = userInfo;
+                return userInfo;
+            } else {
+                // 未登录，重定向到CAS登录页面
+                console.log('User not logged in, redirecting to CAS login...');
+                const loginResponse = await fetch(`${CONFIG.API_BASE_URL}/cas/login`, {
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+                const loginData = await loginResponse.json();
+                
+                if (loginData.success && loginData.login_url) {
+                    // 重定向到CAS登录页面
+                    window.location.href = loginData.login_url;
+                    return null; // 重定向后不会执行到这里
+                } else {
+                    throw new Error(loginData.message || 'CAS登录失败');
+                }
+            }
+        } catch (error) {
+            console.error('CAS authentication failed:', error);
+            throw new Error('CAS认证失败: ' + error.message);
+        }
+    },
+    
+    // 重定向到企业微信授权页面
+    _redirectToWeChatAuth() {
+        const redirectUrl = encodeURIComponent(window.location.href.split('?')[0]);
+        const authUrl = `https://open.weixin.qq.com/connect/oauth2/authorize?appid=${CONFIG.WECHAT_CORP_ID}&redirect_uri=${redirectUrl}&response_type=code&scope=snsapi_base&state=attendance#wechat_redirect`;
+        window.location.href = authUrl;
     },
     
     // 检查是否在企业微信环境中

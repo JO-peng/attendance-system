@@ -129,11 +129,11 @@ class AttendanceService:
         
         # 检查当前时间是否在某个课程的时间段内
         for student_course in student_courses:
-            time_slot = TimeSlot.get_time_slot(student_course.course_schedule.time_slot)
+            schedule = student_course.course_schedule
             
             # 转换上课和下课时间为分钟计数
-            start_minutes = time_slot.start_time.hour * 60 + time_slot.start_time.minute
-            end_minutes = time_slot.end_time.hour * 60 + time_slot.end_time.minute
+            start_minutes = schedule.start_time.hour * 60 + schedule.start_time.minute
+            end_minutes = schedule.end_time.hour * 60 + schedule.end_time.minute
             
             # 检查当前时间是否在课程时间段内
             if start_minutes <= current_time <= end_minutes:

@@ -84,14 +84,32 @@ class WeChatAPI:
         
         result = self._make_request('GET', url, params=params)
         
-        if result.get('errcode') != 0:
-            error_msg = f"Failed to get user info by code: {result.get('errmsg', 'Unknown error')}"
-            current_app.logger.error(error_msg)
-            raise Exception(error_msg)
+        # 处理不同的错误码
+        errcode = result.get('errcode', 0)
+        if errcode != 0:
+            errmsg = result.get('errmsg', 'Unknown error')
+            
+            # 特殊处理授权码相关错误
+            if errcode == 40029:  # invalid code
+                error_msg = "授权码已失效或无效，请重新授权"
+                current_app.logger.warning(f"Invalid authorization code: {code}")
+                raise Exception(error_msg)
+            elif errcode == 40001:  # invalid credential
+                error_msg = "access_token无效，请检查应用配置"
+                current_app.logger.error(f"Invalid access token")
+                raise Exception(error_msg)
+            elif errcode == 60011:  # no privilege
+                error_msg = "应用无权限访问用户信息，请检查应用权限配置"
+                current_app.logger.error(f"No privilege to access user info")
+                raise Exception(error_msg)
+            else:
+                error_msg = f"获取用户信息失败 (错误码: {errcode}): {errmsg}"
+                current_app.logger.error(error_msg)
+                raise Exception(error_msg)
         
         userid = result.get('userid')
         if not userid:
-            raise Exception("No userid found in response")
+            raise Exception("响应中未找到用户ID")
         
         # 记录完整的getuserinfo响应以便调试
         current_app.logger.info(f"getuserinfo response: {result}")
