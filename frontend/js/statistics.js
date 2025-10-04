@@ -77,15 +77,58 @@ class StatisticsPage {
         }
     }
     
+    // 带重试限制的用户信息获取方法
+    async getUserInfoWithRetry(maxRetries = 2) {
+        const retryKey = 'statistics_userinfo_retry_count';
+        let retryCount = parseInt(sessionStorage.getItem(retryKey) || '0');
+        
+        if (retryCount >= maxRetries) {
+            console.warn('已达到最大重试次数，停止获取用户信息');
+            return null;
+        }
+        
+        try {
+            const userInfo = await WeChatAPI.getUserInfo();
+            if (userInfo && userInfo.student_id) {
+                // 成功获取，重置重试计数
+                sessionStorage.removeItem(retryKey);
+                return userInfo;
+            } else {
+                // 获取失败，增加重试计数
+                retryCount++;
+                sessionStorage.setItem(retryKey, retryCount.toString());
+                console.warn(`用户信息获取失败，重试次数: ${retryCount}/${maxRetries}`);
+                return null;
+            }
+        } catch (error) {
+            // 出现错误，增加重试计数
+            retryCount++;
+            sessionStorage.setItem(retryKey, retryCount.toString());
+            console.error(`用户信息获取出错，重试次数: ${retryCount}/${maxRetries}`, error);
+            return null;
+        }
+    }
+    
     // 加载考勤数据
     async loadAttendanceData() {
         try {
             this.showLoadingState();
             
-            // 获取当前用户信息
-            const userInfo = await WeChatAPI.getUserInfo();
+            // 获取当前用户信息，添加重试限制
+            const userInfo = await this.getUserInfoWithRetry();
             if (!userInfo || !userInfo.student_id) {
-                throw new Error('无法获取用户信息');
+                console.warn('无法获取用户信息，显示空数据');
+                this.updateAttendanceStats({
+                    totalDays: 0,
+                    attendedDays: 0,
+                    lateDays: 0,
+                    absentDays: 0,
+                    attendanceRate: 0
+                });
+                this.updateCalendar([]);
+                this.hideLoadingState();
+                Utils.showMessage('无法获取用户信息，请刷新页面重试', 'warning');
+                return;
             }
             
             // 获取指定年月的统计数据

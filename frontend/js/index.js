@@ -87,6 +87,38 @@ class SignInPage {
         }
     }
     
+    // 带重试限制的用户信息获取方法
+    async getUserInfoWithRetry(maxRetries = 2) {
+        const retryKey = 'index_userinfo_retry_count';
+        let retryCount = parseInt(sessionStorage.getItem(retryKey) || '0');
+        
+        if (retryCount >= maxRetries) {
+            console.warn('已达到最大重试次数，停止获取用户信息');
+            return null;
+        }
+        
+        try {
+            const userInfo = await WeChatAPI.getUserInfo();
+            if (userInfo && userInfo.student_id) {
+                // 成功获取，重置重试计数
+                sessionStorage.removeItem(retryKey);
+                return userInfo;
+            } else {
+                // 获取失败，增加重试计数
+                retryCount++;
+                sessionStorage.setItem(retryKey, retryCount.toString());
+                console.warn(`用户信息获取失败，重试次数: ${retryCount}/${maxRetries}`);
+                return null;
+            }
+        } catch (error) {
+            // 出现错误，增加重试计数
+            retryCount++;
+            sessionStorage.setItem(retryKey, retryCount.toString());
+            console.error(`用户信息获取出错，重试次数: ${retryCount}/${maxRetries}`, error);
+            return null;
+        }
+    }
+    
     // 加载用户信息
     async loadUserInfo() {
         try {
@@ -96,8 +128,8 @@ class SignInPage {
                 return;
             }
             
-            // 尝试从企业微信获取用户信息
-            const userInfo = await WeChatAPI.getUserInfo();
+            // 尝试从企业微信获取用户信息，添加重试限制
+            const userInfo = await this.getUserInfoWithRetry();
             
             if (userInfo && userInfo.student_id && userInfo.name) {
                 this.displayUserInfo(userInfo);

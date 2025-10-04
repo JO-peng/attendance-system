@@ -318,6 +318,27 @@ def signin():
                         f.write(image_data)
                         
                     logger.info(f"照片已保存: {full_path}")
+                elif len(photo) > 10 and not photo.startswith('http'):
+                    # 企业微信serverId格式，通过企业微信API下载
+                    try:
+                        wechat_api = get_wechat_api()
+                        image_data = wechat_api.download_media(photo)
+                        
+                        if image_data:
+                            # 生成文件名
+                            filename = f"signin_{student_id}_{int(datetime.now().timestamp())}.jpg"
+                            photo_path = os.path.join('photos', filename)
+                            full_path = os.path.join(app.config['UPLOAD_FOLDER'], photo_path)
+                            
+                            # 保存图片
+                            with open(full_path, 'wb') as f:
+                                f.write(image_data)
+                                
+                            logger.info(f"企业微信照片已保存: {full_path}")
+                        else:
+                            logger.warning(f"无法从企业微信下载照片: {photo}")
+                    except Exception as wechat_error:
+                        logger.error(f"企业微信照片下载失败: {wechat_error}")
                 else:
                     # 其他格式的照片数据，暂时记录但不处理
                     logger.info(f"收到照片数据: {photo[:50]}...")

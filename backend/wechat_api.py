@@ -300,6 +300,40 @@ class WeChatAPI:
         except Exception as e:
             current_app.logger.error(f"Error uploading media: {e}")
             raise
+    
+    def download_media(self, media_id):
+        """下载多媒体文件"""
+        access_token = self.get_access_token()
+        
+        url = f"{self.base_url}/media/get"
+        params = {
+            'access_token': access_token,
+            'media_id': media_id
+        }
+        
+        try:
+            response = requests.get(url, params=params, timeout=30)
+            response.raise_for_status()
+            
+            # 检查响应是否为图片数据
+            content_type = response.headers.get('content-type', '')
+            if content_type.startswith('image/'):
+                current_app.logger.info(f"Media downloaded successfully: {media_id}")
+                return response.content
+            else:
+                # 如果不是图片，可能是错误响应
+                try:
+                    error_data = response.json()
+                    error_msg = f"Failed to download media: {error_data.get('errmsg', 'Unknown error')}"
+                    current_app.logger.error(error_msg)
+                    return None
+                except:
+                    current_app.logger.error(f"Failed to download media: Invalid response")
+                    return None
+                    
+        except Exception as e:
+            current_app.logger.error(f"Error downloading media: {e}")
+            return None
 
 # 全局实例 - 延迟初始化
 wechat_api = None
