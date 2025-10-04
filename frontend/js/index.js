@@ -192,11 +192,16 @@ class SignInPage {
 
             const result = await response.json();
             
+            // 格式化经纬度显示（保留4位小数）
+            const lat = this.currentLocation.latitude.toFixed(4);
+            const lng = this.currentLocation.longitude.toFixed(4);
+            const coordsText = `(${lat}, ${lng})`;
+            
             if (result.success && result.data) {
                 if (result.data.building && result.data.is_valid_location) {
-                    // 在有效范围内，显示建筑名称
+                    // 在有效范围内，显示建筑名称和坐标
                     if (buildingNameElement) {
-                        buildingNameElement.textContent = result.data.building.name;
+                        buildingNameElement.innerHTML = `${result.data.building.name}<br><small style="font-size: 0.8em; color: #666;">${coordsText}</small>`;
                         buildingNameElement.setAttribute('data-zh', result.data.building.name);
                         buildingNameElement.setAttribute('data-en', result.data.building.name_en);
                     }
@@ -204,14 +209,14 @@ class SignInPage {
                     // 找到最近建筑但距离太远
                     if (buildingNameElement) {
                         const distance = result.data.distance;
-                        buildingNameElement.textContent = `${result.data.building.name} (${distance}m)`;
+                        buildingNameElement.innerHTML = `${result.data.building.name} (${distance}m)<br><small style="font-size: 0.8em; color: #666;">${coordsText}</small>`;
                         buildingNameElement.setAttribute('data-zh', `${result.data.building.name} (距离${distance}米)`);
                         buildingNameElement.setAttribute('data-en', `${result.data.building.name_en} (${distance}m away)`);
                     }
                 } else {
                     // 没有找到任何建筑
                     if (buildingNameElement) {
-                        buildingNameElement.textContent = '位置未知';
+                        buildingNameElement.innerHTML = `位置未知<br><small style="font-size: 0.8em; color: #666;">${coordsText}</small>`;
                         buildingNameElement.setAttribute('data-zh', '位置未知');
                         buildingNameElement.setAttribute('data-en', 'Unknown Location');
                     }
@@ -220,17 +225,22 @@ class SignInPage {
                 // 保存位置信息供其他功能使用
                 this.locationInfo = result.data;
             } else {
-                // API调用失败
+                // API调用失败，但仍显示坐标
                 if (buildingNameElement) {
-                    buildingNameElement.textContent = '定位失败';
+                    buildingNameElement.innerHTML = `定位失败<br><small style="font-size: 0.8em; color: #666;">${coordsText}</small>`;
                     buildingNameElement.setAttribute('data-zh', '定位失败');
                     buildingNameElement.setAttribute('data-en', 'Location Failed');
                 }
             }
         } catch (error) {
             console.error('更新建筑信息失败:', error);
+            // 即使API失败，也显示坐标信息
+            const lat = this.currentLocation.latitude.toFixed(4);
+            const lng = this.currentLocation.longitude.toFixed(4);
+            const coordsText = `(${lat}, ${lng})`;
+            
             if (buildingNameElement) {
-                buildingNameElement.textContent = '位置获取失败';
+                buildingNameElement.innerHTML = `位置获取失败<br><small style="font-size: 0.8em; color: #666;">${coordsText}</small>`;
                 buildingNameElement.setAttribute('data-zh', '定位失败');
                 buildingNameElement.setAttribute('data-en', 'Location Failed');
             }
@@ -245,10 +255,14 @@ class SignInPage {
             this.currentLocation = location;
             console.log('Location obtained successfully:', location);
             
-            // 更新UI显示定位成功
+            // 更新UI显示定位成功，包含坐标信息
             const buildingNameElement = document.getElementById('buildingName');
             if (buildingNameElement) {
-                buildingNameElement.textContent = Utils.t('location_getting');
+                const lat = location.latitude.toFixed(4);
+                const lng = location.longitude.toFixed(4);
+                const coordsText = `(${lat}, ${lng})`;
+                
+                buildingNameElement.innerHTML = `正在获取位置信息...<br><small style="font-size: 0.8em; color: #666;">${coordsText}</small>`;
                 buildingNameElement.setAttribute('data-zh', '正在获取位置信息...');
                 buildingNameElement.setAttribute('data-en', 'Getting location...');
             }

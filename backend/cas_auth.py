@@ -166,6 +166,16 @@ class CASClient:
             # 禁用SSL警告
             import urllib3
             urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+        else:
+            # 默认使用系统证书，但如果验证失败则尝试使用项目证书链
+            try:
+                # 尝试使用项目中的证书链文件
+                project_ca_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'ca', 'kpeak.szu.edu.cn-chain.pem')
+                if os.path.exists(project_ca_path):
+                    self.session.verify = project_ca_path
+                    current_app.logger.info(f"Using project CA bundle: {project_ca_path}")
+            except Exception as e:
+                current_app.logger.warning(f"Failed to set project CA bundle: {e}")
     
     def get_login_url(self) -> str:
         """获取CAS登录URL"""
