@@ -679,7 +679,7 @@ const WeChatAPI = {
             this.getConfig().then(config => {
                 wx.config({
                     beta: true,
-                    debug: false,
+                    debug: true, // 开启调试模式以便查看权限问题
                     appId: config.corpId,
                     timestamp: config.timestamp,
                     nonceStr: config.nonceStr,
@@ -688,7 +688,17 @@ const WeChatAPI = {
                         'getLocation',
                         'chooseImage',
                         'uploadImage',
-                        'downloadImage'
+                        'downloadImage',
+                        'previewImage',
+                        'startRecord',
+                        'stopRecord',
+                        'onVoiceRecordEnd',
+                        'playVoice',
+                        'pauseVoice',
+                        'stopVoice',
+                        'onVoicePlayEnd',
+                        'uploadVoice',
+                        'downloadVoice'
                     ]
                 });
                 
@@ -981,9 +991,31 @@ const WeChatAPI = {
         });
     },
     
+    // 检查相机权限
+    async checkCameraPermission() {
+        return new Promise((resolve) => {
+            if (typeof wx === 'undefined' || typeof wx.checkJsApi !== 'function') {
+                resolve(false);
+                return;
+            }
+            
+            wx.checkJsApi({
+                jsApiList: ['chooseImage'],
+                success: (res) => {
+                    console.log('checkJsApi result:', res);
+                    const hasPermission = res.checkResult && res.checkResult.chooseImage;
+                    resolve(hasPermission);
+                },
+                fail: () => {
+                    resolve(false);
+                }
+            });
+        });
+    },
+    
     // 拍照或选择图片
     async chooseImage() {
-        return new Promise((resolve, reject) => {
+        return new Promise(async (resolve, reject) => {
             console.log('chooseImage called, checking environment...');
             console.log('appState.isWeChatReady:', appState.isWeChatReady);
             console.log('typeof wx:', typeof wx);
@@ -1000,6 +1032,15 @@ const WeChatAPI = {
                 console.error('chooseImage failed:', error.message);
                 reject(error);
                 return;
+            }
+            
+            // 检查相机权限
+            console.log('Checking camera permission...');
+            const hasPermission = await this.checkCameraPermission();
+            console.log('Camera permission check result:', hasPermission);
+            
+            if (!hasPermission) {
+                console.warn('Camera permission not available, but trying anyway...');
             }
             
             console.log('Calling wx.chooseImage...');
@@ -1023,9 +1064,11 @@ const WeChatAPI = {
                         if (error.errMsg.includes('cancel')) {
                             errorMessage = 'User cancelled image selection';
                         } else if (error.errMsg.includes('permission')) {
-                            errorMessage = 'Camera permission denied';
+                            errorMessage = 'Camera permission denied. Please enable camera permission in WeChat Work settings.';
                         } else if (error.errMsg.includes('not support')) {
                             errorMessage = 'Camera not supported';
+                        } else if (error.errMsg.includes('system permission')) {
+                            errorMessage = 'System camera permission denied. Please enable camera permission in device settings.';
                         }
                     }
                     reject(new Error(errorMessage));

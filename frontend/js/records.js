@@ -391,7 +391,7 @@ class RecordsPage {
     updateAttendanceStats(data) {
         // 更新出勤率环形图
         const progressBar = document.querySelector('.progress-bar');
-        const progressPercentage = document.querySelector('.progress-percentage');
+        const progressPercentage = document.getElementById('attendancePercentage');
         
         if (progressBar && progressPercentage) {
             const circumference = 314; // 2 * π * 50
@@ -401,14 +401,16 @@ class RecordsPage {
             progressPercentage.textContent = `${data.attendanceRate}%`;
         }
         
-        // 更新统计数据
-        const attendedValue = document.querySelector('.stat-item.attended .stat-value');
-        const lateValue = document.querySelector('.stat-item.late .stat-value');
-        const absentValue = document.querySelector('.stat-item.absent .stat-value');
+        // 更新统计数据 - 使用正确的ID选择器
+        const attendedValue = document.getElementById('normalCount');
+        const lateValue = document.getElementById('lateCount');
+        const absentValue = document.getElementById('absentCount');
         
         if (attendedValue) attendedValue.textContent = data.attendedDays;
         if (lateValue) lateValue.textContent = data.lateDays;
         if (absentValue) absentValue.textContent = data.absentDays;
+        
+        console.log('统计数据已更新:', data);
     }
     
     filterRecords() {
