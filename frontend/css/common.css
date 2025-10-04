@@ -392,3 +392,62 @@ body {
 .shadow-lg { box-shadow: var(--shadow-lg); }
 
 .transition { transition: all 0.2s ease; }
+
+/* 消息提示动画 */
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-20px);
+    }
+}
+
+/* 消息提示样式 */
+.message {
+    font-family: var(--font-family);
+    font-weight: 500;
+    letter-spacing: 0.025em;
+}
+
+.message button {
+    transition: opacity 0.2s ease;
+}
+
+.message button:hover {
+    opacity: 0.8;
+}
+
+/* 加载动画 */
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.loading-spinner {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top-color: white;
+    animation: spin 1s ease-in-out infinite;
+    margin-right: 8px;
+}

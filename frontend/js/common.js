@@ -97,13 +97,133 @@ const LANGUAGES = {
 class AppState {
     constructor() {
         this.currentLanguage = this.getStoredLanguage();
-        this.userInfo = null;
-        this.location = null;
+        this.userInfo = this.getStoredUserInfo();
+        this.location = this.getStoredLocation();
         this.isWeChatReady = false;
+        this.cache = {
+            userInfo: { data: null, timestamp: 0, ttl: 5 * 60 * 1000 }, // 5分钟缓存
+            location: { data: null, timestamp: 0, ttl: 10 * 60 * 1000 }, // 10分钟缓存
+            buildingInfo: { data: null, timestamp: 0, ttl: 15 * 60 * 1000 } // 15分钟缓存
+        };
     }
     
     getStoredLanguage() {
         return localStorage.getItem('language') || CONFIG.DEFAULT_LANGUAGE;
+    }
+    
+    getStoredUserInfo() {
+        try {
+            const stored = localStorage.getItem('userInfo');
+            const timestamp = localStorage.getItem('userInfo_timestamp');
+            if (stored && timestamp) {
+                const age = Date.now() - parseInt(timestamp);
+                // 用户信息缓存5分钟
+                if (age < 5 * 60 * 1000) {
+                    return JSON.parse(stored);
+                } else {
+                    // 缓存过期，清除
+                    this.clearStoredUserInfo();
+                }
+            }
+        } catch (error) {
+            console.error('Failed to get stored user info:', error);
+            this.clearStoredUserInfo();
+        }
+        return null;
+    }
+    
+    getStoredLocation() {
+        try {
+            const stored = localStorage.getItem('location');
+            const timestamp = localStorage.getItem('location_timestamp');
+            if (stored && timestamp) {
+                const age = Date.now() - parseInt(timestamp);
+                // 位置信息缓存10分钟
+                if (age < 10 * 60 * 1000) {
+                    return JSON.parse(stored);
+                } else {
+                    // 缓存过期，清除
+                    this.clearStoredLocation();
+                }
+            }
+        } catch (error) {
+            console.error('Failed to get stored location:', error);
+            this.clearStoredLocation();
+        }
+        return null;
+    }
+    
+    setUserInfo(userInfo) {
+        this.userInfo = userInfo;
+        if (userInfo) {
+            localStorage.setItem('userInfo', JSON.stringify(userInfo));
+            localStorage.setItem('userInfo_timestamp', Date.now().toString());
+        } else {
+            this.clearStoredUserInfo();
+        }
+    }
+    
+    setLocation(location) {
+        this.location = location;
+        if (location) {
+            localStorage.setItem('location', JSON.stringify(location));
+            localStorage.setItem('location_timestamp', Date.now().toString());
+        } else {
+            this.clearStoredLocation();
+        }
+    }
+    
+    clearStoredUserInfo() {
+        localStorage.removeItem('userInfo');
+        localStorage.removeItem('userInfo_timestamp');
+        this.userInfo = null;
+    }
+    
+    clearStoredLocation() {
+        localStorage.removeItem('location');
+        localStorage.removeItem('location_timestamp');
+        this.location = null;
+    }
+    
+    // 通用缓存方法
+    setCache(key, data, customTtl = null) {
+        if (this.cache[key]) {
+            this.cache[key].data = data;
+            this.cache[key].timestamp = Date.now();
+            if (customTtl) {
+                this.cache[key].ttl = customTtl;
+            }
+        }
+    }
+    
+    getCache(key) {
+        if (this.cache[key]) {
+            const { data, timestamp, ttl } = this.cache[key];
+            const age = Date.now() - timestamp;
+            if (age < ttl && data !== null) {
+                return data;
+            } else {
+                // 缓存过期，清除
+                this.cache[key].data = null;
+                this.cache[key].timestamp = 0;
+            }
+        }
+        return null;
+    }
+    
+    clearCache(key = null) {
+        if (key && this.cache[key]) {
+            this.cache[key].data = null;
+            this.cache[key].timestamp = 0;
+        } else if (!key) {
+            // 清除所有缓存
+            Object.keys(this.cache).forEach(k => {
+                this.cache[k].data = null;
+                this.cache[k].timestamp = 0;
+            });
+            this.clearStoredUserInfo();
+            this.clearStoredLocation();
+        }
     }
     
     setLanguage(lang) {
@@ -150,6 +270,77 @@ class AppState {
 // 全局应用状态
 const appState = new AppState();
 
+// 资源管理器
+const ResourceManager = {
+    loadedCSS: new Set(),
+    loadedJS: new Set(),
+    
+    // 懒加载CSS文件
+    async loadCSS(href) {
+        if (this.loadedCSS.has(href)) {
+            return Promise.resolve();
+        }
+        
+        return new Promise((resolve, reject) => {
+            const link = document.createElement('link');
+            link.rel = 'stylesheet';
+            link.href = href;
+            link.onload = () => {
+                this.loadedCSS.add(href);
+                resolve();
+            };
+            link.onerror = reject;
+            document.head.appendChild(link);
+        });
+    },
+    
+    // 懒加载JS文件
+    async loadJS(src) {
+        if (this.loadedJS.has(src)) {
+            return Promise.resolve();
+        }
+        
+        return new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = src;
+            script.onload = () => {
+                this.loadedJS.add(src);
+                resolve();
+            };
+            script.onerror = reject;
+            document.head.appendChild(script);
+        });
+    },
+    
+    // 预加载资源
+    preloadResource(href, type = 'stylesheet') {
+        const link = document.createElement('link');
+        link.rel = 'preload';
+        link.href = href;
+        link.as = type === 'stylesheet' ? 'style' : 'script';
+        document.head.appendChild(link);
+    },
+    
+    // 预加载页面相关资源
+    preloadPageResources() {
+        const currentPage = window.location.pathname.split('/').pop() || 'index.html';
+        
+        // 根据当前页面预加载可能访问的其他页面资源
+        const preloadMap = {
+            'index.html': ['css/records.css', 'css/statistics.css', 'js/records.js', 'js/statistics.js'],
+            'records.html': ['css/statistics.css', 'js/statistics.js'],
+            'statistics.html': ['css/records.css', 'js/records.js'],
+            'feedback.html': []
+        };
+        
+        const resourcesToPreload = preloadMap[currentPage] || [];
+        resourcesToPreload.forEach(resource => {
+            const type = resource.endsWith('.css') ? 'stylesheet' : 'script';
+            this.preloadResource(resource, type);
+        });
+    }
+};
+
 // 工具函数
 const Utils = {
     // 获取多语言文本
@@ -158,32 +349,179 @@ const Utils = {
     },
     
     // 显示消息提示
-    showMessage(message, type = 'info', duration = 3000) {
+    showMessage(message, type = 'info', duration = 3000, options = {}) {
+        // 清除之前的消息（如果需要）
+        if (options.clearPrevious) {
+            document.querySelectorAll('.message').forEach(el => el.remove());
+        }
+        
         const messageEl = document.createElement('div');
         messageEl.className = `message message-${type}`;
-        messageEl.textContent = message;
+        
+        // 支持HTML内容
+        if (options.html) {
+            messageEl.innerHTML = message;
+        } else {
+            messageEl.textContent = message;
+        }
+        
+        // 获取颜色配置
+        const colors = {
+            success: '#10B981',
+            error: '#EF4444',
+            warning: '#F59E0B',
+            info: '#3B82F6',
+            loading: '#6B7280'
+        };
+        
         messageEl.style.cssText = `
             position: fixed;
             top: 20px;
             left: 50%;
             transform: translateX(-50%);
-            background: ${type === 'success' ? 'var(--success-color)' : type === 'error' ? 'var(--error-color)' : 'var(--gray-700)'};
+            background: ${colors[type] || colors.info};
             color: white;
             padding: 12px 24px;
             border-radius: 8px;
             z-index: 9999;
-            box-shadow: var(--shadow-lg);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
             animation: slideDown 0.3s ease;
+            max-width: 90%;
+            word-wrap: break-word;
+            font-size: 14px;
+            line-height: 1.4;
         `;
+        
+        // 添加图标
+        const icons = {
+            success: '✅',
+            error: '❌',
+            warning: '⚠️',
+            info: 'ℹ️',
+            loading: '⏳'
+        };
+        
+        if (icons[type] && !options.noIcon) {
+            const icon = document.createElement('span');
+            icon.textContent = icons[type] + ' ';
+            icon.style.marginRight = '8px';
+            messageEl.insertBefore(icon, messageEl.firstChild);
+        }
+        
+        // 添加关闭按钮（对于持久消息）
+        if (options.persistent || duration > 10000) {
+            const closeBtn = document.createElement('button');
+            closeBtn.innerHTML = '×';
+            closeBtn.style.cssText = `
+                background: none;
+                border: none;
+                color: white;
+                font-size: 18px;
+                margin-left: 12px;
+                cursor: pointer;
+                padding: 0;
+                line-height: 1;
+            `;
+            closeBtn.onclick = () => this._removeMessage(messageEl);
+            messageEl.appendChild(closeBtn);
+        }
         
         document.body.appendChild(messageEl);
         
-        setTimeout(() => {
+        // 自动移除（除非是持久消息）
+        if (!options.persistent) {
+            setTimeout(() => {
+                this._removeMessage(messageEl);
+            }, duration);
+        }
+        
+        return messageEl;
+    },
+    
+    // 移除消息的辅助方法
+    _removeMessage(messageEl) {
+        if (messageEl && messageEl.parentNode) {
             messageEl.style.animation = 'slideUp 0.3s ease';
             setTimeout(() => {
-                document.body.removeChild(messageEl);
+                if (messageEl.parentNode) {
+                    messageEl.parentNode.removeChild(messageEl);
+                }
             }, 300);
-        }, duration);
+        }
+    },
+    
+    // 显示加载消息
+    showLoading(message = '加载中...') {
+        return this.showMessage(message, 'loading', 0, { persistent: true });
+    },
+    
+    // 隐藏加载消息
+    hideLoading(loadingEl) {
+        if (loadingEl) {
+            this._removeMessage(loadingEl);
+        }
+    },
+    
+    // 显示确认对话框
+    showConfirm(message, onConfirm, onCancel) {
+        const overlay = document.createElement('div');
+        overlay.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        `;
+        
+        const dialog = document.createElement('div');
+        dialog.style.cssText = `
+            background: white;
+            padding: 24px;
+            border-radius: 12px;
+            max-width: 400px;
+            width: 90%;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+        `;
+        
+        dialog.innerHTML = `
+            <div style="margin-bottom: 20px; font-size: 16px; line-height: 1.5;">${message}</div>
+            <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                <button id="cancelBtn" style="padding: 8px 16px; border: 1px solid #ccc; background: white; border-radius: 6px; cursor: pointer;">取消</button>
+                <button id="confirmBtn" style="padding: 8px 16px; border: none; background: #3B82F6; color: white; border-radius: 6px; cursor: pointer;">确认</button>
+            </div>
+        `;
+        
+        overlay.appendChild(dialog);
+        document.body.appendChild(overlay);
+        
+        const confirmBtn = dialog.querySelector('#confirmBtn');
+        const cancelBtn = dialog.querySelector('#cancelBtn');
+        
+        const cleanup = () => {
+            document.body.removeChild(overlay);
+        };
+        
+        confirmBtn.onclick = () => {
+            cleanup();
+            if (onConfirm) onConfirm();
+        };
+        
+        cancelBtn.onclick = () => {
+            cleanup();
+            if (onCancel) onCancel();
+        };
+        
+        overlay.onclick = (e) => {
+            if (e.target === overlay) {
+                cleanup();
+                if (onCancel) onCancel();
+            }
+        };
     },
     
     // 格式化时间
@@ -215,6 +553,10 @@ const Utils = {
         return new Promise(resolve => setTimeout(resolve, ms));
     },
     
+    // 请求缓存和去重
+    _requestCache: new Map(),
+    _pendingRequests: new Map(),
+    
     // API请求封装
     async request(url, options = {}) {
         const defaultOptions = {
@@ -224,6 +566,50 @@ const Utils = {
             },
         };
         
+        // 生成请求的唯一键
+        const requestKey = `${options.method || 'GET'}:${url}:${JSON.stringify(options.body || {})}`;
+        
+        // 对于GET请求，检查缓存
+        if (!options.method || options.method === 'GET') {
+            const cached = this._requestCache.get(requestKey);
+            if (cached && Date.now() - cached.timestamp < 30000) { // 30秒缓存
+                console.log('Using cached response for:', url);
+                return cached.data;
+            }
+        }
+        
+        // 检查是否有相同的请求正在进行
+        if (this._pendingRequests.has(requestKey)) {
+            console.log('Request already pending, waiting for result:', url);
+            return this._pendingRequests.get(requestKey);
+        }
+        
+        // 创建新的请求Promise
+        const requestPromise = this._makeRequest(url, options, defaultOptions);
+        
+        // 缓存正在进行的请求
+        this._pendingRequests.set(requestKey, requestPromise);
+        
+        try {
+            const result = await requestPromise;
+            
+            // 对于GET请求，缓存结果
+            if (!options.method || options.method === 'GET') {
+                this._requestCache.set(requestKey, {
+                    data: result,
+                    timestamp: Date.now()
+                });
+            }
+            
+            return result;
+        } finally {
+            // 清除正在进行的请求
+            this._pendingRequests.delete(requestKey);
+        }
+    },
+    
+    // 实际执行请求的方法
+    async _makeRequest(url, options, defaultOptions) {
         try {
             const response = await fetch(`${CONFIG.API_BASE_URL}${url}`, {
                 ...defaultOptions,
@@ -243,6 +629,12 @@ const Utils = {
             console.error('API Request Error:', error);
             throw error;
         }
+    },
+    
+    // 清除请求缓存
+    clearRequestCache() {
+        this._requestCache.clear();
+        console.log('Request cache cleared');
     },
     
     // 防抖函数
@@ -636,6 +1028,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     });
     
+    // 预加载页面资源
+    ResourceManager.preloadPageResources();
+    
     // 初始化企业微信
     try {
         await WeChatAPI.init();
@@ -645,12 +1040,22 @@ document.addEventListener('DOMContentLoaded', async () => {
         // 在非企业微信环境下继续运行
     }
     
-    // 获取用户信息
-    try {
-        await WeChatAPI.getUserInfo();
-        console.log('User info loaded:', appState.userInfo);
-    } catch (error) {
-        console.warn('Failed to load user info:', error);
+    // 只在首页自动获取用户信息，其他页面按需获取
+    const currentPage = window.location.pathname.split('/').pop() || 'index.html';
+    if (currentPage === 'index.html' || currentPage === '') {
+        try {
+            // 检查是否有缓存的用户信息
+            const cachedUserInfo = appState.getStoredUserInfo();
+            if (!cachedUserInfo) {
+                await WeChatAPI.getUserInfo();
+                console.log('User info loaded:', appState.userInfo);
+            } else {
+                console.log('Using cached user info:', cachedUserInfo);
+                appState.userInfo = cachedUserInfo;
+            }
+        } catch (error) {
+            console.warn('Failed to load user info:', error);
+        }
     }
 });
 
@@ -658,4 +1063,5 @@ document.addEventListener('DOMContentLoaded', async () => {
 window.AppState = appState;
 window.Utils = Utils;
 window.WeChatAPI = WeChatAPI;
+window.ResourceManager = ResourceManager;
 window.CONFIG = CONFIG;

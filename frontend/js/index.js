@@ -124,6 +124,7 @@ class SignInPage {
         try {
             // 如果已有用户信息，直接显示
             if (appState.userInfo && appState.userInfo.student_id && appState.userInfo.name) {
+                console.log('Using cached user info:', appState.userInfo);
                 this.displayUserInfo(appState.userInfo);
                 return;
             }
@@ -132,7 +133,10 @@ class SignInPage {
             const userInfo = await this.getUserInfoWithRetry();
             
             if (userInfo && userInfo.student_id && userInfo.name) {
+                // 使用新的缓存机制保存用户信息
+                appState.setUserInfo(userInfo);
                 this.displayUserInfo(userInfo);
+                console.log('User info loaded and cached:', userInfo);
             } else {
                 // 显示获取用户信息失败的状态
                 console.error('无法获取用户信息');
@@ -198,8 +202,8 @@ class SignInPage {
         this.updateBuildingInfo();
     }
     
-    // 更新建筑信息显示
-    async updateBuildingInfo() {
+    // 更新建筑信息显示（带重试机制）
+    async updateBuildingInfo(retryCount = 0, maxRetries = 2) {
         const buildingNameElement = document.getElementById('buildingName');
         
         if (!this.currentLocation?.latitude || !this.currentLocation?.longitude) {
@@ -207,6 +211,15 @@ class SignInPage {
                 buildingNameElement.textContent = '位置获取中...';
             }
             return;
+        }
+        
+        // 显示正在获取位置信息的状态
+        const lat = this.currentLocation.latitude.toFixed(4);
+        const lng = this.currentLocation.longitude.toFixed(4);
+        const coordsText = `(${lat}, ${lng})`;
+        
+        if (buildingNameElement && retryCount === 0) {
+            buildingNameElement.innerHTML = `正在获取位置信息...<br><small style="font-size: 0.8em; color: #666;">${coordsText}</small>`;
         }
         
         try {
@@ -222,12 +235,11 @@ class SignInPage {
                 })
             });
 
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
             const result = await response.json();
-            
-            // 格式化经纬度显示（保留4位小数）
-            const lat = this.currentLocation.latitude.toFixed(4);
-            const lng = this.currentLocation.longitude.toFixed(4);
-            const coordsText = `(${lat}, ${lng})`;
             
             if (result.success && result.data) {
                 if (result.data.building && result.data.is_valid_location) {
@@ -256,50 +268,101 @@ class SignInPage {
                 
                 // 保存位置信息供其他功能使用
                 this.locationInfo = result.data;
+                // 缓存建筑信息
+                appState.setCache('buildingInfo', result.data);
+                console.log('Building info updated and cached:', result.data);
             } else {
-                // API调用失败，但仍显示坐标
-                if (buildingNameElement) {
-                    buildingNameElement.innerHTML = `定位失败<br><small style="font-size: 0.8em; color: #666;">${coordsText}</small>`;
-                    buildingNameElement.setAttribute('data-zh', '定位失败');
-                    buildingNameElement.setAttribute('data-en', 'Location Failed');
-                }
+                throw new Error(result.message || '位置信息获取失败');
             }
         } catch (error) {
-            console.error('更新建筑信息失败:', error);
-            // 即使API失败，也显示坐标信息
-            const lat = this.currentLocation.latitude.toFixed(4);
-            const lng = this.currentLocation.longitude.toFixed(4);
-            const coordsText = `(${lat}, ${lng})`;
+            console.error(`更新建筑信息失败 (尝试 ${retryCount + 1}/${maxRetries + 1}):`, error);
             
+            // 如果还有重试次数，则重试
+            if (retryCount < maxRetries) {
+                console.log(`正在重试获取位置信息... (${retryCount + 1}/${maxRetries})`);
+                setTimeout(() => {
+                    this.updateBuildingInfo(retryCount + 1, maxRetries);
+                }, 1000 * (retryCount + 1)); // 递增延迟：1s, 2s
+                return;
+            }
+            
+            // 所有重试都失败了，显示失败状态
             if (buildingNameElement) {
                 buildingNameElement.innerHTML = `位置获取失败<br><small style="font-size: 0.8em; color: #666;">${coordsText}</small>`;
-                buildingNameElement.setAttribute('data-zh', '定位失败');
+                buildingNameElement.setAttribute('data-zh', '位置获取失败');
                 buildingNameElement.setAttribute('data-en', 'Location Failed');
             }
+            
+            // 只在最后一次失败时显示错误消息
+            Utils.showMessage(`位置信息获取失败: ${error.message}`, 'error');
+        }
+    }
+    
+    // 显示缓存的建筑信息
+    displayCachedBuildingInfo(buildingInfo) {
+        const buildingNameElement = document.getElementById('buildingName');
+        if (!buildingNameElement || !this.currentLocation) return;
+        
+        const lat = this.currentLocation.latitude.toFixed(4);
+        const lng = this.currentLocation.longitude.toFixed(4);
+        const coordsText = `(${lat}, ${lng})`;
+        
+        if (buildingInfo.building && buildingInfo.is_valid_location) {
+            // 在有效范围内，显示建筑名称和坐标
+            buildingNameElement.innerHTML = `${buildingInfo.building.name}<br><small style="font-size: 0.8em; color: #666;">${coordsText}</small>`;
+            buildingNameElement.setAttribute('data-zh', buildingInfo.building.name);
+            buildingNameElement.setAttribute('data-en', buildingInfo.building.name_en);
+        } else if (buildingInfo.building) {
+            // 找到最近建筑但距离太远
+            const distance = buildingInfo.distance;
+            buildingNameElement.innerHTML = `${buildingInfo.building.name} (${distance}m)<br><small style="font-size: 0.8em; color: #666;">${coordsText}</small>`;
+            buildingNameElement.setAttribute('data-zh', `${buildingInfo.building.name} (距离${distance}米)`);
+            buildingNameElement.setAttribute('data-en', `${buildingInfo.building.name_en} (${distance}m away)`);
+        } else {
+            // 没有找到任何建筑
+            buildingNameElement.innerHTML = `位置未知<br><small style="font-size: 0.8em; color: #666;">${coordsText}</small>`;
+            buildingNameElement.setAttribute('data-zh', '位置未知');
+            buildingNameElement.setAttribute('data-en', 'Unknown Location');
         }
     }
     
     // 获取当前位置
     async getCurrentLocation() {
+        // 检查是否有缓存的位置信息
+        if (appState.location) {
+            console.log('Using cached location:', appState.location);
+            this.currentLocation = appState.location;
+            // 使用缓存的建筑信息
+            const cachedBuildingInfo = appState.getCache('buildingInfo');
+            if (cachedBuildingInfo) {
+                console.log('Using cached building info:', cachedBuildingInfo);
+                this.locationInfo = cachedBuildingInfo;
+                this.displayCachedBuildingInfo(cachedBuildingInfo);
+            } else {
+                await this.updateBuildingInfo();
+            }
+            return;
+        }
+        
+        // 显示定位加载状态
+        const loadingMessage = Utils.showLoading('正在获取位置信息...');
+        
         try {
             console.log('Starting location acquisition...');
             const location = await WeChatAPI.getLocation();
             this.currentLocation = location;
-            console.log('Location obtained successfully:', location);
+            // 使用新的缓存机制保存位置信息
+            appState.setLocation(location);
+            console.log('Location obtained and cached:', location);
             
-            // 更新UI显示定位成功，包含坐标信息
-            const buildingNameElement = document.getElementById('buildingName');
-            if (buildingNameElement) {
-                const lat = location.latitude.toFixed(4);
-                const lng = location.longitude.toFixed(4);
-                const coordsText = `(${lat}, ${lng})`;
-                
-                buildingNameElement.innerHTML = `正在获取位置信息...<br><small style="font-size: 0.8em; color: #666;">${coordsText}</small>`;
-                buildingNameElement.setAttribute('data-zh', '正在获取位置信息...');
-                buildingNameElement.setAttribute('data-en', 'Getting location...');
-            }
+            Utils.hideLoading(loadingMessage);
+            Utils.showMessage('位置获取成功', 'success', 2000);
+            
+            // 立即更新建筑信息
+            await this.updateBuildingInfo();
             
         } catch (error) {
+            Utils.hideLoading(loadingMessage);
             console.error('Failed to get location:', error);
             
             // 更新UI显示定位失败
@@ -310,8 +373,32 @@ class SignInPage {
                 buildingNameElement.setAttribute('data-en', 'Location Failed');
             }
             
-            // 显示错误提示
-            Utils.showMessage(`定位获取失败: ${error.message}`, 'error');
+            // 根据错误类型显示不同的提示
+            let errorMessage = '定位获取失败';
+            let errorType = 'error';
+            
+            if (error.message) {
+                if (error.message.includes('permission') || error.message.includes('denied')) {
+                    errorMessage = '定位权限被拒绝，请在设置中允许位置访问';
+                    errorType = 'warning';
+                } else if (error.message.includes('timeout')) {
+                    errorMessage = '定位超时，请检查网络连接或稍后重试';
+                    errorType = 'warning';
+                } else if (error.message.includes('unavailable')) {
+                    errorMessage = '定位服务不可用，请检查设备设置';
+                    errorType = 'warning';
+                } else {
+                    errorMessage = `定位失败: ${error.message}`;
+                }
+            }
+            
+            // 显示错误提示，并提供重试选项
+            Utils.showMessage(
+                errorMessage + ' <button onclick="window.signinPage.getCurrentLocation()" style="margin-left: 12px; padding: 4px 8px; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); color: white; border-radius: 4px; cursor: pointer;">重试</button>',
+                errorType,
+                8000,
+                { html: true }
+            );
             
             // 不再使用模拟位置，让用户知道定位失败了
             this.currentLocation = null;
@@ -490,19 +577,39 @@ class SignInPage {
         try {
             // 检查是否在企业微信环境中且JS-SDK已准备好
             if (appState.isWeChatReady && WeChatAPI.isInWeChatWork()) {
-                const localId = await WeChatAPI.chooseImage();
+                const loadingMessage = Utils.showLoading('正在调用相机...');
                 
-                // 显示照片预览
-                const photoUpload = document.getElementById('photoUpload');
-                if (photoUpload) {
-                    photoUpload.innerHTML = `
-                        <img src="${localId}" alt="签到照片" class="photo-preview">
-                    `;
-                    photoUpload.classList.add('has-photo');
+                try {
+                    const localId = await WeChatAPI.chooseImage();
+                    Utils.hideLoading(loadingMessage);
+                    
+                    // 显示照片预览
+                    const photoUpload = document.getElementById('photoUpload');
+                    if (photoUpload) {
+                        photoUpload.innerHTML = `
+                            <img src="${localId}" alt="签到照片" class="photo-preview">
+                        `;
+                        photoUpload.classList.add('has-photo');
+                    }
+                    
+                    this.currentPhoto = localId;
+                    this.validateForm();
+                    Utils.showMessage('照片上传成功', 'success', 2000);
+                    
+                } catch (wechatError) {
+                    Utils.hideLoading(loadingMessage);
+                    console.error('WeChat photo failed:', wechatError);
+                    
+                    // 根据错误类型显示不同提示
+                    if (wechatError.message && wechatError.message.includes('cancel')) {
+                        Utils.showMessage('已取消拍照', 'info', 2000);
+                        return;
+                    }
+                    
+                    Utils.showMessage('企业微信拍照失败，切换到本地相册', 'warning', 3000);
+                    // 降级到HTML5文件选择
+                    setTimeout(() => this.chooseImageFallback(), 500);
                 }
-                
-                this.currentPhoto = localId;
-                this.validateForm();
             } else {
                 // 降级到HTML5文件选择
                 this.chooseImageFallback();
@@ -510,42 +617,84 @@ class SignInPage {
             
         } catch (error) {
             console.error('Failed to take photo:', error);
-            // 如果企业微信拍照失败，尝试降级方案
-            this.chooseImageFallback();
+            Utils.showMessage('拍照功能异常，请重试', 'error', 3000);
         }
     }
     
     // HTML5文件选择降级方案
     chooseImageFallback() {
-        const input = document.createElement('input');
-        input.type = 'file';
-        input.accept = 'image/*';
-        input.capture = 'camera'; // 优先使用摄像头
-        
-        input.onchange = (event) => {
-            const file = event.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    const dataUrl = e.target.result;
-                    
-                    // 显示照片预览
-                    const photoUpload = document.getElementById('photoUpload');
-                    if (photoUpload) {
-                        photoUpload.innerHTML = `
-                            <img src="${dataUrl}" alt="签到照片" class="photo-preview">
-                        `;
-                        photoUpload.classList.add('has-photo');
+        try {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/*';
+            input.capture = 'camera'; // 优先使用摄像头
+            
+            input.onchange = (event) => {
+                const file = event.target.files[0];
+                if (file) {
+                    // 检查文件大小（限制为5MB）
+                    if (file.size > 5 * 1024 * 1024) {
+                        Utils.showMessage('图片文件过大，请选择小于5MB的图片', 'warning', 4000);
+                        return;
                     }
                     
-                    this.currentPhoto = dataUrl;
-                    this.validateForm();
-                };
-                reader.readAsDataURL(file);
-            }
-        };
-        
-        input.click();
+                    // 检查文件类型
+                    if (!file.type.startsWith('image/')) {
+                        Utils.showMessage('请选择图片文件', 'warning', 3000);
+                        return;
+                    }
+                    
+                    const loadingMessage = Utils.showLoading('正在处理图片...');
+                    
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        try {
+                            const dataUrl = e.target.result;
+                            
+                            // 显示照片预览
+                            const photoUpload = document.getElementById('photoUpload');
+                            if (photoUpload) {
+                                photoUpload.innerHTML = `
+                                    <img src="${dataUrl}" alt="签到照片" class="photo-preview">
+                                `;
+                                photoUpload.classList.add('has-photo');
+                            }
+                            
+                            this.currentPhoto = dataUrl;
+                            this.validateForm();
+                            
+                            Utils.hideLoading(loadingMessage);
+                            Utils.showMessage('图片上传成功', 'success', 2000);
+                            
+                        } catch (error) {
+                            Utils.hideLoading(loadingMessage);
+                            console.error('Image processing error:', error);
+                            Utils.showMessage('图片处理失败，请重试', 'error', 3000);
+                        }
+                    };
+                    
+                    reader.onerror = () => {
+                        Utils.hideLoading(loadingMessage);
+                        Utils.showMessage('图片读取失败，请重试', 'error', 3000);
+                    };
+                    
+                    reader.readAsDataURL(file);
+                } else {
+                    Utils.showMessage('未选择图片', 'info', 2000);
+                }
+            };
+            
+            // 处理用户取消选择
+            input.oncancel = () => {
+                Utils.showMessage('已取消选择图片', 'info', 2000);
+            };
+            
+            input.click();
+            
+        } catch (error) {
+            console.error('File selection error:', error);
+            Utils.showMessage('无法打开文件选择器，请检查浏览器权限', 'error', 4000);
+        }
     }
     
     // 验证表单
@@ -593,8 +742,10 @@ class SignInPage {
         this.isSigningIn = true;
         const submitBtn = document.getElementById('submitSignin');
     
+        // 显示加载状态
+        const loadingMessage = Utils.showLoading('正在提交签到...');
+    
         try {
-            // 显示加载状态
             if (submitBtn) {
                 submitBtn.classList.add('loading');
                 submitBtn.disabled = true;
@@ -659,7 +810,7 @@ class SignInPage {
                         
                         // 显示建筑信息
                         if (buildingInfo.building) {
-                            Utils.showMessage(`检测到您在${buildingInfo.building.name}(${buildingInfo.building.name_en})`, 'info');
+                            Utils.showMessage(`检测到您在${buildingInfo.building.name}(${buildingInfo.building.name_en})`, 'info', 2000);
                         }
                         
                         // 如果有课程信息，显示课程状态
@@ -670,12 +821,12 @@ class SignInPage {
                                 'absent': '缺席',
                                 'no_class': '当前无课程'
                             };
-                            Utils.showMessage(`课程: ${buildingInfo.course.name} - ${statusText[buildingInfo.status] || buildingInfo.status}`, 'info');
+                            Utils.showMessage(`课程: ${buildingInfo.course.name} - ${statusText[buildingInfo.status] || buildingInfo.status}`, 'info', 2000);
                         }
                     }
                 } catch (error) {
                     console.warn('位置检查失败:', error);
-                    // 继续正常签到流程
+                    Utils.showMessage('位置检查失败，继续签到流程', 'warning', 2000);
                 }
             }
             
@@ -686,7 +837,8 @@ class SignInPage {
             });
             
             if (result.success) {
-                Utils.showMessage(Utils.t('signin_success'), 'success');
+                Utils.hideLoading(loadingMessage);
+                Utils.showMessage(Utils.t('signin_success'), 'success', 3000);
                 this.hideSigninModal();
                 
                 // 可选：刷新页面或更新UI状态
@@ -698,28 +850,67 @@ class SignInPage {
             }
             
         } catch (error) {
+            Utils.hideLoading(loadingMessage);
             console.error('Sign in error:', error);
             
             let errorMessage = Utils.t('signin_failed');
+            let errorType = 'error';
             
-            // 如果是网络错误
-            if (error.message.includes('network') || error.message.includes('fetch')) {
-                errorMessage = Utils.t('network_error');
+            // 检查是否是授权相关错误
+            if (error.message && (
+                error.message.includes('Invalid authorization') ||
+                error.message.includes('授权码过期') ||
+                error.message.includes('401') ||
+                error.message.includes('403')
+            )) {
+                errorMessage = '授权已过期，请刷新页面重新登录';
+                errorType = 'warning';
+                
+                // 清除缓存的用户信息
+                appState.clearCache('userInfo');
+                sessionStorage.removeItem('index_userinfo_retry_count');
+                
+                // 显示刷新按钮
+                Utils.showMessage(
+                    errorMessage + ' <button onclick="window.location.reload()" style="margin-left: 12px; padding: 4px 8px; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); color: white; border-radius: 4px; cursor: pointer;">刷新页面</button>',
+                    errorType,
+                    0,
+                    { html: true, persistent: true, clearPrevious: true }
+                );
+                return;
+            }
+            
+            // 网络错误
+            if (error.message && (
+                error.message.includes('network') || 
+                error.message.includes('fetch') ||
+                error.message.includes('Failed to fetch') ||
+                error.name === 'NetworkError'
+            )) {
+                errorMessage = '网络连接失败，请检查网络后重试';
+                errorType = 'warning';
             } 
-            // 如果是服务器错误
-            else if (error.message.includes('server')) {
-                errorMessage = Utils.t('server_error');
+            // 服务器错误
+            else if (error.message && (
+                error.message.includes('server') ||
+                error.message.includes('500') ||
+                error.message.includes('502') ||
+                error.message.includes('503')
+            )) {
+                errorMessage = '服务器暂时不可用，请稍后重试';
+                errorType = 'warning';
             }
             // 如果有具体的错误消息，显示具体消息
             else if (error.message && error.message !== 'Sign in failed') {
                 errorMessage = error.message;
             }
             
-            Utils.showMessage(errorMessage, 'error');
+            Utils.showMessage(errorMessage, errorType, 5000);
             
             // 在控制台输出详细错误信息供调试
             console.log('详细错误信息:', {
                 message: error.message,
+                name: error.name,
                 stack: error.stack,
                 signinData: {
                     student_id: appState.userInfo?.student_id || '2020000319',

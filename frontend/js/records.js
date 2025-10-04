@@ -179,26 +179,49 @@ class RecordsPage {
         } catch (error) {
             console.error('加载出勤数据失败:', error);
             
-            // 如果API调用失败，计算本地数据
-            const attendedCount = this.filteredRecords.filter(r => r.status === 'attended').length;
-            const lateCount = this.filteredRecords.filter(r => r.status === 'late').length;
-            const absentCount = this.filteredRecords.filter(r => r.status === 'absent').length;
-            const totalCount = attendedCount + lateCount + absentCount;
+            // 特殊处理授权码过期错误
+            if (error.message && (
+                error.message.includes('Invalid authorization code') ||
+                error.message.includes('授权码过期') ||
+                error.message.includes('401') ||
+                error.message.includes('403')
+            )) {
+                // 清除缓存的用户信息
+                appState.clearStoredUserInfo();
+                
+                // 显示空的统计数据
+                this.updateAttendanceStats({
+                    totalDays: 0,
+                    attendedDays: 0,
+                    lateDays: 0,
+                    absentDays: 0,
+                    attendanceRate: 0
+                });
+                
+                Utils.showMessage('授权已过期，统计数据无法加载', 'warning');
+            } else {
+                // 其他错误：如果API调用失败，计算本地数据
+                const attendedCount = this.filteredRecords.filter(r => r.status === 'attended').length;
+                const lateCount = this.filteredRecords.filter(r => r.status === 'late').length;
+                const absentCount = this.filteredRecords.filter(r => r.status === 'absent').length;
+                const totalCount = attendedCount + lateCount + absentCount;
+                
+                // 计算出勤率：正常出勤 + 迟到*0.5，与统计界面保持一致
+                const attendanceRate = totalCount > 0 ? 
+                    Math.round(((attendedCount + lateCount * 0.5) / totalCount) * 100) : 0;
+                
+                const attendanceData = {
+                    totalDays: totalCount,
+                    attendedDays: attendedCount,
+                    lateDays: lateCount,
+                    absentDays: absentCount,
+                    attendanceRate: attendanceRate
+                };
+                
+                this.updateAttendanceStats(attendanceData);
+                Utils.showMessage('加载出勤数据失败，使用本地计算', 'warning');
+            }
             
-            // 计算出勤率：正常出勤 + 迟到*0.5，与统计界面保持一致
-            const attendanceRate = totalCount > 0 ? 
-                Math.round(((attendedCount + lateCount * 0.5) / totalCount) * 100) : 0;
-            
-            const attendanceData = {
-                totalDays: totalCount,
-                attendedDays: attendedCount,
-                lateDays: lateCount,
-                absentDays: absentCount,
-                attendanceRate: attendanceRate
-            };
-            
-            this.updateAttendanceStats(attendanceData);
-            Utils.showMessage('加载出勤数据失败，使用本地计算', 'warning');
             this.hideLoadingState('attendance');
         }
     }
@@ -256,12 +279,52 @@ class RecordsPage {
             
         } catch (error) {
             console.error('加载记录失败:', error);
-            // 显示空状态而不是模拟数据
-            this.records = [];
-            this.filteredRecords = [];
-            this.totalRecords = 0;
-            this.renderRecords();
-            Utils.showMessage(`加载记录失败: ${error.message}`, 'error');
+            
+            // 特殊处理授权码过期错误
+            if (error.message && (
+                error.message.includes('Invalid authorization code') ||
+                error.message.includes('授权码过期') ||
+                error.message.includes('401') ||
+                error.message.includes('403')
+            )) {
+                // 清除缓存的用户信息，强制重新获取
+                appState.clearStoredUserInfo();
+                sessionStorage.removeItem('userInfo_retry_count');
+                
+                Utils.showMessage('授权已过期，请刷新页面重新登录', 'warning', 5000);
+                
+                // 显示友好的错误状态
+                const recordsContainer = document.getElementById('recordsContainer');
+                if (recordsContainer) {
+                    recordsContainer.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-icon">🔐</div>
+                            <h3>授权已过期</h3>
+                            <p>您的登录状态已过期，请刷新页面重新登录</p>
+                            <button onclick="location.reload()" class="btn btn-primary">刷新页面</button>
+                        </div>
+                    `;
+                }
+            } else {
+                // 其他错误的处理
+                this.records = [];
+                this.filteredRecords = [];
+                this.totalRecords = 0;
+                this.renderRecords();
+                
+                // 根据错误类型显示不同的消息
+                let errorMessage = '加载记录失败';
+                if (error.message && error.message.includes('网络')) {
+                    errorMessage = '网络连接失败，请检查网络设置后重试';
+                } else if (error.message && error.message.includes('500')) {
+                    errorMessage = '服务器暂时不可用，请稍后重试';
+                } else if (error.message) {
+                    errorMessage = `加载失败: ${error.message}`;
+                }
+                
+                Utils.showMessage(errorMessage, 'error');
+            }
+            
             this.hideLoadingState('records');
         }
     }

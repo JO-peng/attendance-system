@@ -118,14 +118,11 @@ class StatisticsPage {
             const userInfo = await this.getUserInfoWithRetry();
             if (!userInfo || !userInfo.student_id) {
                 console.warn('无法获取用户信息，显示空数据');
-                this.updateAttendanceStats({
-                    totalDays: 0,
-                    attendedDays: 0,
-                    lateDays: 0,
-                    absentDays: 0,
-                    attendanceRate: 0
-                });
-                this.updateCalendar([]);
+                // 清空数据并更新显示
+                this.attendanceData = {};
+                this.signinRecords = [];
+                this.renderCalendar();
+                this.updateStatistics();
                 this.hideLoadingState();
                 Utils.showMessage('无法获取用户信息，请刷新页面重试', 'warning');
                 return;
