@@ -31,7 +31,7 @@ class Config:
     
     # 深圳大学CAS统一身份认证配置
     CAS_SERVER_URL = os.environ.get('CAS_SERVER_URL') or 'https://authserver.szu.edu.cn/authserver'
-    CAS_SERVICE_URL = os.environ.get('CAS_SERVICE_URL') or 'http://localhost:5000'
+    CAS_SERVICE_URL = os.environ.get('CAS_SERVICE_URL') or 'https://kpeak.szu.edu.cn'
     CAS_LOGIN_PATH = '/cas/login'
     CAS_LOGOUT_PATH = '/cas/logout'
     CAS_CALLBACK_PATH = '/cas/callback'

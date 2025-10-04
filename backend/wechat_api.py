@@ -171,8 +171,22 @@ class WeChatAPI:
             }
             current_app.logger.info(f"User info obtained for userid: {userid}")
             return user_info
+        elif result.get('errcode') == 60011:
+            # 权限不足，返回基础用户信息
+            current_app.logger.warning(f"No privilege to access detailed user info for userid: {userid}, using basic info")
+            return {
+                'userid': userid,
+                'name': userid,  # 使用userid作为默认名称
+                'department': [],
+                'position': None,
+                'mobile': None,
+                'email': None,
+                'avatar': None,
+                'status': 1,
+                'extattr': {}
+            }
         else:
-            error_msg = f"Failed to get user detail: {result.get('errmsg', 'Unknown error')}"
+            error_msg = f"Failed to get user detail: errcode={result.get('errcode')}, errmsg={result.get('errmsg', 'Unknown error')}"
             current_app.logger.error(error_msg)
             raise Exception(error_msg)
     
