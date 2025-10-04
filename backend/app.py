@@ -237,6 +237,115 @@ def get_wechat_userinfo():
             'message': f'获取用户信息失败: {str(e)}'
         }), 500
 
+@app.route('/signin', methods=['POST'])
+@handle_errors
+def signin():
+    """签到接口 - 兼容前端调用"""
+    try:
+        # 获取请求参数
+        data = request.get_json()
+        student_id = data.get('student_id')
+        name = data.get('name')
+        course_name = data.get('course_name')
+        classroom = data.get('classroom')
+        photo = data.get('photo')
+        latitude = data.get('latitude')
+        longitude = data.get('longitude')
+        location_address = data.get('location_address')
+        wechat_userid = data.get('wechat_userid')
+        timestamp = data.get('timestamp')
+        
+        # 参数验证
+        if not all([student_id, name, course_name, classroom]):
+            return jsonify({
+                'success': False,
+                'message': '缺少必要参数：学号、姓名、课程名称、教室'
+            }), 400
+        
+        if not all([latitude, longitude]):
+            return jsonify({
+                'success': False,
+                'message': '缺少位置信息'
+            }), 400
+        
+        # 查找或创建用户
+        user = User.query.filter_by(student_id=student_id).first()
+        if not user:
+            user = User(
+                student_id=student_id,
+                name=name,
+                wechat_userid=wechat_userid
+            )
+            db.session.add(user)
+            db.session.commit()
+        
+        # 处理照片上传
+        photo_path = None
+        if photo:
+            try:
+                # 如果是base64数据
+                if photo.startswith('data:image/'):
+                    import base64
+                    import io
+                    from PIL import Image
+                    
+                    # 解析base64数据
+                    header, data = photo.split(',', 1)
+                    image_data = base64.b64decode(data)
+                    
+                    # 生成文件名
+                    filename = f"signin_{student_id}_{int(datetime.now().timestamp())}.jpg"
+                    photo_path = os.path.join('photos', filename)
+                    full_path = os.path.join(app.config['UPLOAD_FOLDER'], photo_path)
+                    
+                    # 保存图片
+                    with open(full_path, 'wb') as f:
+                        f.write(image_data)
+                        
+                    logger.info(f"照片已保存: {full_path}")
+                else:
+                    # 其他格式的照片数据，暂时记录但不处理
+                    logger.info(f"收到照片数据: {photo[:50]}...")
+            except Exception as e:
+                logger.error(f"照片处理失败: {e}")
+                # 继续签到流程，不因照片失败而中断
+        
+        # 创建签到记录
+        attendance = Attendance(
+            user_id=user.id,
+            course_name=course_name,
+            classroom=classroom,
+            latitude=float(latitude),
+            longitude=float(longitude),
+            location_address=location_address or '未知位置',
+            photo_path=photo_path,
+            status='attended',  # 默认为出席
+            signed_at=datetime.now()
+        )
+        
+        db.session.add(attendance)
+        db.session.commit()
+        
+        logger.info(f"用户 {name}({student_id}) 签到成功: {course_name} - {classroom}")
+        
+        return jsonify({
+            'success': True,
+            'message': '签到成功',
+            'data': {
+                'attendance_id': attendance.id,
+                'status': attendance.status,
+                'signed_at': attendance.signed_at.isoformat()
+            }
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"签到失败: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': f'签到失败: {str(e)}'
+        }), 500
+
 
 
 

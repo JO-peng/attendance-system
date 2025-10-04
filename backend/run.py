@@ -25,6 +25,12 @@ def init_database():
     with app.app_context():
         # 创建所有表
         db.create_all()
+        
+        # 初始化建筑数据
+        from models.building import Building
+        Building.init_buildings(db.session)
+        print("建筑数据初始化完成")
+        
         print("数据库初始化完成")
         
         # 不自动创建示例数据，保护用户的真实数据

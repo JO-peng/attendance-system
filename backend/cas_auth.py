@@ -160,30 +160,33 @@ class CASClient:
         # 配置SSL
         self.session = requests.Session()
         if ca_bundle_path and os.path.exists(ca_bundle_path):
+            # 使用配置文件中指定的证书路径
             self.session.verify = ca_bundle_path
+            try:
+                current_app.logger.info(f"Using configured CA bundle: {ca_bundle_path}")
+            except:
+                print(f"Using configured CA bundle: {ca_bundle_path}")
         elif not ssl_verify:
             self.session.verify = False
             # 禁用SSL警告
             import urllib3
             urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
         else:
-            # 尝试使用项目中的证书链文件
+            # 如果没有指定证书路径，使用默认的项目证书
             project_ca_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'ca', 'kpeak.szu.edu.cn-chain.pem')
             if os.path.exists(project_ca_path):
                 self.session.verify = project_ca_path
                 try:
-                    current_app.logger.info(f"Using project CA bundle: {project_ca_path}")
+                    current_app.logger.info(f"Using default project CA bundle: {project_ca_path}")
                 except:
-                    print(f"Using project CA bundle: {project_ca_path}")
+                    print(f"Using default project CA bundle: {project_ca_path}")
             else:
-                # 如果项目证书不存在，禁用SSL验证以避免验证失败
-                self.session.verify = False
-                import urllib3
-                urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
                 try:
-                    current_app.logger.warning("Project CA bundle not found, disabling SSL verification")
+                    current_app.logger.error("No valid CA bundle found, SSL verification may fail")
                 except:
-                    print("Project CA bundle not found, disabling SSL verification")
+                    print("No valid CA bundle found, SSL verification may fail")
+                # 保持默认的SSL验证行为
+                self.session.verify = True
     
     def get_login_url(self) -> str:
         """获取CAS登录URL"""
