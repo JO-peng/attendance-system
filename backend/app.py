@@ -310,7 +310,8 @@ def signin():
                     
                     # 生成文件名
                     filename = f"signin_{student_id}_{int(datetime.now().timestamp())}.jpg"
-                    photo_path = os.path.join('photos', filename)
+                    # 使用正斜杠分隔符，确保URL路径正确
+                    photo_path = f"photos/{filename}"
                     full_path = os.path.join(app.config['UPLOAD_FOLDER'], photo_path)
                     
                     # 保存图片
@@ -327,7 +328,8 @@ def signin():
                         if image_data:
                             # 生成文件名
                             filename = f"signin_{student_id}_{int(datetime.now().timestamp())}.jpg"
-                            photo_path = os.path.join('photos', filename)
+                            # 使用正斜杠分隔符，确保URL路径正确
+                            photo_path = f"photos/{filename}"
                             full_path = os.path.join(app.config['UPLOAD_FOLDER'], photo_path)
                             
                             # 保存图片
@@ -535,8 +537,7 @@ def submit_feedback():
         contact_info=data.get('contact_info'),
         images=json.dumps(data.get('images', [])),
         user_agent=request.headers.get('User-Agent'),
-        ip_address=request.remote_addr,
-        user_id=data.get('user_id')  # 保存用户ID
+        ip_address=request.remote_addr
     )
     
     db.session.add(feedback)

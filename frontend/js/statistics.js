@@ -195,62 +195,7 @@ class StatisticsPage {
         }
     }
     
-    // 加载模拟数据
-    loadMockData() {
-        const daysInMonth = new Date(this.currentYear, this.currentMonth, 0).getDate();
-        this.attendanceData = {};
-        this.signinRecords = [];
-        
-        // 生成一些模拟的签到记录
-        for (let day = 1; day <= daysInMonth; day++) {
-            const date = `${this.currentYear}-${this.currentMonth.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
-            const dayOfWeek = new Date(this.currentYear, this.currentMonth - 1, day).getDay();
-            
-            // 跳过周末
-            if (dayOfWeek === 0 || dayOfWeek === 6) {
-                continue;
-            }
-            
-            // 随机生成签到状态
-            const random = Math.random();
-            if (random > 0.2) { // 80%概率签到
-                this.attendanceData[date] = 'attended';
-                
-                // 生成签到记录
-                this.signinRecords.push({
-                    id: `record_${day}`,
-                    date: date,
-                    time: `${8 + Math.floor(Math.random() * 2)}:${Math.floor(Math.random() * 60).toString().padStart(2, '0')}:${Math.floor(Math.random() * 60).toString().padStart(2, '0')}`,
-                    courseName: ['高等数学', '大学英语', '计算机基础', '数据结构'][Math.floor(Math.random() * 4)],
-                    classroom: ['A101', 'B205', 'C303', 'D408'][Math.floor(Math.random() * 4)],
-                    status: 'attended',
-                    photo: 'mock_photo.jpg',
-                    location: {
-                        latitude: 22.5431 + (Math.random() - 0.5) * 0.001,
-                        longitude: 114.0579 + (Math.random() - 0.5) * 0.001
-                    }
-                });
-            } else if (random > 0.1) { // 10%概率迟到
-                this.attendanceData[date] = 'partial';
-                
-                this.signinRecords.push({
-                    id: `record_${day}`,
-                    date: date,
-                    time: `${9 + Math.floor(Math.random() * 2)}:${Math.floor(Math.random() * 60).toString().padStart(2, '0')}:${Math.floor(Math.random() * 60).toString().padStart(2, '0')}`,
-                    courseName: ['高等数学', '大学英语', '计算机基础', '数据结构'][Math.floor(Math.random() * 4)],
-                    classroom: ['A101', 'B205', 'C303', 'D408'][Math.floor(Math.random() * 4)],
-                    status: 'late',
-                    photo: 'mock_photo.jpg',
-                    location: {
-                        latitude: 22.5431 + (Math.random() - 0.5) * 0.001,
-                        longitude: 114.0579 + (Math.random() - 0.5) * 0.001
-                    }
-                });
-            } else { // 10%概率缺勤
-                this.attendanceData[date] = 'missed';
-            }
-        }
-    }
+
     
     // 显示加载状态
     showLoadingState() {

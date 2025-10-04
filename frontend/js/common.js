@@ -894,7 +894,19 @@ const WeChatAPI = {
     // 检查是否在企业微信环境中
     isInWeChatWork() {
         const ua = navigator.userAgent.toLowerCase();
-        return ua.includes('wxwork') || ua.includes('micromessenger');
+        const isWxWork = ua.includes('wxwork');
+        const isMicroMessenger = ua.includes('micromessenger');
+        const hasWxObject = typeof wx !== 'undefined';
+        
+        console.log('WeChat environment check:', {
+            userAgent: ua,
+            isWxWork,
+            isMicroMessenger,
+            hasWxObject,
+            isWeChatReady: appState.isWeChatReady
+        });
+        
+        return (isWxWork || isMicroMessenger) && hasWxObject;
     },
     
     // 获取地理位置
@@ -972,21 +984,55 @@ const WeChatAPI = {
     // 拍照或选择图片
     async chooseImage() {
         return new Promise((resolve, reject) => {
+            console.log('chooseImage called, checking environment...');
+            console.log('appState.isWeChatReady:', appState.isWeChatReady);
+            console.log('typeof wx:', typeof wx);
+            
             if (!appState.isWeChatReady) {
-                reject(new Error('WeChat JS-SDK not ready'));
+                const error = new Error('WeChat JS-SDK not ready');
+                console.error('chooseImage failed:', error.message);
+                reject(error);
                 return;
             }
             
+            if (typeof wx === 'undefined' || typeof wx.chooseImage !== 'function') {
+                const error = new Error('WeChat chooseImage API not available');
+                console.error('chooseImage failed:', error.message);
+                reject(error);
+                return;
+            }
+            
+            console.log('Calling wx.chooseImage...');
             wx.chooseImage({
                 count: 1,
                 sizeType: ['compressed'],
                 sourceType: ['camera', 'album'],
                 success: (res) => {
-                    resolve(res.localIds[0]);
+                    console.log('wx.chooseImage success:', res);
+                    if (res.localIds && res.localIds.length > 0) {
+                        resolve(res.localIds[0]);
+                    } else {
+                        reject(new Error('No image selected'));
+                    }
                 },
                 fail: (error) => {
-                    console.error('Failed to choose image:', error);
-                    reject(new Error('Failed to choose image'));
+                    console.error('wx.chooseImage failed:', error);
+                    // 根据错误信息判断具体原因
+                    let errorMessage = 'Failed to choose image';
+                    if (error.errMsg) {
+                        if (error.errMsg.includes('cancel')) {
+                            errorMessage = 'User cancelled image selection';
+                        } else if (error.errMsg.includes('permission')) {
+                            errorMessage = 'Camera permission denied';
+                        } else if (error.errMsg.includes('not support')) {
+                            errorMessage = 'Camera not supported';
+                        }
+                    }
+                    reject(new Error(errorMessage));
+                },
+                cancel: () => {
+                    console.log('wx.chooseImage cancelled by user');
+                    reject(new Error('User cancelled image selection'));
                 }
             });
         });
