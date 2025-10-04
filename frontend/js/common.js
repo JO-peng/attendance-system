@@ -49,7 +49,43 @@ const LANGUAGES = {
         
         // 时间格式
         time_format: 'YYYY-MM-DD HH:mm:ss',
-        date_format: 'YYYY-MM-DD'
+        date_format: 'YYYY-MM-DD',
+        
+        // 用户信息相关
+        user_info_not_available: '无法获取用户信息，请在企业微信环境中访问',
+        user_info_not_loaded: '用户信息未获取，请在企业微信中访问或刷新页面',
+        user_info_refresh_required: '用户信息未获取，请刷新页面或在企业微信中访问',
+        user_info_load_failed: '无法获取用户信息，请刷新页面重试',
+        auth_expired: '授权已过期，请刷新页面重新登录',
+        auth_expired_stats: '授权已过期，统计数据无法加载',
+        
+        // 位置相关
+        location_success: '位置获取成功',
+        location_check_failed: '位置检查失败，继续签到流程',
+        
+        // 拍照相关
+        camera_opening: '正在打开相机...',
+        camera_error: '拍照功能异常，请重试',
+        image_too_large: '图片文件过大，请选择小于5MB的图片',
+        select_image_file: '请选择图片文件',
+        image_upload_success: '图片上传成功',
+        image_process_failed: '图片处理失败，请重试',
+        image_read_failed: '图片读取失败，请重试',
+        no_image_selected: '未选择图片',
+        image_selection_cancelled: '已取消选择图片',
+        file_selector_error: '无法打开文件选择器，请检查浏览器权限',
+        
+        // 数据加载相关
+        load_attendance_failed: '加载出勤数据失败，使用本地计算',
+        load_records_failed: '无法获取记录数据，请检查网络连接',
+        
+        // 导出相关
+        exporting_data: '正在导出数据...',
+        export_success: '导出成功',
+        export_failed: '导出失败',
+        
+        // 表单相关
+        form_reset: '表单已重置'
     },
     en: {
         // Common
@@ -89,7 +125,43 @@ const LANGUAGES = {
         
         // Time format
         time_format: 'YYYY-MM-DD HH:mm:ss',
-        date_format: 'YYYY-MM-DD'
+        date_format: 'YYYY-MM-DD',
+        
+        // User info related
+        user_info_not_available: 'Unable to get user info, please access in WeChat Work environment',
+        user_info_not_loaded: 'User info not loaded, please access in WeChat Work or refresh page',
+        user_info_refresh_required: 'User info not loaded, please refresh page or access in WeChat Work',
+        user_info_load_failed: 'Unable to get user info, please refresh page and try again',
+        auth_expired: 'Authorization expired, please refresh page to login again',
+        auth_expired_stats: 'Authorization expired, statistics data cannot be loaded',
+        
+        // Location related
+        location_success: 'Location obtained successfully',
+        location_check_failed: 'Location check failed, continue sign-in process',
+        
+        // Camera related
+        camera_opening: 'Opening camera...',
+        camera_error: 'Camera function error, please try again',
+        image_too_large: 'Image file too large, please select image smaller than 5MB',
+        select_image_file: 'Please select an image file',
+        image_upload_success: 'Image uploaded successfully',
+        image_process_failed: 'Image processing failed, please try again',
+        image_read_failed: 'Image reading failed, please try again',
+        no_image_selected: 'No image selected',
+        image_selection_cancelled: 'Image selection cancelled',
+        file_selector_error: 'Cannot open file selector, please check browser permissions',
+        
+        // Data loading related
+        load_attendance_failed: 'Failed to load attendance data, using local calculation',
+        load_records_failed: 'Unable to get records data, please check network connection',
+        
+        // Export related
+        exporting_data: 'Exporting data...',
+        export_success: 'Export successful',
+        export_failed: 'Export failed',
+        
+        // Form related
+        form_reset: 'Form has been reset'
     }
 };
 

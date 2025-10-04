@@ -140,17 +140,17 @@ class SignInPage {
             } else {
                 // 显示获取用户信息失败的状态
                 console.error('无法获取用户信息');
-                Utils.showMessage('无法获取用户信息，请在企业微信环境中访问', 'error');
+                Utils.showMessage(Utils.t('user_info_not_available'), 'error');
                 
                 // 显示错误状态
-                const studentIdElement = document.getElementById('studentId');
-                const studentNameElement = document.getElementById('studentName');
+                const userIdElement = document.getElementById('userId');
+                const userNameElement = document.getElementById('userName');
                 
-                if (studentIdElement) {
-                    studentIdElement.textContent = '获取失败';
+                if (userIdElement) {
+                    userIdElement.textContent = '获取失败';
                 }
-                if (studentNameElement) {
-                    studentNameElement.textContent = '获取失败';
+                if (userNameElement) {
+                    userNameElement.textContent = '获取失败';
                 }
                 
                 // 禁用签到按钮
@@ -356,7 +356,7 @@ class SignInPage {
             console.log('Location obtained and cached:', location);
             
             Utils.hideLoading(loadingMessage);
-            Utils.showMessage('位置获取成功', 'success', 2000);
+            Utils.showMessage(Utils.t('location_success'), 'success', 2000);
             
             // 立即更新建筑信息
             await this.updateBuildingInfo();
@@ -425,7 +425,7 @@ class SignInPage {
     async showSigninModal() {
         // 检查用户信息是否有效
         if (!appState.userInfo || !appState.userInfo.student_id || !appState.userInfo.name) {
-            Utils.showMessage('用户信息未获取，请在企业微信中访问或刷新页面', 'error');
+            Utils.showMessage(Utils.t('user_info_not_loaded'), 'error');
             return;
         }
         
@@ -573,19 +573,19 @@ class SignInPage {
     }
     
     // 拍照 - 直接使用系统相机
-    async takePhoto() {
-        try {
-            console.log('takePhoto called, using system camera...');
-            Utils.showMessage('正在打开相机...', 'info', 1000);
-            
-            // 直接使用HTML5文件选择和相机功能
-            this.chooseImageFallback();
-            
-        } catch (error) {
-            console.error('Failed to take photo:', error);
-            Utils.showMessage('拍照功能异常，请重试', 'error', 3000);
-        }
-    }
+     async takePhoto() {
+         try {
+             console.log('takePhoto called, using system camera...');
+             Utils.showMessage(Utils.t('camera_opening'), 'info', 1000);
+             
+             // 直接使用HTML5文件选择和相机功能
+             this.chooseImageFallback();
+             
+         } catch (error) {
+             console.error('Failed to take photo:', error);
+             Utils.showMessage(Utils.t('camera_error'), 'error', 3000);
+         }
+     }
     
     // HTML5文件选择降级方案
     chooseImageFallback() {
@@ -598,17 +598,17 @@ class SignInPage {
             input.onchange = (event) => {
                 const file = event.target.files[0];
                 if (file) {
-                    // 检查文件大小（限制为5MB）
-                    if (file.size > 5 * 1024 * 1024) {
-                        Utils.showMessage('图片文件过大，请选择小于5MB的图片', 'warning', 4000);
-                        return;
-                    }
-                    
-                    // 检查文件类型
-                    if (!file.type.startsWith('image/')) {
-                        Utils.showMessage('请选择图片文件', 'warning', 3000);
-                        return;
-                    }
+                     // 检查文件大小（限制为5MB）
+                     if (file.size > 5 * 1024 * 1024) {
+                         Utils.showMessage(Utils.t('image_too_large'), 'warning', 4000);
+                         return;
+                     }
+                     
+                     // 检查文件类型
+                     if (!file.type.startsWith('image/')) {
+                         Utils.showMessage(Utils.t('select_image_file'), 'warning', 3000);
+                         return;
+                     }
                     
                     const loadingMessage = Utils.showLoading('正在处理图片...');
                     
@@ -630,37 +630,37 @@ class SignInPage {
                             this.validateForm();
                             
                             Utils.hideLoading(loadingMessage);
-                            Utils.showMessage('图片上传成功', 'success', 2000);
-                            
-                        } catch (error) {
-                            Utils.hideLoading(loadingMessage);
-                            console.error('Image processing error:', error);
-                            Utils.showMessage('图片处理失败，请重试', 'error', 3000);
-                        }
-                    };
-                    
-                    reader.onerror = () => {
-                        Utils.hideLoading(loadingMessage);
-                        Utils.showMessage('图片读取失败，请重试', 'error', 3000);
-                    };
-                    
-                    reader.readAsDataURL(file);
-                } else {
-                    Utils.showMessage('未选择图片', 'info', 2000);
-                }
-            };
-            
-            // 处理用户取消选择
-            input.oncancel = () => {
-                Utils.showMessage('已取消选择图片', 'info', 2000);
-            };
-            
-            input.click();
-            
-        } catch (error) {
-            console.error('File selection error:', error);
-            Utils.showMessage('无法打开文件选择器，请检查浏览器权限', 'error', 4000);
-        }
+                             Utils.showMessage(Utils.t('image_upload_success'), 'success', 2000);
+                             
+                         } catch (error) {
+                             Utils.hideLoading(loadingMessage);
+                             console.error('Image processing error:', error);
+                             Utils.showMessage(Utils.t('image_process_failed'), 'error', 3000);
+                         }
+                     };
+                     
+                     reader.onerror = () => {
+                         Utils.hideLoading(loadingMessage);
+                         Utils.showMessage(Utils.t('image_read_failed'), 'error', 3000);
+                     };
+                     
+                     reader.readAsDataURL(file);
+                 } else {
+                     Utils.showMessage(Utils.t('no_image_selected'), 'info', 2000);
+                 }
+             };
+             
+             // 处理用户取消选择
+             input.oncancel = () => {
+                 Utils.showMessage(Utils.t('image_selection_cancelled'), 'info', 2000);
+             };
+             
+             input.click();
+             
+         } catch (error) {
+             console.error('File selection error:', error);
+             Utils.showMessage(Utils.t('file_selector_error'), 'error', 4000);
+         }
     }
     
     // 验证表单
@@ -689,10 +689,10 @@ class SignInPage {
         }
     
         // 检查用户信息是否有效
-        if (!appState.userInfo || !appState.userInfo.student_id || !appState.userInfo.name) {
-            Utils.showMessage('用户信息未获取，请刷新页面或在企业微信中访问', 'error');
-            return;
-        }
+         if (!appState.userInfo || !appState.userInfo.student_id || !appState.userInfo.name) {
+             Utils.showMessage(Utils.t('user_info_refresh_required'), 'error');
+             return;
+         }
     
         if (!this.validateForm()) {
             if (!this.currentPhoto) {
@@ -791,9 +791,9 @@ class SignInPage {
                         }
                     }
                 } catch (error) {
-                    console.warn('位置检查失败:', error);
-                    Utils.showMessage('位置检查失败，继续签到流程', 'warning', 2000);
-                }
+                     console.warn('位置检查失败:', error);
+                     Utils.showMessage(Utils.t('location_check_failed'), 'warning', 2000);
+                 }
             }
             
             // 提交到后端
