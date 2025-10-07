@@ -7,7 +7,7 @@
     border-radius: var(--radius-lg);
     padding: var(--spacing-4);
     margin-bottom: var(--spacing-6);
-    border: 1px solid var(--gray-200);
+    /* border: 1px solid var(--gray-200); */
 }
 
 .user-info-item,
@@ -16,7 +16,7 @@
     justify-content: space-between;
     align-items: center;
     padding: var(--spacing-2) 0;
-    border-bottom: 1px solid var(--gray-200);
+    /* border-bottom: 1px solid var(--gray-200); */
 }
 
 .user-info-item:last-child,
@@ -114,6 +114,50 @@
 .user-id span {
     font-weight: 600;
     color: var(--gray-800);
+}
+
+/* 首页用户信息卡片样式 - 简洁纯白 */
+.user-card .user-info-section {
+    background: var(--white);
+    padding: var(--spacing-4) 0;
+    margin-top: var(--spacing-4);
+}
+
+.user-card .user-info-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-2) 0;
+    margin-bottom: var(--spacing-3);
+}
+
+.user-card .user-info-item:last-child {
+    margin-bottom: 0;
+}
+
+.user-card .user-info-item .label {
+    font-size: var(--font-size-base);
+    color: var(--gray-600);
+    font-weight: 500;
+}
+
+.user-card .user-info-item .value {
+    font-size: var(--font-size-lg);
+    color: var(--primary-dark);
+    font-weight: 700;
+    text-align: right;
+}
+
+/* 加载状态样式 */
+.user-card .user-info-item .value:contains('加载中') {
+    color: var(--gray-500);
+    font-style: italic;
+}
+
+/* 错误状态样式 */
+.user-card .user-info-item .value:contains('获取失败') {
+    color: var(--error-color);
+    font-weight: 600;
 }
 
 /* 签到区域 */

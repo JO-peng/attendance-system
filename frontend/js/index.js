@@ -163,7 +163,7 @@ class SignInPage {
         } catch (error) {
             console.error('加载用户信息失败:', error);
             // 显示错误提示
-            this.displayUserInfo({
+            this.updateUserInfo({
                 name: '用户信息加载失败',
                 student_id: '请刷新页面重试'
             });
@@ -178,15 +178,26 @@ class SignInPage {
     }
     
     // 更新首页用户信息 - 完全按照弹窗的方式实现
-    updateUserInfo() {
+    updateUserInfo(userInfo = null) {
         const nameElement = document.getElementById('userName');
         const idElement = document.getElementById('userId');
         
-        if (nameElement && appState.userInfo?.name) {
-            nameElement.textContent = appState.userInfo.name;
+        // 使用传入的用户信息或全局状态中的用户信息
+        const userData = userInfo || appState.userInfo;
+        
+        if (nameElement) {
+            if (userData?.name) {
+                nameElement.textContent = userData.name;
+            } else {
+                nameElement.textContent = '获取失败';
+            }
         }
-        if (idElement && appState.userInfo?.student_id) {
-            idElement.textContent = appState.userInfo.student_id;
+        if (idElement) {
+            if (userData?.student_id) {
+                idElement.textContent = userData.student_id;
+            } else {
+                idElement.textContent = '获取失败';
+            }
         }
     }
 
