@@ -177,7 +177,8 @@ class StatisticsPage {
                         location: {
                             latitude: record.latitude,
                             longitude: record.longitude
-                        }
+                        },
+                        location_address: record.location_address || '未知位置'
                     });
                 });
                 
