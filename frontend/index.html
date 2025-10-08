@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="css/common.css">
     <link rel="stylesheet" href="css/index.css">
     <script src="https://res.wx.qq.com/open/js/jweixin-1.6.0.js"></script>
+    <script src="https://webapi.amap.com/maps?v=2.0&key=947de6f6c206f80edc09bcdbc1d0c4d4&plugin=AMap.Geolocation"></script>
 </head>
 <body>
     <div class="container">
@@ -132,6 +133,14 @@
                         <span class="label" data-zh="签到状态" data-en="Status">签到状态：</span>
                         <span class="value" id="statusDisplay">-</span>
                     </div>
+                </div>
+                
+                <!-- 地图显示区域 -->
+                <div class="map-section" id="mapSection" style="display: none;">
+                    <div class="map-header">
+                        <span class="map-title" data-zh="位置地图" data-en="Location Map">位置地图</span>
+                    </div>
+                    <div class="map-container" id="mapContainer"></div>
                 </div>
                 
                 <div class="form-group">

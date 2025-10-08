@@ -48,6 +48,93 @@
     color: var(--primary-dark);
 }
 
+/* 地图显示区域样式 */
+.map-section {
+    background: var(--gray-50);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-4);
+    margin-bottom: var(--spacing-6);
+    border: 1px solid var(--gray-200);
+}
+
+.map-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-3);
+}
+
+.map-title {
+    font-size: var(--font-size-sm);
+    color: var(--gray-600);
+    font-weight: 500;
+}
+
+.map-container {
+    width: 100%;
+    height: 200px;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    border: 1px solid var(--gray-300);
+    background: var(--gray-100);
+    position: relative;
+}
+
+/* 地图加载状态 */
+.map-container::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--gray-300);
+    border-top: 2px solid var(--primary-color);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    z-index: 1;
+}
+
+.map-container.loaded::before {
+    display: none;
+}
+
+@keyframes spin {
+    0% { transform: translate(-50%, -50%) rotate(0deg); }
+    100% { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+/* 移动端适配 */
+@media (max-width: 768px) {
+    .map-container {
+        height: 180px;
+    }
+    
+    .map-section {
+        padding: var(--spacing-3);
+    }
+}
+
+/* 高德地图控件样式优化 */
+.amap-logo,
+.amap-copyright {
+    display: none !important;
+}
+
+.amap-toolbar {
+    background: rgba(255, 255, 255, 0.9) !important;
+    border-radius: var(--radius-sm) !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+}
+
+.amap-scale {
+    background: rgba(255, 255, 255, 0.9) !important;
+    border-radius: var(--radius-sm) !important;
+    border: none !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+}
+
 /* 用户信息卡片 */
 .user-card {
     background: var(--white);

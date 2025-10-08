@@ -6,6 +6,11 @@ class SignInPage {
         this.currentLocation = null;
         this.timeInterval = null;
         this.isSigningIn = false;
+        this.map = null;
+        this.userMarker = null;
+        this.buildingMarker = null;
+        this.buildingCircle = null;
+        this.currentBuildingInfo = null;
         
         this.init();
     }
@@ -629,8 +634,15 @@ class SignInPage {
                 
                 statusDisplay.textContent = statusMessage;
             }
+            
+            // 保存建筑信息并显示地图
+            if (locationInfo.building) {
+                this.currentBuildingInfo = locationInfo.building;
+                this.showMapSection();
+            }
         } else {
             courseInfoSection.style.display = 'none';
+            this.hideMapSection();
         }
     }
     
@@ -640,6 +652,7 @@ class SignInPage {
         if (modal) {
             modal.style.display = 'none';
         }
+        this.hideMapSection();
     }
     
     // 重置表单
@@ -1004,10 +1017,191 @@ class SignInPage {
         }
     }
     
+    // 初始化地图
+    initMap() {
+        if (!window.AMap) {
+            console.warn('高德地图API未加载');
+            return;
+        }
+
+        const mapContainer = document.getElementById('mapContainer');
+        if (!mapContainer) {
+            console.warn('地图容器未找到');
+            return;
+        }
+
+        try {
+            // 创建地图实例
+            this.map = new AMap.Map('mapContainer', {
+                zoom: 16,
+                center: [114.0579, 22.5431], // 深圳大学默认坐标
+                mapStyle: 'amap://styles/normal',
+                showLabel: true,
+                showBuildingBlock: true,
+                resizeEnable: true,
+                rotateEnable: false,
+                pitchEnable: false,
+                scrollWheel: true,
+                doubleClickZoom: true,
+                keyboardEnable: false
+            });
+
+            // 地图加载完成事件
+            this.map.on('complete', () => {
+                mapContainer.classList.add('loaded');
+                console.log('地图加载完成');
+            });
+
+            // 添加地图控件
+            this.map.addControl(new AMap.Scale({
+                position: {
+                    bottom: '10px',
+                    left: '10px'
+                }
+            }));
+            
+            this.map.addControl(new AMap.ToolBar({
+                position: {
+                    top: '10px',
+                    right: '10px'
+                },
+                locate: false,
+                noIpLocate: true
+            }));
+
+        } catch (error) {
+            console.error('地图初始化失败:', error);
+            mapContainer.innerHTML = `
+                <div style="display: flex; align-items: center; justify-content: center; height: 100%; color: var(--gray-500); font-size: var(--font-size-sm);">
+                    ${appState.currentLanguage === 'zh' ? '地图加载失败' : 'Map loading failed'}
+                </div>
+            `;
+        }
+    }
+
+    // 更新地图显示
+    updateMapDisplay(userLocation, buildingInfo = null) {
+        if (!this.map || !userLocation) {
+            return;
+        }
+
+        const userLng = parseFloat(userLocation.longitude);
+        const userLat = parseFloat(userLocation.latitude);
+
+        // 清除之前的标记
+        this.clearMapMarkers();
+
+        // 添加用户位置标记
+        this.userMarker = new AMap.Marker({
+            position: [userLng, userLat],
+            title: appState.currentLanguage === 'zh' ? '我的位置' : 'My Location',
+            icon: new AMap.Icon({
+                size: new AMap.Size(25, 34),
+                image: 'data:image/svg+xml;base64,' + btoa(`
+                    <svg xmlns="http://www.w3.org/2000/svg" width="25" height="34" viewBox="0 0 25 34">
+                        <path fill="#1890ff" d="M12.5 0C5.6 0 0 5.6 0 12.5c0 12.5 12.5 21.5 12.5 21.5s12.5-9 12.5-21.5C25 5.6 19.4 0 12.5 0zm0 17c-2.5 0-4.5-2-4.5-4.5s2-4.5 4.5-4.5 4.5 2 4.5 4.5-2 4.5-4.5 4.5z"/>
+                    </svg>
+                `),
+                imageOffset: new AMap.Pixel(-12, -34)
+            })
+        });
+        this.map.add(this.userMarker);
+
+        // 如果有建筑信息，添加建筑标记和范围圆圈
+        if (buildingInfo && buildingInfo.longitude && buildingInfo.latitude) {
+            const buildingLng = parseFloat(buildingInfo.longitude);
+            const buildingLat = parseFloat(buildingInfo.latitude);
+            const radius = parseFloat(buildingInfo.radius || 100);
+
+            // 添加建筑标记
+            this.buildingMarker = new AMap.Marker({
+                position: [buildingLng, buildingLat],
+                title: buildingInfo.name || (appState.currentLanguage === 'zh' ? '教学楼' : 'Building'),
+                icon: new AMap.Icon({
+                    size: new AMap.Size(25, 34),
+                    image: 'data:image/svg+xml;base64,' + btoa(`
+                        <svg xmlns="http://www.w3.org/2000/svg" width="25" height="34" viewBox="0 0 25 34">
+                            <path fill="#ff4d4f" d="M12.5 0C5.6 0 0 5.6 0 12.5c0 12.5 12.5 21.5 12.5 21.5s12.5-9 12.5-21.5C25 5.6 19.4 0 12.5 0zm0 17c-2.5 0-4.5-2-4.5-4.5s2-4.5 4.5-4.5 4.5 2 4.5 4.5-2 4.5-4.5 4.5z"/>
+                        </svg>
+                    `),
+                    imageOffset: new AMap.Pixel(-12, -34)
+                })
+            });
+            this.map.add(this.buildingMarker);
+
+            // 添加签到范围圆圈
+            this.buildingCircle = new AMap.Circle({
+                center: [buildingLng, buildingLat],
+                radius: radius,
+                fillColor: '#ff4d4f',
+                fillOpacity: 0.1,
+                strokeColor: '#ff4d4f',
+                strokeWeight: 2,
+                strokeOpacity: 0.8
+            });
+            this.map.add(this.buildingCircle);
+
+            // 调整地图视野以包含所有标记
+            const bounds = new AMap.Bounds([userLng, userLat], [buildingLng, buildingLat]);
+            this.map.setBounds(bounds, false, [20, 20, 20, 20]);
+        } else {
+            // 只有用户位置时，以用户位置为中心
+            this.map.setCenter([userLng, userLat]);
+            this.map.setZoom(16);
+        }
+    }
+
+    // 清除地图标记
+    clearMapMarkers() {
+        if (this.userMarker) {
+            this.map.remove(this.userMarker);
+            this.userMarker = null;
+        }
+        if (this.buildingMarker) {
+            this.map.remove(this.buildingMarker);
+            this.buildingMarker = null;
+        }
+        if (this.buildingCircle) {
+            this.map.remove(this.buildingCircle);
+            this.buildingCircle = null;
+        }
+    }
+
+    // 显示地图区域
+    showMapSection() {
+        const mapSection = document.getElementById('mapSection');
+        if (mapSection) {
+            mapSection.style.display = 'block';
+            
+            // 延迟初始化地图以确保容器已显示
+            setTimeout(() => {
+                if (!this.map) {
+                    this.initMap();
+                }
+                if (this.map) {
+                    this.map.getViewport().resize();
+                    this.updateMapDisplay(this.currentLocation, this.currentBuildingInfo);
+                }
+            }, 100);
+        }
+    }
+
+    // 隐藏地图区域
+    hideMapSection() {
+        const mapSection = document.getElementById('mapSection');
+        if (mapSection) {
+            mapSection.style.display = 'none';
+        }
+    }
+
     // 页面销毁时清理
     destroy() {
         if (this.timeInterval) {
             clearInterval(this.timeInterval);
+        }
+        if (this.map) {
+            this.map.destroy();
+            this.map = null;
         }
     }
 }
