@@ -1144,7 +1144,7 @@ class SignInPage {
             locationBtnContainer.style.cssText = `
                 position: absolute;
                 top: 80px;
-                right: 10px;
+                right: 0px;
                 z-index: 1000;
             `;
         
@@ -1480,25 +1480,23 @@ class SignInPage {
         // 清除之前的标记
         this.clearMapMarkers();
 
-        // 添加用户位置标记 - 使用更醒目的红色大图标
+        // 添加用户位置标记 - 使用大头针样式
         this.userMarker = new AMap.Marker({
             position: [userLng, userLat],
             title: appState.currentLanguage === 'zh' ? '我的位置' : 'My Location',
             icon: new AMap.Icon({
-                size: new AMap.Size(48, 48),
+                size: new AMap.Size(32, 40),
                 image: 'data:image/svg+xml;base64,' + btoa(`
-                    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48">
-                        <circle cx="24" cy="24" r="23" fill="#ff4d4f" stroke="white" stroke-width="3"/>
-                        <circle cx="24" cy="24" r="16" fill="white"/>
-                        <circle cx="24" cy="24" r="10" fill="#ff4d4f"/>
-                        <circle cx="24" cy="24" r="4" fill="white"/>
-                        <path d="M24 8 L26 14 L32 12 L28 18 L34 20 L28 22 L32 28 L26 26 L24 32 L22 26 L16 28 L20 22 L14 20 L20 18 L16 12 L22 14 Z" 
-                              fill="#ff4d4f" opacity="0.3"/>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="40" viewBox="0 0 32 40">
+                        <path d="M16 0C7.163 0 0 7.163 0 16c0 16 16 24 16 24s16-8 16-24C32 7.163 24.837 0 16 0z" 
+                              fill="#ff4d4f" stroke="white" stroke-width="2"/>
+                        <circle cx="16" cy="16" r="8" fill="white"/>
+                        <circle cx="16" cy="16" r="4" fill="#ff4d4f"/>
                     </svg>
                 `),
-                imageOffset: new AMap.Pixel(-24, -24)
+                imageOffset: new AMap.Pixel(-16, -40)
             }),
-            anchor: 'center',
+            anchor: 'bottom-center',
             zIndex: 100
         });
         this.map.add(this.userMarker);
@@ -1520,15 +1518,17 @@ class SignInPage {
         });
 
         // 如果有建筑信息，添加建筑标记和签到范围
-        if (buildingInfo && buildingInfo.building && buildingInfo.building.longitude && buildingInfo.building.latitude) {
-            const buildingLng = parseFloat(buildingInfo.building.longitude);
-            const buildingLat = parseFloat(buildingInfo.building.latitude);
-            const radius = parseFloat(buildingInfo.building.radius || 100);
+        console.log('检查建筑信息:', buildingInfo);
+        
+        if (buildingInfo && buildingInfo.longitude && buildingInfo.latitude) {
+            const buildingLng = parseFloat(buildingInfo.longitude);
+            const buildingLat = parseFloat(buildingInfo.latitude);
+            const radius = parseFloat(buildingInfo.radius || 100);
 
             // 添加建筑标记 - 使用红色建筑图标
             this.buildingMarker = new AMap.Marker({
                 position: [buildingLng, buildingLat],
-                title: buildingInfo.building.name || (appState.currentLanguage === 'zh' ? '教学楼' : 'Building'),
+                title: buildingInfo.name || (appState.currentLanguage === 'zh' ? '教学楼' : 'Building'),
                 icon: new AMap.Icon({
                     size: new AMap.Size(36, 42),
                     image: 'data:image/svg+xml;base64,' + btoa(`
@@ -1554,7 +1554,7 @@ class SignInPage {
             // 添加建筑信息窗口
             const buildingInfoWindow = new AMap.InfoWindow({
                 content: `<div style="padding: 8px; font-size: 12px; color: #333;">
-                            <strong style="color: #ff4d4f;">${buildingInfo.building.name || (appState.currentLanguage === 'zh' ? '教学楼' : 'Building')}</strong><br>
+                            <strong style="color: #ff4d4f;">${buildingInfo.name || (appState.currentLanguage === 'zh' ? '教学楼' : 'Building')}</strong><br>
                             <span style="color: #666;">签到半径: ${radius}米</span><br>
                             <span style="color: #666;">经度: ${buildingLng.toFixed(6)}</span><br>
                             <span style="color: #666;">纬度: ${buildingLat.toFixed(6)}</span>
