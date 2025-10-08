@@ -312,9 +312,15 @@ class SignInPage {
                 
                 // 保存位置信息供其他功能使用
                 this.locationInfo = result.data;
+                this.currentBuildingInfo = result.data;
                 // 缓存建筑信息
                 appState.setCache('buildingInfo', result.data);
                 console.log('Building info updated and cached:', result.data);
+                
+                // 如果有当前位置和地图已加载，更新地图显示
+                if (this.currentLocation && this.map) {
+                    this.updateMapDisplay(this.currentLocation, result.data);
+                }
             } else {
                 throw new Error(result.message || '位置信息获取失败');
             }
@@ -392,6 +398,12 @@ class SignInPage {
             `;
             buildingNameElement.setAttribute('data-zh', '位置未知 - 超出范围');
             buildingNameElement.setAttribute('data-en', 'Unknown Location - Out of range');
+        }
+        
+        // 如果地图已加载，更新地图显示
+        if (this.map) {
+            this.currentBuildingInfo = buildingInfo;
+            this.updateMapDisplay(this.currentLocation, buildingInfo);
         }
     }
     
@@ -1075,9 +1087,14 @@ class SignInPage {
                     this.displayAllBuildings();
                 }, 1000);
                 
-                // 如果有当前位置和建筑信息，立即更新地图显示
+                // 如果有当前位置，立即更新地图显示
                 if (this.currentLocation) {
                     this.updateMapDisplay(this.currentLocation, this.currentBuildingInfo);
+                } else {
+                    // 如果没有位置信息，尝试获取位置
+                    this.getCurrentLocation().catch(error => {
+                        console.log('地图加载完成后获取位置失败:', error);
+                    });
                 }
                 
                 Utils.showMessage('地图加载成功', 'success', 2000);
@@ -1149,7 +1166,7 @@ class SignInPage {
             locationBtnContainer.style.cssText = `
                 position: absolute;
                 top: 80px;
-                right: 0px;
+                right: 5px;
                 z-index: 1000;
             `;
         
@@ -1677,23 +1694,44 @@ class SignInPage {
                 position: [buildingLng, buildingLat],
                 title: building.name,
                 icon: new AMap.Icon({
-                    size: new AMap.Size(30, 36),
+                    size: new AMap.Size(24, 30),
                     image: 'data:image/svg+xml;base64,' + btoa(`
-                        <svg xmlns="http://www.w3.org/2000/svg" width="30" height="36" viewBox="0 0 30 36">
-                            <path fill="#1890ff" stroke="white" stroke-width="2" d="M15 1C7.3 1 1 7.3 1 15c0 15 14 20 14 20s14-5 14-20C29 7.3 22.7 1 15 1z"/>
-                            <rect x="8" y="8" width="14" height="10" rx="1" fill="white"/>
-                            <rect x="10" y="10" width="2" height="2" fill="#1890ff"/>
-                            <rect x="13" y="10" width="2" height="2" fill="#1890ff"/>
-                            <rect x="16" y="10" width="2" height="2" fill="#1890ff"/>
-                            <rect x="10" y="13" width="2" height="2" fill="#1890ff"/>
-                            <rect x="13" y="13" width="2" height="2" fill="#1890ff"/>
-                            <rect x="16" y="13" width="2" height="2" fill="#1890ff"/>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="30" viewBox="0 0 24 30">
+                            <path fill="#1890ff" stroke="white" stroke-width="1" d="M12 1C6.5 1 2 5.5 2 11c0 9 10 18 10 18s10-9 10-18C22 5.5 17.5 1 12 1z"/>
+                            <circle cx="12" cy="11" r="6" fill="white"/>
+                            <rect x="9" y="8" width="6" height="6" rx="1" fill="#1890ff"/>
+                            <rect x="10" y="9" width="1" height="1" fill="white"/>
+                            <rect x="12" y="9" width="1" height="1" fill="white"/>
+                            <rect x="10" y="11" width="1" height="1" fill="white"/>
+                            <rect x="12" y="11" width="1" height="1" fill="white"/>
+                            <rect x="10" y="13" width="1" height="1" fill="white"/>
+                            <rect x="12" y="13" width="1" height="1" fill="white"/>
                         </svg>
                     `),
-                    imageOffset: new AMap.Pixel(-15, -36)
+                    imageOffset: new AMap.Pixel(-12, -30)
                 }),
                 anchor: 'bottom-center',
                 zIndex: 98
+            });
+
+            // 创建建筑名称标签
+            const label = new AMap.Text({
+                text: building.name,
+                position: [buildingLng, buildingLat],
+                offset: new AMap.Pixel(0, -35),
+                style: {
+                    'background-color': 'rgba(255, 255, 255, 0.9)',
+                    'border': '1px solid #1890ff',
+                    'border-radius': '4px',
+                    'padding': '2px 6px',
+                    'font-size': '12px',
+                    'color': '#1890ff',
+                    'font-weight': 'bold',
+                    'text-align': 'center',
+                    'white-space': 'nowrap',
+                    'box-shadow': '0 2px 4px rgba(0,0,0,0.2)'
+                },
+                zIndex: 99
             });
 
             // 创建信息窗口
@@ -1730,12 +1768,15 @@ class SignInPage {
 
             // 添加到地图
             this.map.add(marker);
+            this.map.add(label);
             this.map.add(circle);
 
             // 保存引用以便后续清除
             if (!this.allBuildingMarkers) this.allBuildingMarkers = [];
+            if (!this.allBuildingLabels) this.allBuildingLabels = [];
             if (!this.allBuildingCircles) this.allBuildingCircles = [];
             this.allBuildingMarkers.push(marker);
+            this.allBuildingLabels.push(label);
             this.allBuildingCircles.push(circle);
         });
 
@@ -1749,6 +1790,12 @@ class SignInPage {
                 this.map.remove(marker);
             });
             this.allBuildingMarkers = [];
+        }
+        if (this.allBuildingLabels) {
+            this.allBuildingLabels.forEach(label => {
+                this.map.remove(label);
+            });
+            this.allBuildingLabels = [];
         }
         if (this.allBuildingCircles) {
             this.allBuildingCircles.forEach(circle => {
