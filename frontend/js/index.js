@@ -830,7 +830,8 @@ class SignInPage {
                 longitude: this.currentLocation?.longitude,
                 location_address: this.currentLocation?.address,
                 wechat_userid: appState.userInfo?.wechat_userid,
-                timestamp: new Date().toISOString()
+                timestamp: new Date().toISOString(),
+                language: appState.currentLanguage // 添加当前界面语言
             };
     
             console.log('提交签到数据:', signinData);

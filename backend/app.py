@@ -269,6 +269,7 @@ def signin():
         location_address = data.get('location_address')
         wechat_userid = data.get('wechat_userid')
         timestamp = data.get('timestamp')
+        language = data.get('language', 'zh')  # 获取语言参数，默认为中文
         
         # 参数验证
         if not all([student_id, name, course_name, classroom]):
@@ -349,7 +350,9 @@ def signin():
                 # 继续签到流程，不因照片失败而中断
         
         # 计算详细的位置信息
-        detailed_location_address = location_address or '未知位置'
+        from utils.language_utils import format_location_info, format_unknown_location
+        
+        detailed_location_address = location_address or format_unknown_location(language)
         if latitude and longitude:
             try:
                 from services.attendance_service import AttendanceService
@@ -357,16 +360,19 @@ def signin():
                 
                 if building_info['building']:
                     building_name = building_info['building']['name']
+                    building_name_en = building_info['building'].get('name_en', building_name)
                     distance = round(building_info['distance'], 0)
-                    status_text = '位置已知' if building_info['is_valid'] else '位置未知'
-                    detailed_location_address = f"距离{building_name}{distance}米（{status_text}）"
+                    is_valid = building_info['is_valid']
+                    detailed_location_address = format_location_info(
+                        building_name, building_name_en, distance, is_valid, language
+                    )
                 else:
-                    detailed_location_address = "未知位置（超出范围）"
+                    detailed_location_address = format_unknown_location(language)
                     
-                logger.info(f"位置信息计算完成: {detailed_location_address}")
+                logger.info(f"位置信息计算完成 ({language}): {detailed_location_address}")
             except Exception as e:
                 logger.warning(f"位置信息计算失败: {e}")
-                detailed_location_address = location_address or '未知位置'
+                detailed_location_address = location_address or format_unknown_location(language)
 
         # 创建签到记录
         attendance = Attendance(
