@@ -174,6 +174,7 @@ class StatisticsPage {
                         classroom: record.classroom || record.location_address,
                         status: record.status,
                         photo: record.photo_path ? `/api/uploads/${record.photo_path}` : null,
+                        location_address: record.location_address, // 添加详细位置信息
                         location: {
                             latitude: record.latitude,
                             longitude: record.longitude
