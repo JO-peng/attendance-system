@@ -354,12 +354,12 @@ class StatisticsPage {
                     </span>
                 </div>
                 <div class="detail-item">
-                    <span class="detail-label" data-zh="位置" data-en="Location">位置</span>
+                    <span class="detail-label" data-zh="签到坐标" data-en="Sign-in Coordinates">签到坐标</span>
                     <span class="detail-value">${record.location ? `${Utils.t('latitude')}: ${record.location.latitude.toFixed(4)}, ${Utils.t('longitude')}: ${record.location.longitude.toFixed(4)}` : Utils.t('unknown_location')}</span>
                 </div>
                 <div class="detail-item">
-                    <span class="detail-label" data-zh="教学楼" data-en="Building">教学楼</span>
-                    <span class="detail-value">${record.building || record.buildingName || Utils.t('unknown_location')}</span>
+                    <span class="detail-label" data-zh="位置信息" data-en="Location Info">位置信息</span>
+                    <span class="detail-value">${this.formatLocationWithDistance(record)}</span>
                 </div>
             `;
         } else {
@@ -396,6 +396,70 @@ class StatisticsPage {
             'missed': appState.currentLanguage === 'zh' ? '缺勤' : 'Absent'
         };
         return statusMap[status] || status;
+    }
+
+    // 计算两点间距离（米）
+    calculateDistance(lat1, lon1, lat2, lon2) {
+        const R = 6371000; // 地球半径（米）
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLon = (lon2 - lon1) * Math.PI / 180;
+        const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                  Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                  Math.sin(dLon/2) * Math.sin(dLon/2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        return R * c;
+    }
+
+    // 格式化位置信息，包含距离提示
+    formatLocationWithDistance(record) {
+        if (!record.latitude || !record.longitude) {
+            return appState.currentLanguage === 'zh' ? '位置信息不可用' : 'Location unavailable';
+        }
+
+        const userLat = parseFloat(record.latitude);
+        const userLon = parseFloat(record.longitude);
+        
+        // 教学楼坐标
+        const buildings = [
+            { name: '文科楼', nameen: 'Liberal Arts Building', lat: 22.534, lon: 113.938 },
+            { name: '理工楼', nameen: 'Science Building', lat: 22.535, lon: 113.939 },
+            { name: '行政楼', nameen: 'Administration Building', lat: 22.533, lon: 113.937 },
+            { name: '图书馆', nameen: 'Library', lat: 22.536, lon: 113.940 },
+            { name: '学生活动中心', nameen: 'Student Activity Center', lat: 22.532, lon: 113.936 }
+        ];
+
+        let nearestBuilding = null;
+        let minDistance = Infinity;
+
+        // 找到最近的教学楼
+        buildings.forEach(building => {
+            const distance = this.calculateDistance(userLat, userLon, building.lat, building.lon);
+            if (distance < minDistance) {
+                minDistance = distance;
+                nearestBuilding = building;
+            }
+        });
+
+        if (nearestBuilding) {
+            const buildingName = appState.currentLanguage === 'zh' ? nearestBuilding.name : nearestBuilding.nameen;
+            const distanceText = minDistance < 1000 
+                ? `${Math.round(minDistance)}${appState.currentLanguage === 'zh' ? '米' : 'm'}`
+                : `${(minDistance / 1000).toFixed(1)}${appState.currentLanguage === 'zh' ? '公里' : 'km'}`;
+            
+            if (minDistance <= 50) {
+                // 在建筑范围内
+                return appState.currentLanguage === 'zh' 
+                    ? `${buildingName}（范围内）`
+                    : `${buildingName} (Within range)`;
+            } else {
+                // 显示距离
+                return appState.currentLanguage === 'zh' 
+                    ? `距离${buildingName} ${distanceText}`
+                    : `${distanceText} from ${buildingName}`;
+            }
+        }
+
+        return appState.currentLanguage === 'zh' ? '未知位置' : 'Unknown location';
     }
 }
 
