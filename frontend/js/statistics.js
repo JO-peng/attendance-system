@@ -321,6 +321,9 @@ class StatisticsPage {
         
         if (!detailsElement || !contentElement) return;
         
+        // 保存当前日期，用于语言切换时重新渲染
+        detailsElement.setAttribute('data-current-date', date);
+        
         if (record) {
             // 处理照片显示
             const photoCell = record.photo ? 
@@ -417,22 +420,21 @@ class StatisticsPage {
 
     // 格式化位置信息，包含距离提示
     formatLocationWithDistance(record) {
-        // 教学楼坐标
-        const buildings = [
-            { name: '文科楼', nameen: 'Liberal Arts Building', lat: 22.534, lon: 113.938 },
-            { name: '理工楼', nameen: 'Science Building', lat: 22.535, lon: 113.939 },
-            { name: '行政楼', nameen: 'Administration Building', lat: 22.533, lon: 113.937 },
-            { name: '图书馆', nameen: 'Library', lat: 22.536, lon: 113.940 },
-            { name: '学生活动中心', nameen: 'Student Activity Center', lat: 22.532, lon: 113.936 }
-        ];
-
-        // 如果没有坐标信息，显示默认的最近教学楼（文科楼）
+        // 如果没有坐标信息，显示位置未知
         if (!record.latitude || !record.longitude) {
-            const defaultBuilding = buildings[0]; // 文科楼作为默认
-            const buildingName = appState.currentLanguage === 'zh' ? defaultBuilding.name : defaultBuilding.nameen;
-            return appState.currentLanguage === 'zh' 
-                ? `距离${buildingName} (位置未知)`
-                : `Near ${buildingName} (Location unknown)`;
+            return appState.currentLanguage === 'zh' ? '位置未知' : 'Unknown Location';
+        }
+
+        // 如果有建筑信息，显示建筑名称和距离
+        if (record.building_name) {
+            if (record.distance !== undefined && record.distance !== null) {
+                const distanceText = appState.currentLanguage === 'zh' 
+                    ? `距离 ${record.distance} 米` 
+                    : `${record.distance}m away`;
+                return `${record.building_name} (${distanceText})`;
+            } else {
+                return record.building_name;
+            }
         }
 
         const userLat = parseFloat(record.latitude);

@@ -1,5 +1,10 @@
 /* 反馈页面专用样式 */
 
+/* 主内容区域 */
+.main-content {
+    margin-bottom: 100px; /* 增加底部边距，确保内容完全可见 */
+}
+
 /* 头部样式 - 与前三页保持一致 */
 .header {
     display: flex;
