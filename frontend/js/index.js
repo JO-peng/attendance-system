@@ -429,33 +429,43 @@ class SignInPage {
             // 更新UI显示定位失败
             const buildingNameElement = document.getElementById('buildingName');
             if (buildingNameElement) {
-                buildingNameElement.textContent = Utils.t('location_failed');
+                const failedText = appState.currentLanguage === 'zh' ? '定位失败' : 'Location Failed';
+                buildingNameElement.textContent = failedText;
                 buildingNameElement.setAttribute('data-zh', '定位失败');
                 buildingNameElement.setAttribute('data-en', 'Location Failed');
             }
             
             // 根据错误类型显示不同的提示
-            let errorMessage = '定位获取失败';
+            let errorMessage = appState.currentLanguage === 'zh' ? '定位获取失败' : 'Location failed';
             let errorType = 'error';
             
             if (error.message) {
                 if (error.message.includes('permission') || error.message.includes('denied')) {
-                    errorMessage = '定位权限被拒绝，请在设置中允许位置访问';
+                    errorMessage = appState.currentLanguage === 'zh' ? 
+                        '定位权限被拒绝，请在设置中允许位置访问' : 
+                        'Location permission denied, please allow location access in settings';
                     errorType = 'warning';
                 } else if (error.message.includes('timeout')) {
-                    errorMessage = '定位超时，请检查网络连接或稍后重试';
+                    errorMessage = appState.currentLanguage === 'zh' ? 
+                        '定位超时，请检查网络连接或稍后重试' : 
+                        'Location timeout, please check network or try again later';
                     errorType = 'warning';
                 } else if (error.message.includes('unavailable')) {
-                    errorMessage = '定位服务不可用，请检查设备设置';
+                    errorMessage = appState.currentLanguage === 'zh' ? 
+                        '定位服务不可用，请检查设备设置' : 
+                        'Location service unavailable, please check device settings';
                     errorType = 'warning';
                 } else {
-                    errorMessage = `定位失败: ${error.message}`;
+                    errorMessage = appState.currentLanguage === 'zh' ? 
+                        `定位失败: ${error.message}` : 
+                        `Location failed: ${error.message}`;
                 }
             }
             
             // 显示错误提示，并提供重试选项
+            const retryText = appState.currentLanguage === 'zh' ? '重试' : 'Retry';
             Utils.showMessage(
-                errorMessage + ' <button onclick="window.signinPage.getCurrentLocation()" style="margin-left: 12px; padding: 4px 8px; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); color: white; border-radius: 4px; cursor: pointer;">重试</button>',
+                errorMessage + ` <button onclick="window.signinPage.getCurrentLocation()" style="margin-left: 12px; padding: 4px 8px; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); color: white; border-radius: 4px; cursor: pointer;">${retryText}</button>`,
                 errorType,
                 8000,
                 { html: true }
@@ -573,17 +583,25 @@ class SignInPage {
             
             // 显示课程信息
             if (currentCourseDisplay) {
-                currentCourseDisplay.textContent = locationInfo.course?.name || '无当前课程';
+                const noCourseText = appState.currentLanguage === 'zh' ? '无当前课程' : 'No current course';
+                currentCourseDisplay.textContent = locationInfo.course?.name || noCourseText;
             }
             
             // 显示教学楼信息
             if (buildingDisplay) {
-                let buildingText = '未知位置';
+                let buildingText = appState.currentLanguage === 'zh' ? '未知位置' : 'Unknown location';
                 if (locationInfo.building) {
+                    const buildingName = appState.currentLanguage === 'zh' ? 
+                        locationInfo.building.name : 
+                        (locationInfo.building.name_en || locationInfo.building.name);
+                    
                     if (locationInfo.is_valid_location) {
-                        buildingText = locationInfo.building.name;
+                        buildingText = buildingName;
                     } else {
-                        buildingText = `${locationInfo.building.name} (距离${locationInfo.distance}米)`;
+                        const distanceText = appState.currentLanguage === 'zh' ? 
+                            `距离${locationInfo.distance}米` : 
+                            `${locationInfo.distance}m away`;
+                        buildingText = `${buildingName} (${distanceText})`;
                     }
                 }
                 buildingDisplay.textContent = buildingText;
@@ -592,17 +610,21 @@ class SignInPage {
             // 显示签到状态
             if (statusDisplay) {
                 const statusText = {
-                    'present': '正常签到',
-                    'late': '迟到签到',
-                    'absent': '缺席',
-                    'no_class': '当前无课程'
+                    'present': appState.currentLanguage === 'zh' ? '正常签到' : 'Present',
+                    'late': appState.currentLanguage === 'zh' ? '迟到签到' : 'Late',
+                    'absent': appState.currentLanguage === 'zh' ? '缺席' : 'Absent',
+                    'no_class': appState.currentLanguage === 'zh' ? '当前无课程' : 'No class'
                 };
                 
-                let statusMessage = statusText[locationInfo.status] || locationInfo.status || '未知状态';
+                const unknownStatusText = appState.currentLanguage === 'zh' ? '未知状态' : 'Unknown status';
+                let statusMessage = statusText[locationInfo.status] || locationInfo.status || unknownStatusText;
                 
                 // 如果位置无效，添加位置提示
                 if (!locationInfo.is_valid_location && locationInfo.building) {
-                    statusMessage += ' (位置距离过远)';
+                    const distanceWarning = appState.currentLanguage === 'zh' ? 
+                        ' (位置距离过远)' : 
+                        ' (Location too far)';
+                    statusMessage += distanceWarning;
                 }
                 
                 statusDisplay.textContent = statusMessage;
@@ -906,7 +928,9 @@ class SignInPage {
                 error.message.includes('401') ||
                 error.message.includes('403')
             )) {
-                errorMessage = '授权已过期，请刷新页面重新登录';
+                errorMessage = appState.currentLanguage === 'zh' ? 
+                    '授权已过期，请刷新页面重新登录' : 
+                    'Authorization expired, please refresh page to login again';
                 errorType = 'warning';
                 
                 // 清除缓存的用户信息
@@ -914,8 +938,9 @@ class SignInPage {
                 sessionStorage.removeItem('index_userinfo_retry_count');
                 
                 // 显示刷新按钮
+                const refreshText = appState.currentLanguage === 'zh' ? '刷新页面' : 'Refresh Page';
                 Utils.showMessage(
-                    errorMessage + ' <button onclick="window.location.reload()" style="margin-left: 12px; padding: 4px 8px; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); color: white; border-radius: 4px; cursor: pointer;">刷新页面</button>',
+                    errorMessage + ` <button onclick="window.location.reload()" style="margin-left: 12px; padding: 4px 8px; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); color: white; border-radius: 4px; cursor: pointer;">${refreshText}</button>`,
                     errorType,
                     0,
                     { html: true, persistent: true, clearPrevious: true }
@@ -930,7 +955,9 @@ class SignInPage {
                 error.message.includes('Failed to fetch') ||
                 error.name === 'NetworkError'
             )) {
-                errorMessage = '网络连接失败，请检查网络后重试';
+                errorMessage = appState.currentLanguage === 'zh' ? 
+                    '网络连接失败，请检查网络后重试' : 
+                    'Network connection failed, please check network and try again';
                 errorType = 'warning';
             } 
             // 服务器错误
@@ -940,7 +967,9 @@ class SignInPage {
                 error.message.includes('502') ||
                 error.message.includes('503')
             )) {
-                errorMessage = '服务器暂时不可用，请稍后重试';
+                errorMessage = appState.currentLanguage === 'zh' ? 
+                    '服务器暂时不可用，请稍后重试' : 
+                    'Server temporarily unavailable, please try again later';
                 errorType = 'warning';
             }
             // 如果有具体的错误消息，显示具体消息
