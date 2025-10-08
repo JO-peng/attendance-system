@@ -20,36 +20,27 @@ class FeedbackPage {
     }
     
     initLanguageSupport() {
-        // 初始化语言切换功能 - 与前三页保持一致
-        const langOptions = document.querySelectorAll('.lang-option');
-        langOptions.forEach(option => {
-            option.addEventListener('click', () => {
-                const lang = option.getAttribute('data-lang');
-                this.switchLanguage(lang);
-            });
-        });
-        
-        // 初始化语言显示
+        // 初始化语言显示，事件绑定由全局系统处理
         this.updateLanguageDisplay();
-    }
-    
-    switchLanguage(lang) {
-        // 更新激活状态
-        document.querySelectorAll('.lang-option').forEach(option => {
-            option.classList.remove('active');
-        });
-        document.querySelector(`[data-lang="${lang}"]`).classList.add('active');
         
+        // 监听语言切换事件，当语言改变时更新页面内容
+        document.addEventListener('languageChanged', (event) => {
+            this.updatePageContent(event.detail.language);
+        });
+    }
+
+    switchLanguage(lang) {
+        // 使用全局语言切换系统
+        appState.setLanguage(lang);
         // 更新页面内容
         this.updatePageContent(lang);
-        
-        // 保存语言设置
-        localStorage.setItem('language', lang);
     }
-    
+
     updateLanguageDisplay() {
         const savedLang = localStorage.getItem('language') || 'zh';
-        this.switchLanguage(savedLang);
+        // 使用全局语言切换系统
+        appState.setLanguage(savedLang);
+        this.updatePageContent(savedLang);
     }
     
     updatePageContent(lang) {

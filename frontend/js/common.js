@@ -411,6 +411,12 @@ class AppState {
             this.currentLanguage = lang;
             localStorage.setItem('language', lang);
             this.updateUI();
+            
+            // 触发语言切换事件，通知其他组件
+            const event = new CustomEvent('languageChanged', {
+                detail: { language: lang }
+            });
+            document.dispatchEvent(event);
         }
     }
     

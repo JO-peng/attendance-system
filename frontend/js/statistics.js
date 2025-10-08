@@ -14,6 +14,11 @@ class StatisticsPage {
         this.initDateSelectors();
         this.bindEvents();
         this.loadAttendanceData();
+        
+        // 监听语言切换事件
+        document.addEventListener('languageChanged', () => {
+            this.refreshDisplayTexts();
+        });
     }
     
     // 初始化日期选择器
@@ -412,13 +417,6 @@ class StatisticsPage {
 
     // 格式化位置信息，包含距离提示
     formatLocationWithDistance(record) {
-        if (!record.latitude || !record.longitude) {
-            return appState.currentLanguage === 'zh' ? '位置信息不可用' : 'Location unavailable';
-        }
-
-        const userLat = parseFloat(record.latitude);
-        const userLon = parseFloat(record.longitude);
-        
         // 教学楼坐标
         const buildings = [
             { name: '文科楼', nameen: 'Liberal Arts Building', lat: 22.534, lon: 113.938 },
@@ -428,6 +426,18 @@ class StatisticsPage {
             { name: '学生活动中心', nameen: 'Student Activity Center', lat: 22.532, lon: 113.936 }
         ];
 
+        // 如果没有坐标信息，显示默认的最近教学楼（文科楼）
+        if (!record.latitude || !record.longitude) {
+            const defaultBuilding = buildings[0]; // 文科楼作为默认
+            const buildingName = appState.currentLanguage === 'zh' ? defaultBuilding.name : defaultBuilding.nameen;
+            return appState.currentLanguage === 'zh' 
+                ? `距离${buildingName} (位置未知)`
+                : `Near ${buildingName} (Location unknown)`;
+        }
+
+        const userLat = parseFloat(record.latitude);
+        const userLon = parseFloat(record.longitude);
+        
         let nearestBuilding = null;
         let minDistance = Infinity;
 
@@ -460,6 +470,21 @@ class StatisticsPage {
         }
 
         return appState.currentLanguage === 'zh' ? '未知位置' : 'Unknown location';
+    }
+    
+    // 刷新显示文本（用于语言切换时）
+    refreshDisplayTexts() {
+        // 重新渲染日历以更新状态文本
+        this.renderCalendar();
+        
+        // 如果签到详情面板是打开的，重新显示详情
+        const detailsPanel = document.getElementById('signinDetails');
+        if (detailsPanel && !detailsPanel.classList.contains('hidden')) {
+            const currentDate = detailsPanel.getAttribute('data-current-date');
+            if (currentDate) {
+                this.showSigninDetails(currentDate);
+            }
+        }
     }
 }
 

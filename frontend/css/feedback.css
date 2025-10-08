@@ -72,9 +72,13 @@
 
 /* 反馈容器 */
 .feedback-container {
-    padding: var(--spacing-5);
+    min-height: calc(100vh - 80px);
+    padding: var(--spacing-5) var(--spacing-5) 120px var(--spacing-5);
     background: var(--gray-50);
-    min-height: calc(100vh - 140px); /* 减去头部和底部导航高度 */
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    overflow-y: auto;
 }
 
 .feedback-card {

@@ -19,6 +19,11 @@ class SignInPage {
         if (appState.userInfo) {
             this.updateUserInfo();
         }
+        
+        // 监听语言切换事件
+        document.addEventListener('languageChanged', () => {
+            this.refreshLocationDisplay();
+        });
     }
     
     bindEvents() {
@@ -458,6 +463,24 @@ class SignInPage {
             
             // 不再使用模拟位置，让用户知道定位失败了
             this.currentLocation = null;
+        }
+    }
+    
+    // 刷新位置显示（用于语言切换时）
+    refreshLocationDisplay() {
+        if (this.currentLocation && this.locationInfo) {
+            // 如果有位置信息，重新显示建筑信息
+            this.displayCachedBuildingInfo(this.locationInfo);
+        } else if (this.currentLocation) {
+            // 如果只有位置坐标，重新获取建筑信息
+            this.updateBuildingInfo();
+        } else {
+            // 如果没有位置信息，显示定位失败状态
+            const buildingNameElement = document.getElementById('buildingName');
+            if (buildingNameElement) {
+                const failedText = appState.currentLanguage === 'zh' ? '位置获取失败' : 'Location Failed';
+                buildingNameElement.textContent = failedText;
+            }
         }
     }
     

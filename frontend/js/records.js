@@ -22,6 +22,11 @@ class RecordsPage {
         this.bindEvents();
         this.loadAttendanceData();
         this.loadRecords();
+        
+        // 监听语言切换事件
+        document.addEventListener('languageChanged', () => {
+            this.refreshDisplayTexts();
+        });
     }
     
     bindEvents() {
@@ -760,6 +765,15 @@ class RecordsPage {
             }
         }
         // records的加载状态会在renderRecords中被替换
+    }
+    
+    // 刷新显示文本（用于语言切换时）
+    refreshDisplayTexts() {
+        // 重新渲染记录列表以更新状态文本
+        this.renderRecords();
+        
+        // 重新渲染概览卡片以更新统计文本
+        this.renderOverviewCard();
     }
 }
 
