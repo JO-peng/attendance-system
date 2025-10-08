@@ -36,6 +36,7 @@
     font-size: var(--font-size-sm);
     color: var(--gray-800);
     font-weight: 600;
+    text-align: right;
 }
 
 .course-info-section {
