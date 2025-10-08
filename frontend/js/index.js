@@ -1070,6 +1070,11 @@ class SignInPage {
                     this.addMapControls();
                 }, 500);
                 
+                // 显示所有深圳大学建筑
+                setTimeout(() => {
+                    this.displayAllBuildings();
+                }, 1000);
+                
                 // 如果有当前位置和建筑信息，立即更新地图显示
                 if (this.currentLocation) {
                     this.updateMapDisplay(this.currentLocation, this.currentBuildingInfo);
@@ -1439,20 +1444,40 @@ class SignInPage {
         
         // 如果用户标记存在，添加跳动动画
         if (this.userMarker) {
-            const originalIcon = this.userMarker.getIcon();
-            // 创建放大的图标
+            // 创建标准的大头针图标
+            const standardIcon = new AMap.Icon({
+                size: new AMap.Size(32, 40),
+                image: 'data:image/svg+xml;base64,' + btoa(`
+                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="40" viewBox="0 0 32 40">
+                        <path d="M16 0C7.163 0 0 7.163 0 16c0 16 16 24 16 24s16-8 16-24C32 7.163 24.837 0 16 0z" 
+                              fill="#ff4d4f" stroke="white" stroke-width="2"/>
+                        <circle cx="16" cy="16" r="8" fill="white"/>
+                        <circle cx="16" cy="16" r="4" fill="#ff4d4f"/>
+                    </svg>
+                `),
+                imageOffset: new AMap.Pixel(-16, -40)
+            });
+            
+            // 创建放大的图标用于动画
             const enlargedIcon = new AMap.Icon({
-                size: new AMap.Size(32, 32),
-                image: originalIcon.image,
-                imageSize: new AMap.Size(32, 32)
+                size: new AMap.Size(40, 50),
+                image: 'data:image/svg+xml;base64,' + btoa(`
+                    <svg xmlns="http://www.w3.org/2000/svg" width="40" height="50" viewBox="0 0 40 50">
+                        <path d="M20 0C8.954 0 0 8.954 0 20c0 20 20 30 20 30s20-10 20-30C40 8.954 31.046 0 20 0z" 
+                              fill="#ff4d4f" stroke="white" stroke-width="2"/>
+                        <circle cx="20" cy="20" r="10" fill="white"/>
+                        <circle cx="20" cy="20" r="5" fill="#ff4d4f"/>
+                    </svg>
+                `),
+                imageOffset: new AMap.Pixel(-20, -50)
             });
             
             this.userMarker.setIcon(enlargedIcon);
             
-            // 500ms后恢复原始大小
+            // 500ms后恢复标准大小
             setTimeout(() => {
-                if (this.userMarker && originalIcon) {
-                    this.userMarker.setIcon(originalIcon);
+                if (this.userMarker) {
+                    this.userMarker.setIcon(standardIcon);
                 }
             }, 500);
         }
@@ -1606,6 +1631,130 @@ class SignInPage {
             // 只有用户位置时，以用户位置为中心
             this.map.setCenter([userLng, userLat]);
             this.map.setZoom(16);
+        }
+    }
+
+    // 显示所有深圳大学建筑
+    displayAllBuildings() {
+        if (!this.map) return;
+
+        // 深圳大学所有建筑数据
+        const buildings = [
+            // 沧海校区
+            { name: "致腾楼", name_en: "Zhiteng Building", campus: "沧海校区", longitude: 113.93677, latitude: 22.52601, radius: 100 },
+            { name: "致远楼", name_en: "Zhiyuan Building", campus: "沧海校区", longitude: 113.937826, latitude: 22.525709, radius: 100 },
+            { name: "致工楼", name_en: "Zhigong Building", campus: "沧海校区", longitude: 113.93861, latitude: 22.526338, radius: 100 },
+            { name: "致信楼", name_en: "Zhixin Building", campus: "沧海校区", longitude: 113.93758, latitude: 22.527523, radius: 100 },
+            { name: "致知楼", name_en: "Zhizhi Building", campus: "沧海校区", longitude: 113.939055, latitude: 22.527002, radius: 100 },
+            { name: "致艺楼", name_en: "Zhiyi Building", campus: "沧海校区", longitude: 113.939763, latitude: 22.529297, radius: 100 },
+            { name: "致理楼", name_en: "Zhili Building", campus: "沧海校区", longitude: 113.939913, latitude: 22.528048, radius: 100 },
+            { name: "致真楼", name_en: "Zhizhen Building", campus: "沧海校区", longitude: 113.94097, latitude: 22.5295, radius: 100 },
+            { name: "汇智楼", name_en: "Huizhi Building", campus: "沧海校区", longitude: 113.935938, latitude: 22.531457, radius: 100 },
+            { name: "汇子楼", name_en: "Huizi Building", campus: "沧海校区", longitude: 113.936557, latitude: 22.532779, radius: 100 },
+            { name: "汇典楼", name_en: "Huidian Building", campus: "沧海校区", longitude: 113.935447, latitude: 22.533408, radius: 100 },
+            { name: "汇文楼", name_en: "Huiwen Building", campus: "沧海校区", longitude: 113.934642, latitude: 22.537704, radius: 100 },
+            { name: "汇行楼", name_en: "Huixing Building", campus: "沧海校区", longitude: 113.9366, latitude: 22.535152, radius: 100 },
+            { name: "汇德楼", name_en: "Huide Building", campus: "沧海校区", longitude: 113.933001, latitude: 22.534245, radius: 100 },
+            { name: "汇园楼", name_en: "Huiyuan Building", campus: "沧海校区", longitude: 113.933001, latitude: 22.534245, radius: 100 },
+            // 丽湖校区
+            { name: "四方楼", name_en: "Sifang Building", campus: "丽湖校区", longitude: 113.991746, latitude: 22.602008, radius: 100 },
+            { name: "明理楼", name_en: "Mingli Building", campus: "丽湖校区", longitude: 113.993462, latitude: 22.601239, radius: 100 },
+            { name: "守正楼", name_en: "Shouzheng Building", campus: "丽湖校区", longitude: 113.994057, latitude: 22.600552, radius: 100 },
+            { name: "文韬楼", name_en: "Wentao Building", campus: "丽湖校区", longitude: 113.994775, latitude: 22.599209, radius: 100 }
+        ];
+
+        // 清除现有的建筑标记
+        this.clearAllBuildingMarkers();
+
+        // 为每个建筑创建标记和半径圆圈
+        buildings.forEach((building, index) => {
+            const buildingLng = parseFloat(building.longitude);
+            const buildingLat = parseFloat(building.latitude);
+            const radius = building.radius || 100;
+
+            // 创建建筑标记
+            const marker = new AMap.Marker({
+                position: [buildingLng, buildingLat],
+                title: building.name,
+                icon: new AMap.Icon({
+                    size: new AMap.Size(30, 36),
+                    image: 'data:image/svg+xml;base64,' + btoa(`
+                        <svg xmlns="http://www.w3.org/2000/svg" width="30" height="36" viewBox="0 0 30 36">
+                            <path fill="#1890ff" stroke="white" stroke-width="2" d="M15 1C7.3 1 1 7.3 1 15c0 15 14 20 14 20s14-5 14-20C29 7.3 22.7 1 15 1z"/>
+                            <rect x="8" y="8" width="14" height="10" rx="1" fill="white"/>
+                            <rect x="10" y="10" width="2" height="2" fill="#1890ff"/>
+                            <rect x="13" y="10" width="2" height="2" fill="#1890ff"/>
+                            <rect x="16" y="10" width="2" height="2" fill="#1890ff"/>
+                            <rect x="10" y="13" width="2" height="2" fill="#1890ff"/>
+                            <rect x="13" y="13" width="2" height="2" fill="#1890ff"/>
+                            <rect x="16" y="13" width="2" height="2" fill="#1890ff"/>
+                        </svg>
+                    `),
+                    imageOffset: new AMap.Pixel(-15, -36)
+                }),
+                anchor: 'bottom-center',
+                zIndex: 98
+            });
+
+            // 创建信息窗口
+            const infoWindow = new AMap.InfoWindow({
+                content: `<div style="padding: 8px; font-size: 12px; color: #333;">
+                            <strong style="color: #1890ff;">${building.name}</strong><br>
+                            <span style="color: #666;">${building.name_en}</span><br>
+                            <span style="color: #666;">校区: ${building.campus}</span><br>
+                            <span style="color: #666;">签到半径: ${radius}米</span><br>
+                            <span style="color: #666;">经度: ${buildingLng.toFixed(6)}</span><br>
+                            <span style="color: #666;">纬度: ${buildingLat.toFixed(6)}</span>
+                          </div>`,
+                offset: new AMap.Pixel(0, -36),
+                closeWhenClickMap: true
+            });
+
+            // 点击标记显示信息窗口
+            marker.on('click', () => {
+                infoWindow.open(this.map, [buildingLng, buildingLat]);
+            });
+
+            // 创建签到范围圆圈
+            const circle = new AMap.Circle({
+                center: [buildingLng, buildingLat],
+                radius: radius,
+                fillColor: '#1890ff',
+                fillOpacity: 0.1,
+                strokeColor: '#1890ff',
+                strokeWeight: 1,
+                strokeOpacity: 0.6,
+                strokeStyle: 'dashed',
+                zIndex: 49
+            });
+
+            // 添加到地图
+            this.map.add(marker);
+            this.map.add(circle);
+
+            // 保存引用以便后续清除
+            if (!this.allBuildingMarkers) this.allBuildingMarkers = [];
+            if (!this.allBuildingCircles) this.allBuildingCircles = [];
+            this.allBuildingMarkers.push(marker);
+            this.allBuildingCircles.push(circle);
+        });
+
+        console.log(`已显示 ${buildings.length} 个建筑标记`);
+    }
+
+    // 清除所有建筑标记
+    clearAllBuildingMarkers() {
+        if (this.allBuildingMarkers) {
+            this.allBuildingMarkers.forEach(marker => {
+                this.map.remove(marker);
+            });
+            this.allBuildingMarkers = [];
+        }
+        if (this.allBuildingCircles) {
+            this.allBuildingCircles.forEach(circle => {
+                this.map.remove(circle);
+            });
+            this.allBuildingCircles = [];
         }
     }
 
