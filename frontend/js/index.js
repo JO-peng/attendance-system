@@ -1136,82 +1136,86 @@ class SignInPage {
     addCustomLocationButton() {
         if (!this.map) return;
         
-        // 创建定位按钮容器
-        const locationBtnContainer = document.createElement('div');
-        locationBtnContainer.className = 'amap-custom-location-container';
-        locationBtnContainer.style.cssText = `
-            position: absolute;
-            bottom: 20px;
-            right: 20px;
-            z-index: 1000;
-        `;
+        // 等待地图控件加载完成后再添加按钮
+        setTimeout(() => {
+            // 创建定位按钮容器
+            const locationBtnContainer = document.createElement('div');
+            locationBtnContainer.className = 'amap-custom-location-container';
+            locationBtnContainer.style.cssText = `
+                position: absolute;
+                top: 80px;
+                right: 10px;
+                z-index: 1000;
+            `;
         
-        // 创建定位按钮
-        const locationBtn = document.createElement('button');
-        locationBtn.className = 'amap-custom-location-btn';
-        locationBtn.innerHTML = `
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3A8.994 8.994 0 0 0 13 3.06V1h-2v2.06A8.994 8.994 0 0 0 3.06 11H1v2h2.06A8.994 8.994 0 0 0 11 20.94V23h2v-2.06A8.994 8.994 0 0 0 20.94 13H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/>
-            </svg>
-        `;
+            // 创建定位按钮
+            const locationBtn = document.createElement('button');
+            locationBtn.className = 'amap-custom-location-btn';
+            locationBtn.innerHTML = `
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3A8.994 8.994 0 0 0 13 3.06V1h-2v2.06A8.994 8.994 0 0 0 3.06 11H1v2h2.06A8.994 8.994 0 0 0 11 20.94V23h2v-2.06A8.994 8.994 0 0 0 20.94 13H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/>
+                </svg>
+            `;
+            
+            // 设置按钮样式
+            locationBtn.style.cssText = `
+                width: 40px;
+                height: 40px;
+                background: #1890ff;
+                border: none;
+                border-radius: 6px;
+                color: white;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                box-shadow: 0 2px 8px rgba(24, 144, 255, 0.3);
+                transition: all 0.3s ease;
+                font-size: 0;
+                margin-bottom: 8px;
+            `;
+            
+            // 添加悬停效果
+            locationBtn.addEventListener('mouseenter', () => {
+                locationBtn.style.transform = 'scale(1.05)';
+                locationBtn.style.boxShadow = '0 4px 12px rgba(24, 144, 255, 0.4)';
+            });
+            
+            locationBtn.addEventListener('mouseleave', () => {
+                locationBtn.style.transform = 'scale(1)';
+                locationBtn.style.boxShadow = '0 2px 8px rgba(24, 144, 255, 0.3)';
+            });
+            
+            // 添加点击效果
+            locationBtn.addEventListener('mousedown', () => {
+                locationBtn.style.transform = 'scale(0.95)';
+            });
+            
+            locationBtn.addEventListener('mouseup', () => {
+                locationBtn.style.transform = 'scale(1.05)';
+            });
+            
+            // 定位按钮点击事件
+            locationBtn.addEventListener('click', () => {
+                this.backToUserLocation();
+            });
+            
+            // 添加工具提示
+            locationBtn.title = appState.currentLanguage === 'zh' ? '回到我的位置' : 'Back to my location';
+            
+            // 将按钮添加到容器
+            locationBtnContainer.appendChild(locationBtn);
+            
+            // 将容器添加到地图容器
+            const mapContainer = this.map.getContainer();
+            if (mapContainer) {
+                mapContainer.appendChild(locationBtnContainer);
+            }
         
-        // 设置按钮样式
-        locationBtn.style.cssText = `
-            width: 44px;
-            height: 44px;
-            background: #1890ff;
-            border: none;
-            border-radius: 50%;
-            color: white;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 4px 12px rgba(24, 144, 255, 0.3);
-            transition: all 0.3s ease;
-            font-size: 0;
-        `;
-        
-        // 添加悬停效果
-        locationBtn.addEventListener('mouseenter', () => {
-            locationBtn.style.transform = 'scale(1.1)';
-            locationBtn.style.boxShadow = '0 6px 16px rgba(24, 144, 255, 0.4)';
-        });
-        
-        locationBtn.addEventListener('mouseleave', () => {
-            locationBtn.style.transform = 'scale(1)';
-            locationBtn.style.boxShadow = '0 4px 12px rgba(24, 144, 255, 0.3)';
-        });
-        
-        // 添加点击效果
-        locationBtn.addEventListener('mousedown', () => {
-            locationBtn.style.transform = 'scale(0.95)';
-        });
-        
-        locationBtn.addEventListener('mouseup', () => {
-            locationBtn.style.transform = 'scale(1.1)';
-        });
-        
-        // 定位按钮点击事件
-        locationBtn.addEventListener('click', () => {
-            this.backToUserLocation();
-        });
-        
-        // 添加工具提示
-        locationBtn.title = appState.currentLanguage === 'zh' ? '回到我的位置' : 'Back to my location';
-        
-        // 将按钮添加到容器
-        locationBtnContainer.appendChild(locationBtn);
-        
-        // 将容器添加到地图容器
-        const mapContainer = this.map.getContainer();
-        if (mapContainer) {
-            mapContainer.appendChild(locationBtnContainer);
-        }
-        
-        // 保存按钮引用以便后续操作
-        this.customLocationBtn = locationBtn;
-        this.customLocationContainer = locationBtnContainer;
+            // 保存按钮引用以便后续操作
+            this.customLocationBtn = locationBtn;
+            this.customLocationContainer = locationBtnContainer;
+        }, 500); // 延迟500ms等待地图控件加载
     }
 
     // 加载高德地图API
@@ -1385,11 +1389,10 @@ class SignInPage {
 
     // 绑定回到用户位置按钮事件
     bindLocationButton() {
-        const locationBtn = document.getElementById('locationBtn');
-        if (locationBtn) {
-            locationBtn.onclick = () => {
-                this.backToUserLocation();
-            };
+        // 自定义按钮已在addCustomLocationButton中绑定事件，这里不需要额外操作
+        // 但确保按钮存在
+        if (this.customLocationBtn) {
+            console.log('自定义位置按钮已绑定');
         }
     }
 
@@ -1464,7 +1467,10 @@ class SignInPage {
 
     // 更新地图显示
     updateMapDisplay(userLocation, buildingInfo = null) {
+        console.log('updateMapDisplay调用:', { userLocation, buildingInfo });
+        
         if (!this.map || !userLocation) {
+            console.log('地图或用户位置不存在');
             return;
         }
 
@@ -1474,20 +1480,23 @@ class SignInPage {
         // 清除之前的标记
         this.clearMapMarkers();
 
-        // 添加用户位置标记 - 使用更醒目的蓝色定位图标
+        // 添加用户位置标记 - 使用更醒目的红色大图标
         this.userMarker = new AMap.Marker({
             position: [userLng, userLat],
             title: appState.currentLanguage === 'zh' ? '我的位置' : 'My Location',
             icon: new AMap.Icon({
-                size: new AMap.Size(32, 32),
+                size: new AMap.Size(48, 48),
                 image: 'data:image/svg+xml;base64,' + btoa(`
-                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
-                        <circle cx="16" cy="16" r="15" fill="#1890ff" stroke="white" stroke-width="2"/>
-                        <circle cx="16" cy="16" r="8" fill="white"/>
-                        <circle cx="16" cy="16" r="4" fill="#1890ff"/>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48">
+                        <circle cx="24" cy="24" r="23" fill="#ff4d4f" stroke="white" stroke-width="3"/>
+                        <circle cx="24" cy="24" r="16" fill="white"/>
+                        <circle cx="24" cy="24" r="10" fill="#ff4d4f"/>
+                        <circle cx="24" cy="24" r="4" fill="white"/>
+                        <path d="M24 8 L26 14 L32 12 L28 18 L34 20 L28 22 L32 28 L26 26 L24 32 L22 26 L16 28 L20 22 L14 20 L20 18 L16 12 L22 14 Z" 
+                              fill="#ff4d4f" opacity="0.3"/>
                     </svg>
                 `),
-                imageOffset: new AMap.Pixel(-16, -16)
+                imageOffset: new AMap.Pixel(-24, -24)
             }),
             anchor: 'center',
             zIndex: 100
@@ -1510,16 +1519,16 @@ class SignInPage {
             userInfoWindow.open(this.map, [userLng, userLat]);
         });
 
-        // 如果有建筑信息，添加建筑标记和范围圆圈
-        if (buildingInfo && buildingInfo.longitude && buildingInfo.latitude) {
-            const buildingLng = parseFloat(buildingInfo.longitude);
-            const buildingLat = parseFloat(buildingInfo.latitude);
-            const radius = parseFloat(buildingInfo.radius || 100);
+        // 如果有建筑信息，添加建筑标记和签到范围
+        if (buildingInfo && buildingInfo.building && buildingInfo.building.longitude && buildingInfo.building.latitude) {
+            const buildingLng = parseFloat(buildingInfo.building.longitude);
+            const buildingLat = parseFloat(buildingInfo.building.latitude);
+            const radius = parseFloat(buildingInfo.building.radius || 100);
 
             // 添加建筑标记 - 使用红色建筑图标
             this.buildingMarker = new AMap.Marker({
                 position: [buildingLng, buildingLat],
-                title: buildingInfo.name || (appState.currentLanguage === 'zh' ? '教学楼' : 'Building'),
+                title: buildingInfo.building.name || (appState.currentLanguage === 'zh' ? '教学楼' : 'Building'),
                 icon: new AMap.Icon({
                     size: new AMap.Size(36, 42),
                     image: 'data:image/svg+xml;base64,' + btoa(`
@@ -1545,7 +1554,7 @@ class SignInPage {
             // 添加建筑信息窗口
             const buildingInfoWindow = new AMap.InfoWindow({
                 content: `<div style="padding: 8px; font-size: 12px; color: #333;">
-                            <strong style="color: #ff4d4f;">${buildingInfo.name || (appState.currentLanguage === 'zh' ? '教学楼' : 'Building')}</strong><br>
+                            <strong style="color: #ff4d4f;">${buildingInfo.building.name || (appState.currentLanguage === 'zh' ? '教学楼' : 'Building')}</strong><br>
                             <span style="color: #666;">签到半径: ${radius}米</span><br>
                             <span style="color: #666;">经度: ${buildingLng.toFixed(6)}</span><br>
                             <span style="color: #666;">纬度: ${buildingLat.toFixed(6)}</span>
