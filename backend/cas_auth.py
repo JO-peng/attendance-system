@@ -168,6 +168,13 @@ class CASClient:
                 current_app.logger.info("SSL verification disabled for CAS client")
             except:
                 print("SSL verification disabled for CAS client")
+        elif ca_bundle_path and os.path.exists(ca_bundle_path):
+            # 使用指定的CA证书包
+            self.session.verify = ca_bundle_path
+            try:
+                current_app.logger.info(f"Using specified CA bundle for CAS authentication: {ca_bundle_path}")
+            except:
+                print(f"Using specified CA bundle for CAS authentication: {ca_bundle_path}")
         else:
             # 对于CAS认证服务器，使用系统默认的证书验证
             # 因为我们的项目证书只适用于kpeak.szu.edu.cn，不适用于authserver.szu.edu.cn
@@ -198,7 +205,12 @@ class CASClient:
             validate_url += "&format=json"
         
         try:
-            response = self.session.get(validate_url, timeout=30)
+            # 根据配置设置SSL验证
+            verify_setting = self.ssl_verify
+            if self.ssl_verify and self.ca_bundle_path and os.path.exists(self.ca_bundle_path):
+                verify_setting = self.ca_bundle_path
+            
+            response = self.session.get(validate_url, timeout=30, verify=verify_setting)
             response.raise_for_status()
             
             if format_type == "json":
@@ -206,6 +218,9 @@ class CASClient:
             else:
                 return self._parse_xml_response(response.text)
                 
+        except requests.exceptions.SSLError as e:
+            current_app.logger.error(f"CAS票据验证SSL错误: {e}")
+            return None
         except requests.RequestException as e:
             current_app.logger.error(f"CAS票据验证失败: {e}")
             return None
@@ -318,13 +333,17 @@ def init_cas_client(app):
         raise ValueError("CAS_SERVICE_URL configuration is missing. Please set it in config.py")
     
     try:
+        # 获取SSL CA证书包路径，但不强制使用
+        ca_bundle_path = app.config.get('SSL_CA_BUNDLE_PATH')
+        
         cas_client = CASClient(
             server_url=server_url,
             service_url=service_url,
             login_path=app.config.get('CAS_LOGIN_PATH', '/cas/login'),
             logout_path=app.config.get('CAS_LOGOUT_PATH', '/cas/logout'),
             callback_path=app.config.get('CAS_CALLBACK_PATH', '/cas/callback'),
-            ssl_verify=True  # 使用系统默认SSL验证
+            ssl_verify=True,  # 使用系统默认SSL验证
+            ca_bundle_path=ca_bundle_path
         )
         
         app.cas_client = cas_client

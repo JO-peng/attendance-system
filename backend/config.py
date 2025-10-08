@@ -37,10 +37,12 @@ class Config:
     CAS_CALLBACK_PATH = '/cas/callback'
     CAS_SESSION_TIMEOUT = 24 * 60 * 60  # 24小时（秒）
     
-    # HTTPS证书配置
+    # HTTPS证书配置（用于网站服务器）
     SSL_CERT_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'ca', 'kpeak.szu.edu.cn-crt.pem')
     SSL_KEY_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'ca', 'kpeak.szu.edu.cn-key.pem')
-    SSL_CA_BUNDLE_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'ca', 'kpeak.szu.edu.cn-chain.pem')
+    
+    # CAS认证SSL配置（留空使用系统默认证书验证深大服务器）
+    SSL_CA_BUNDLE_PATH = None  # 使用系统默认证书存储验证authserver.szu.edu.cn
     
     # API配置
     API_TITLE = '考勤签到系统API'
