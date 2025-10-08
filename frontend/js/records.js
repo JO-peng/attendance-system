@@ -72,7 +72,7 @@ class RecordsPage {
         const nextBtn = document.getElementById('nextPage');
         
         if (prevBtn) {
-            prevBtn.addEventListener('click', async () => {
+            prevBtn.addEventListener('click', () => {
                 if (this.currentPage > 1) {
                     this.currentPage--;
                     this.renderRecords();
@@ -81,7 +81,7 @@ class RecordsPage {
         }
         
         if (nextBtn) {
-            nextBtn.addEventListener('click', async () => {
+            nextBtn.addEventListener('click', () => {
                 const totalPages = Math.ceil(this.filteredRecords.length / this.pageSize);
                 if (this.currentPage < totalPages) {
                     this.currentPage++;
@@ -546,8 +546,8 @@ class RecordsPage {
         const endIndex = startIndex + this.pageSize;
         const pageRecords = this.filteredRecords.slice(startIndex, endIndex);
         
-        // 同步渲染记录
-        const recordRows = pageRecords.map(record => {
+        // 渲染记录
+        tbody.innerHTML = pageRecords.map(record => {
             const statusText = {
                 'attended': Utils.t('status_present'),
                 'late': Utils.t('status_late'),
@@ -558,23 +558,18 @@ class RecordsPage {
                 `<img src="${record.photo}" alt="签到照片" class="photo-thumbnail" onclick="window.showPhotoPreview('${record.photo}', '签到照片')" style="cursor: pointer;">` : 
                 '<span class="text-gray-400">-</span>';
             
-            // 直接获取位置信息（现在是同步的）
-            const locationInfo = this.formatLocationInfo(record);
-            
             return `
                 <tr>
                     <td>${record.name}</td>
                     <td>${record.studentId}</td>
                     <td>${record.course}</td>
-                    <td>${locationInfo}</td>
+                    <td>${this.formatLocationInfo(record)}</td>
                     <td><span class="status-badge ${record.status}">${statusText}</span></td>
                     <td>${Utils.formatDateTime(record.time)}</td>
                     <td>${photoCell}</td>
                 </tr>
             `;
-        });
-        
-        tbody.innerHTML = recordRows.join('');
+        }).join('');
         
         // 更新分页信息
         this.updatePagination();
@@ -594,13 +589,52 @@ class RecordsPage {
 
     // 格式化位置信息，包含距离最近教学楼的信息
     formatLocationInfo(record) {
-        // 直接返回存储在数据库中的位置描述信息
-        // 这些信息在签到时已经生成并存储，包含了详细的位置状态
-        if (record.location && record.location.trim() !== '') {
+        // 优先使用存储的详细位置信息
+        if (record.location && record.location !== '未知位置' && record.location !== 'Unknown Location') {
+            // 如果存储的位置信息包含详细信息，直接返回
+            if (record.location.includes('距离') || record.location.includes('位置已知') || record.location.includes('位置未知')) {
+                return record.location;
+            }
+            // 如果是其他明确的位置信息，也直接返回
             return record.location;
         }
 
-        // 如果没有位置信息，返回未知位置
+        // 如果有经纬度信息，计算距离最近的教学楼
+        if (record.latitude && record.longitude) {
+            // 教学楼坐标（示例数据，实际应从配置或API获取）
+            const buildings = [
+                { name: '文科楼', lat: 22.5342, lon: 113.9356 },
+                { name: '理科楼', lat: 22.5345, lon: 113.9360 },
+                { name: '工学院', lat: 22.5340, lon: 113.9350 },
+                { name: '计算机学院', lat: 22.5338, lon: 113.9365 }
+            ];
+
+            let nearestBuilding = null;
+            let minDistance = Infinity;
+
+            buildings.forEach(building => {
+                const distance = this.calculateDistance(
+                    record.latitude, record.longitude,
+                    building.lat, building.lon
+                );
+                if (distance < minDistance) {
+                    minDistance = distance;
+                    nearestBuilding = building;
+                }
+            });
+
+            if (nearestBuilding && minDistance < 1000) { // 1公里内
+                const distanceText = minDistance < 100 
+                    ? `${Math.round(minDistance)}${Utils.t('meters')}`
+                    : `${(minDistance / 1000).toFixed(1)}${Utils.t('kilometers')}`;
+                
+                return appState.currentLanguage === 'zh'
+                    ? `距离${nearestBuilding.name} ${distanceText}`
+                    : `${distanceText} from ${nearestBuilding.name}`;
+            }
+        }
+
+        // 默认返回未知位置
         return Utils.t('unknown_location');
     }
 

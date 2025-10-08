@@ -177,8 +177,7 @@ class StatisticsPage {
                         location: {
                             latitude: record.latitude,
                             longitude: record.longitude
-                        },
-                        location_address: record.location_address || '未知位置'
+                        }
                     });
                 });
                 
@@ -331,9 +330,6 @@ class StatisticsPage {
                 `<img src="${record.photo}" alt="签到照片" class="detail-photo" onclick="window.showPhotoPreview('${record.photo}', '签到照片')" style="cursor: pointer; max-width: 100px; max-height: 100px; border-radius: 4px;">` : 
                 '<span class="text-gray-400">无照片</span>';
             
-            // 直接获取位置信息（现在是同步的）
-            const locationInfo = this.formatLocationWithDistance(record);
-            
             contentElement.innerHTML = `
                 <div class="detail-item">
                     <span class="detail-label" data-zh="日期" data-en="Date">日期</span>
@@ -371,7 +367,7 @@ class StatisticsPage {
                 </div>
                 <div class="detail-item">
                     <span class="detail-label" data-zh="位置信息" data-en="Location Info">位置信息</span>
-                    <span class="detail-value">${locationInfo}</span>
+                    <span class="detail-value">${this.formatLocationWithDistance(record)}</span>
                 </div>
             `;
         } else {
@@ -422,16 +418,68 @@ class StatisticsPage {
         return R * c;
     }
 
-    // 格式化位置信息，直接显示存储的位置描述
+    // 格式化位置信息，包含距离提示
     formatLocationWithDistance(record) {
-        // 直接返回存储在数据库中的位置描述信息
-        // 这些信息在签到时已经生成并存储，包含了详细的位置状态
-        if (record.location && record.location.trim() !== '') {
-            return record.location;
+        // 优先使用存储的详细位置信息
+        if (record.location_address && record.location_address !== '未知位置' && record.location_address !== 'Unknown Location') {
+            // 如果存储的位置信息包含详细信息，直接返回
+            if (record.location_address.includes('距离') || record.location_address.includes('位置已知') || record.location_address.includes('位置未知')) {
+                return record.location_address;
+            }
         }
 
-        // 如果没有位置信息，返回未知位置
-        return appState.currentLanguage === 'zh' ? '位置未知' : 'Unknown Location';
+        // 如果没有坐标信息，显示位置未知
+        if (!record.latitude || !record.longitude) {
+            return appState.currentLanguage === 'zh' ? '位置未知' : 'Unknown Location';
+        }
+
+        // 如果有建筑信息，显示建筑名称和距离
+        if (record.building_name) {
+            if (record.distance !== undefined && record.distance !== null) {
+                const distanceText = appState.currentLanguage === 'zh' 
+                    ? `距离 ${record.distance} 米` 
+                    : `${record.distance}m away`;
+                return `${record.building_name} (${distanceText})`;
+            } else {
+                return record.building_name;
+            }
+        }
+
+        const userLat = parseFloat(record.latitude);
+        const userLon = parseFloat(record.longitude);
+        
+        let nearestBuilding = null;
+        let minDistance = Infinity;
+
+        // 找到最近的教学楼
+        buildings.forEach(building => {
+            const distance = this.calculateDistance(userLat, userLon, building.lat, building.lon);
+            if (distance < minDistance) {
+                minDistance = distance;
+                nearestBuilding = building;
+            }
+        });
+
+        if (nearestBuilding) {
+            const buildingName = appState.currentLanguage === 'zh' ? nearestBuilding.name : nearestBuilding.nameen;
+            const distanceText = minDistance < 1000 
+                ? `${Math.round(minDistance)}${appState.currentLanguage === 'zh' ? '米' : 'm'}`
+                : `${(minDistance / 1000).toFixed(1)}${appState.currentLanguage === 'zh' ? '公里' : 'km'}`;
+            
+            if (minDistance <= 50) {
+                // 在建筑范围内
+                return appState.currentLanguage === 'zh' 
+                    ? `${buildingName}（范围内）`
+                    : `${buildingName} (Within range)`;
+            } else {
+                // 显示距离
+                return appState.currentLanguage === 'zh' 
+                    ? `距离${buildingName} ${distanceText}`
+                    : `${distanceText} from ${buildingName}`;
+            }
+        }
+
+        return appState.currentLanguage === 'zh' ? '未知位置' : 'Unknown location';
     }
     
     // 刷新显示文本（用于语言切换时）

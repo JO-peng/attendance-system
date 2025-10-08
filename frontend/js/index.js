@@ -265,11 +265,10 @@ class SignInPage {
                     if (buildingNameElement) {
                         const statusText = appState.currentLanguage === 'zh' ? '在范围内' : 'Within range';
                         const coordsLabel = appState.currentLanguage === 'zh' ? '当前坐标：' : 'Current coordinates: ';
-                        const locationStatus = appState.currentLanguage === 'zh' ? '（位置已知）' : '(Location Known)';
                         buildingNameElement.innerHTML = `
                             <div style="color: #28a745; font-weight: bold;">${result.data.building.name}</div>
                             <div style="font-size: 0.85em; color: #28a745; margin-top: 2px;">✓ ${statusText}</div>
-                            <small style="font-size: 0.75em; color: #666; margin-top: 4px; display: block;">${coordsLabel}${coordsText} ${locationStatus}</small>
+                            <small style="font-size: 0.75em; color: #666; margin-top: 4px; display: block;">${coordsLabel}${coordsText}</small>
                         `;
                         buildingNameElement.setAttribute('data-zh', `${result.data.building.name} - 在范围内`);
                         buildingNameElement.setAttribute('data-en', `${result.data.building.name_en} - Within range`);
@@ -280,11 +279,10 @@ class SignInPage {
                         const distance = result.data.distance;
                         const distanceText = appState.currentLanguage === 'zh' ? `距离 ${distance} 米` : `${distance}m away`;
                         const coordsLabel = appState.currentLanguage === 'zh' ? '当前坐标：' : 'Current coordinates: ';
-                        const locationStatus = appState.currentLanguage === 'zh' ? '（范围外）' : '(Out of Range)';
                         buildingNameElement.innerHTML = `
                             <div style="color: #ffc107; font-weight: bold;">${result.data.building.name}</div>
                             <div style="font-size: 0.85em; color: #ffc107; margin-top: 2px;">📍 ${distanceText}</div>
-                            <small style="font-size: 0.75em; color: #666; margin-top: 4px; display: block;">${coordsLabel}${coordsText} ${locationStatus}</small>
+                            <small style="font-size: 0.75em; color: #666; margin-top: 4px; display: block;">${coordsLabel}${coordsText}</small>
                         `;
                         buildingNameElement.setAttribute('data-zh', `${result.data.building.name} - 距离${distance}米`);
                         buildingNameElement.setAttribute('data-en', `${result.data.building.name_en} - ${distance}m away`);
@@ -294,11 +292,10 @@ class SignInPage {
                     if (buildingNameElement) {
                         const unknownText = appState.currentLanguage === 'zh' ? '位置未知' : 'Unknown Location';
                         const coordsLabel = appState.currentLanguage === 'zh' ? '当前坐标：' : 'Current coordinates: ';
-                        const locationStatus = appState.currentLanguage === 'zh' ? '（位置未知）' : '(Location Unknown)';
                         buildingNameElement.innerHTML = `
                             <div style="color: #dc3545; font-weight: bold;">${unknownText}</div>
                             <div style="font-size: 0.85em; color: #dc3545; margin-top: 2px;">❌ ${appState.currentLanguage === 'zh' ? '超出范围' : 'Out of range'}</div>
-                            <small style="font-size: 0.75em; color: #666; margin-top: 4px; display: block;">${coordsLabel}${coordsText} ${locationStatus}</small>
+                            <small style="font-size: 0.75em; color: #666; margin-top: 4px; display: block;">${coordsLabel}${coordsText}</small>
                         `;
                         buildingNameElement.setAttribute('data-zh', '位置未知 - 超出范围');
                         buildingNameElement.setAttribute('data-en', 'Unknown Location - Out of range');
@@ -328,10 +325,9 @@ class SignInPage {
             // 所有重试都失败了，显示失败状态
             if (buildingNameElement) {
                 const failedText = appState.currentLanguage === 'zh' ? '位置获取失败' : 'Location Failed';
-                const locationStatus = appState.currentLanguage === 'zh' ? '（获取失败）' : '(Failed)';
                 buildingNameElement.innerHTML = `
                     <div style="color: #dc3545; font-weight: bold;">${failedText}</div>
-                    <small style="font-size: 0.75em; color: #666; margin-top: 4px; display: block;">${coordsLabel}${coordsText} ${locationStatus}</small>
+                    <small style="font-size: 0.75em; color: #666; margin-top: 4px; display: block;">${coordsLabel}${coordsText}</small>
                 `;
                 buildingNameElement.setAttribute('data-zh', '位置获取失败');
                 buildingNameElement.setAttribute('data-en', 'Location Failed');
@@ -358,11 +354,10 @@ class SignInPage {
             // 在有效范围内，显示建筑名称和状态
             const buildingName = appState.currentLanguage === 'zh' ? buildingInfo.building.name : buildingInfo.building.name_en;
             const statusText = appState.currentLanguage === 'zh' ? '在范围内' : 'Within range';
-            const locationStatus = appState.currentLanguage === 'zh' ? '（位置已知）' : '(Location Known)';
             buildingNameElement.innerHTML = `
                 <div style="color: #28a745; font-weight: bold;">${buildingName}</div>
                 <div style="font-size: 0.85em; color: #28a745; margin-top: 2px;">✓ ${statusText}</div>
-                <small style="font-size: 0.75em; color: #666; margin-top: 4px; display: block;">${coordsLabel}${coordsText} ${locationStatus}</small>
+                <small style="font-size: 0.75em; color: #666; margin-top: 4px; display: block;">${coordsLabel}${coordsText}</small>
             `;
             buildingNameElement.setAttribute('data-zh', `${buildingInfo.building.name} - 在范围内`);
             buildingNameElement.setAttribute('data-en', `${buildingInfo.building.name_en} - Within range`);
@@ -371,23 +366,21 @@ class SignInPage {
             const distance = buildingInfo.distance;
             const buildingName = appState.currentLanguage === 'zh' ? buildingInfo.building.name : buildingInfo.building.name_en;
             const distanceText = appState.currentLanguage === 'zh' ? `距离 ${distance} 米` : `${distance}m away`;
-            const locationStatus = appState.currentLanguage === 'zh' ? '（范围外）' : '(Out of Range)';
             
             buildingNameElement.innerHTML = `
                 <div style="color: #ffc107; font-weight: bold;">${buildingName}</div>
                 <div style="font-size: 0.85em; color: #ffc107; margin-top: 2px;">📍 ${distanceText}</div>
-                <small style="font-size: 0.75em; color: #666; margin-top: 4px; display: block;">${coordsLabel}${coordsText} ${locationStatus}</small>
+                <small style="font-size: 0.75em; color: #666; margin-top: 4px; display: block;">${coordsLabel}${coordsText}</small>
             `;
             buildingNameElement.setAttribute('data-zh', `${buildingInfo.building.name} - 距离${distance}米`);
             buildingNameElement.setAttribute('data-en', `${buildingInfo.building.name_en} - ${distance}m away`);
         } else {
             // 没有找到任何建筑
             const unknownText = appState.currentLanguage === 'zh' ? '位置未知' : 'Unknown Location';
-            const locationStatus = appState.currentLanguage === 'zh' ? '（位置未知）' : '(Location Unknown)';
             buildingNameElement.innerHTML = `
                 <div style="color: #dc3545; font-weight: bold;">${unknownText}</div>
                 <div style="font-size: 0.85em; color: #dc3545; margin-top: 2px;">❌ ${appState.currentLanguage === 'zh' ? '超出范围' : 'Out of range'}</div>
-                <small style="font-size: 0.75em; color: #666; margin-top: 4px; display: block;">${coordsLabel}${coordsText} ${locationStatus}</small>
+                <small style="font-size: 0.75em; color: #666; margin-top: 4px; display: block;">${coordsLabel}${coordsText}</small>
             `;
             buildingNameElement.setAttribute('data-zh', '位置未知 - 超出范围');
             buildingNameElement.setAttribute('data-en', 'Unknown Location - Out of range');
@@ -826,47 +819,26 @@ class SignInPage {
                 }
             }
             
-            // 首先获取详细的位置信息
-            let buildingInfo = null;
-            let locationDescription = '位置未知';
+            // 准备签到数据
+            const signinData = {
+                student_id: appState.userInfo?.student_id || '2020000319',
+                name: appState.userInfo?.name || '胡凯峰',
+                course_name: document.getElementById('courseName').value.trim(),
+                classroom: document.getElementById('classroom').value.trim(),
+                photo: photoData,
+                latitude: this.currentLocation?.latitude,
+                longitude: this.currentLocation?.longitude,
+                location_address: this.currentLocation?.address,
+                wechat_userid: appState.userInfo?.wechat_userid,
+                timestamp: new Date().toISOString()
+            };
+    
+            console.log('提交签到数据:', signinData);
             
+            // 首先检查当前位置和课程
+            let buildingInfo = null;
             if (this.currentLocation?.latitude && this.currentLocation?.longitude) {
                 try {
-                    // 获取位置信息
-                    const locationResult = await Utils.request('/api/v1/location-info', {
-                        method: 'POST',
-                        body: JSON.stringify({
-                            longitude: this.currentLocation.longitude,
-                            latitude: this.currentLocation.latitude,
-                            timestamp: Math.floor(Date.now() / 1000)
-                        })
-                    });
-                    
-                    if (locationResult.success && locationResult.data) {
-                        buildingInfo = locationResult.data;
-                        
-                        // 生成位置描述
-                        if (buildingInfo.building && buildingInfo.is_valid_location) {
-                            // 在有效范围内
-                            locationDescription = `距离${buildingInfo.building.name}${buildingInfo.distance}米（位置已知）`;
-                        } else if (buildingInfo.building) {
-                            // 找到最近建筑但距离太远
-                            locationDescription = `距离${buildingInfo.building.name}${buildingInfo.distance}米（范围外）`;
-                        } else {
-                            // 没有找到任何建筑
-                            locationDescription = '位置未知（超出范围）';
-                        }
-                        
-                        console.log('位置信息获取成功:', buildingInfo);
-                        console.log('生成的位置描述:', locationDescription);
-                        
-                        // 显示建筑信息
-                        if (buildingInfo.building) {
-                            Utils.showMessage(`检测到您在${buildingInfo.building.name}(${buildingInfo.building.name_en})`, 'info', 2000);
-                        }
-                    }
-                    
-                    // 检查课程状态
                     const checkResult = await Utils.request('/api/v1/check-in', {
                         method: 'POST',
                         body: JSON.stringify({
@@ -877,35 +849,28 @@ class SignInPage {
                         })
                     });
                     
-                    if (checkResult.success && checkResult.data && checkResult.data.course) {
-                        const statusKey = `status_${checkResult.data.status}`;
-                        const statusText = Utils.t(statusKey) !== statusKey ? Utils.t(statusKey) : checkResult.data.status;
-                        const courseLabel = appState.currentLanguage === 'zh' ? '课程' : 'Course';
-                        Utils.showMessage(`${courseLabel}: ${checkResult.data.course.name} - ${statusText}`, 'info', 2000);
+                    if (checkResult.success && checkResult.data) {
+                        buildingInfo = checkResult.data;
+                        console.log('位置检查结果:', buildingInfo);
+                        
+                        // 显示建筑信息
+                        if (buildingInfo.building) {
+                            Utils.showMessage(`检测到您在${buildingInfo.building.name}(${buildingInfo.building.name_en})`, 'info', 2000);
+                        }
+                        
+                        // 如果有课程信息，显示课程状态
+                        if (buildingInfo.course) {
+                            const statusKey = `status_${buildingInfo.status}`;
+                            const statusText = Utils.t(statusKey) !== statusKey ? Utils.t(statusKey) : buildingInfo.status;
+                            const courseLabel = appState.currentLanguage === 'zh' ? '课程' : 'Course';
+                            Utils.showMessage(`${courseLabel}: ${buildingInfo.course.name} - ${statusText}`, 'info', 2000);
+                        }
                     }
                 } catch (error) {
                      console.warn('位置检查失败:', error);
                      Utils.showMessage(Utils.t('location_check_failed'), 'warning', 2000);
-                     // 如果位置检查失败，使用默认描述
-                     locationDescription = '位置获取失败';
                  }
             }
-            
-            // 准备签到数据，包含详细的位置描述
-            const signinData = {
-                student_id: appState.userInfo?.student_id || '2020000319',
-                name: appState.userInfo?.name || '胡凯峰',
-                course_name: document.getElementById('courseName').value.trim(),
-                classroom: document.getElementById('classroom').value.trim(),
-                photo: photoData,
-                latitude: this.currentLocation?.latitude,
-                longitude: this.currentLocation?.longitude,
-                location_address: locationDescription, // 使用生成的详细位置描述
-                wechat_userid: appState.userInfo?.wechat_userid,
-                timestamp: new Date().toISOString()
-            };
-    
-            console.log('提交签到数据:', signinData);
             
             // 提交到后端
             const result = await Utils.request('/signin', {

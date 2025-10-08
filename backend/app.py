@@ -348,6 +348,26 @@ def signin():
                 logger.error(f"照片处理失败: {e}")
                 # 继续签到流程，不因照片失败而中断
         
+        # 计算详细的位置信息
+        detailed_location_address = location_address or '未知位置'
+        if latitude and longitude:
+            try:
+                from services.attendance_service import AttendanceService
+                building_info = AttendanceService.find_nearest_building([float(longitude), float(latitude)])
+                
+                if building_info['building']:
+                    building_name = building_info['building']['name']
+                    distance = round(building_info['distance'], 0)
+                    status_text = '位置已知' if building_info['is_valid'] else '位置未知'
+                    detailed_location_address = f"距离{building_name}{distance}米（{status_text}）"
+                else:
+                    detailed_location_address = "未知位置（超出范围）"
+                    
+                logger.info(f"位置信息计算完成: {detailed_location_address}")
+            except Exception as e:
+                logger.warning(f"位置信息计算失败: {e}")
+                detailed_location_address = location_address or '未知位置'
+
         # 创建签到记录
         attendance = Attendance(
             user_id=user.id,
@@ -355,7 +375,7 @@ def signin():
             classroom=classroom,
             latitude=float(latitude),
             longitude=float(longitude),
-            location_address=location_address or '未知位置',
+            location_address=detailed_location_address,
             photo_path=photo_path,
             status='attended',  # 默认为出席
             signed_at=datetime.now()
