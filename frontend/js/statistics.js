@@ -424,7 +424,17 @@ class StatisticsPage {
         // 优先使用存储的详细位置信息
         if (record.location_address && record.location_address !== '未知位置' && record.location_address !== 'Unknown Location') {
             // 如果存储的位置信息包含详细信息，直接返回
-            if (record.location_address.includes('距离') || record.location_address.includes('位置已知') || record.location_address.includes('位置未知')) {
+            // 检查中文关键词
+            const hasChineseKeywords = record.location_address.includes('距离') || 
+                                     record.location_address.includes('位置已知') || 
+                                     record.location_address.includes('位置未知');
+            // 检查英文关键词
+            const hasEnglishKeywords = record.location_address.includes('m from') || 
+                                     record.location_address.includes('Within range') || 
+                                     record.location_address.includes('Out of range') ||
+                                     record.location_address.includes('Unknown location');
+            
+            if (hasChineseKeywords || hasEnglishKeywords) {
                 return record.location_address;
             }
         }
