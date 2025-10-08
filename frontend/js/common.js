@@ -984,36 +984,47 @@ const WeChatAPI = {
     // 获取地理位置
     async getLocation() {
         return new Promise((resolve, reject) => {
-            if (!appState.isWeChatReady) {
-                console.error('WeChat JS-SDK not ready for location');
-                reject(new Error('WeChat JS-SDK not ready'));
-                return;
-            }
-            
-            console.log('Attempting to get location via WeChat JS-SDK...');
-            
-            wx.getLocation({
-                type: 'gcj02',
-                success: (res) => {
-                    console.log('WeChat location success:', res);
-                    const location = {
-                        latitude: res.latitude,
-                        longitude: res.longitude,
-                        accuracy: res.accuracy,
-                        speed: res.speed,
-                        altitude: res.altitude
-                    };
-                    appState.location = location;
-                    resolve(location);
-                },
-                fail: (error) => {
-                    console.error('WeChat getLocation failed:', error);
-                    // 尝试使用浏览器原生定位API作为备选
-                    this._getBrowserLocation().then(resolve).catch(() => {
-                        reject(new Error(`WeChat location failed: ${JSON.stringify(error)}`));
-                    });
-                }
+            // 首先检查是否在企业微信环境中
+            const isInWeChat = this.isInWeChat();
+            console.log('Location request - Environment check:', {
+                isInWeChat: isInWeChat,
+                isWeChatReady: appState.isWeChatReady,
+                hasWxObject: typeof wx !== 'undefined'
             });
+            
+            // 如果在企业微信环境且SDK已准备好，优先使用企业微信定位
+            if (isInWeChat && appState.isWeChatReady && typeof wx !== 'undefined') {
+                console.log('Attempting to get location via WeChat JS-SDK...');
+                
+                wx.getLocation({
+                    type: 'gcj02',
+                    success: (res) => {
+                        console.log('WeChat location success:', res);
+                        const location = {
+                            latitude: res.latitude,
+                            longitude: res.longitude,
+                            accuracy: res.accuracy,
+                            speed: res.speed,
+                            altitude: res.altitude,
+                            source: 'wechat'
+                        };
+                        appState.location = location;
+                        resolve(location);
+                    },
+                    fail: (error) => {
+                        console.error('WeChat getLocation failed:', error);
+                        // 企业微信定位失败，尝试浏览器原生定位
+                        console.log('Falling back to browser geolocation...');
+                        this._getBrowserLocation().then(resolve).catch((browserError) => {
+                            reject(new Error(`Both WeChat and browser location failed. WeChat: ${JSON.stringify(error)}, Browser: ${browserError.message}`));
+                        });
+                    }
+                });
+            } else {
+                // 非企业微信环境或SDK未准备好，直接使用浏览器原生定位
+                console.log('Using browser geolocation (not in WeChat environment or SDK not ready)');
+                this._getBrowserLocation().then(resolve).catch(reject);
+            }
         });
     },
     
@@ -1021,11 +1032,18 @@ const WeChatAPI = {
     async _getBrowserLocation() {
         return new Promise((resolve, reject) => {
             if (!navigator.geolocation) {
-                reject(new Error('Browser geolocation not supported'));
+                reject(new Error('浏览器不支持定位功能'));
                 return;
             }
             
-            console.log('Trying browser geolocation as fallback...');
+            console.log('Using browser geolocation API...');
+            
+            // 设置定位选项
+            const options = {
+                enableHighAccuracy: true,  // 启用高精度定位
+                timeout: 15000,           // 15秒超时
+                maximumAge: 300000        // 5分钟内的缓存位置可用
+            };
             
             navigator.geolocation.getCurrentPosition(
                 (position) => {
@@ -1035,20 +1053,34 @@ const WeChatAPI = {
                         longitude: position.coords.longitude,
                         accuracy: position.coords.accuracy,
                         altitude: position.coords.altitude,
-                        speed: position.coords.speed
+                        speed: position.coords.speed,
+                        source: 'browser'
                     };
                     appState.location = location;
                     resolve(location);
                 },
                 (error) => {
                     console.error('Browser geolocation failed:', error);
-                    reject(new Error(`Browser location failed: ${error.message}`));
+                    
+                    // 根据错误类型提供更友好的错误信息
+                    let errorMessage = '定位获取失败';
+                    switch (error.code) {
+                        case error.PERMISSION_DENIED:
+                            errorMessage = '定位权限被拒绝，请在浏览器设置中允许位置访问';
+                            break;
+                        case error.POSITION_UNAVAILABLE:
+                            errorMessage = '定位信息不可用，请检查设备GPS或网络连接';
+                            break;
+                        case error.TIMEOUT:
+                            errorMessage = '定位请求超时，请稍后重试';
+                            break;
+                        default:
+                            errorMessage = `定位失败: ${error.message}`;
+                    }
+                    
+                    reject(new Error(errorMessage));
                 },
-                {
-                    enableHighAccuracy: true,
-                    timeout: 10000,
-                    maximumAge: 60000
-                }
+                options
             );
         });
     },
