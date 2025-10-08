@@ -48,8 +48,9 @@ class RecordsPage {
         if (timeRangeSelect) {
             timeRangeSelect.addEventListener('change', (e) => {
                 this.currentFilter.timeRange = e.target.value;
-                this.loadAttendanceData();
-                this.loadRecords();
+                // 时间范围变化时，重新计算统计数据并筛选记录
+                this.updateStatsBasedOnTimeRange();
+                this.filterRecords();
             });
         }
         
@@ -274,7 +275,7 @@ class RecordsPage {
             this.totalRecords = this.records.length;
             
             this.renderRecords();
-            this.loadAttendanceData(); // 重新计算出勤数据
+            this.updateStatsBasedOnTimeRange(); // 基于时间范围重新计算出勤数据
             this.hideLoadingState('records');
             
         } catch (error) {
@@ -411,6 +412,63 @@ class RecordsPage {
         if (absentValue) absentValue.textContent = data.absentDays;
     }
     
+    // 根据时间范围筛选记录（用于统计数据计算）
+    getTimeFilteredRecords() {
+        if (!this.currentFilter.timeRange) {
+            return this.records;
+        }
+
+        return this.records.filter(record => {
+            const recordDate = new Date(record.time);
+            const now = new Date();
+            
+            if (this.currentFilter.timeRange === 'week') {
+                // 本周的开始（周一）
+                const day = now.getDay() || 7; // 如果是周日，getDay()返回0，转为7
+                const weekStart = new Date(now);
+                weekStart.setDate(now.getDate() - day + 1);
+                weekStart.setHours(0, 0, 0, 0);
+                return recordDate >= weekStart;
+            } else if (this.currentFilter.timeRange === 'month') {
+                // 本月的开始
+                const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+                return recordDate >= monthStart;
+            } else if (this.currentFilter.timeRange === 'semester') {
+                // 本学期（假设为近3个月）
+                const semesterStart = new Date(now);
+                semesterStart.setMonth(now.getMonth() - 3);
+                semesterStart.setHours(0, 0, 0, 0);
+                return recordDate >= semesterStart;
+            }
+            
+            return true;
+        });
+    }
+
+    // 更新统计数据（只基于时间范围筛选）
+    updateStatsBasedOnTimeRange() {
+        const timeFilteredRecords = this.getTimeFilteredRecords();
+        
+        const attendedCount = timeFilteredRecords.filter(r => r.status === 'attended').length;
+        const lateCount = timeFilteredRecords.filter(r => r.status === 'late').length;
+        const absentCount = timeFilteredRecords.filter(r => r.status === 'absent').length;
+        const totalCount = attendedCount + lateCount + absentCount;
+        
+        // 计算出勤率：正常出勤 + 迟到*0.5
+        const attendanceRate = totalCount > 0 ? 
+            Math.round(((attendedCount + lateCount * 0.5) / totalCount) * 100) : 0;
+        
+        const attendanceData = {
+            totalDays: totalCount,
+            attendedDays: attendedCount,
+            lateDays: lateCount,
+            absentDays: absentCount,
+            attendanceRate: attendanceRate
+        };
+        
+        this.updateAttendanceStats(attendanceData);
+    }
+
     filterRecords() {
         this.filteredRecords = this.records.filter(record => {
             // 搜索过滤
@@ -456,25 +514,8 @@ class RecordsPage {
         this.currentPage = 1; // 重置到第一页
         this.renderRecords();
         
-        // 筛选后重新计算出勤统计数据
-        const attendedCount = this.filteredRecords.filter(r => r.status === 'attended').length;
-        const lateCount = this.filteredRecords.filter(r => r.status === 'late').length;
-        const absentCount = this.filteredRecords.filter(r => r.status === 'absent').length;
-        const totalCount = attendedCount + lateCount + absentCount;
-        
-        // 计算出勤率：正常出勤 + 迟到*0.5
-        const attendanceRate = totalCount > 0 ? 
-            Math.round(((attendedCount + lateCount * 0.5) / totalCount) * 100) : 0;
-        
-        const attendanceData = {
-            totalDays: totalCount,
-            attendedDays: attendedCount,
-            lateDays: lateCount,
-            absentDays: absentCount,
-            attendanceRate: attendanceRate
-        };
-        
-        this.updateAttendanceStats(attendanceData);
+        // 只在时间范围变化时更新统计数据，状态筛选不影响统计
+        // 这个方法会在时间范围选择器变化时单独调用
     }
     
     renderRecords() {
@@ -503,9 +544,9 @@ class RecordsPage {
         // 渲染记录
         tbody.innerHTML = pageRecords.map(record => {
             const statusText = {
-                'attended': '已签到',
-                'late': '迟到',
-                'absent': '缺勤'
+                'attended': Utils.t('status_present'),
+                'late': Utils.t('status_late'),
+                'absent': Utils.t('status_absent')
             }[record.status] || record.status;
             
             const photoCell = record.photo ? 
@@ -517,7 +558,7 @@ class RecordsPage {
                     <td>${record.name}</td>
                     <td>${record.studentId}</td>
                     <td>${record.course}</td>
-                    <td>${record.location}</td>
+                    <td>${this.formatLocationInfo(record)}</td>
                     <td><span class="status-badge ${record.status}">${statusText}</span></td>
                     <td>${Utils.formatDateTime(record.time)}</td>
                     <td>${photoCell}</td>
@@ -529,6 +570,64 @@ class RecordsPage {
         this.updatePagination();
     }
     
+    // 计算两点间距离（米）
+    calculateDistance(lat1, lon1, lat2, lon2) {
+        const R = 6371000; // 地球半径（米）
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLon = (lon2 - lon1) * Math.PI / 180;
+        const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                Math.sin(dLon/2) * Math.sin(dLon/2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        return R * c;
+    }
+
+    // 格式化位置信息，包含距离最近教学楼的信息
+    formatLocationInfo(record) {
+        // 如果有明确的位置信息
+        if (record.location && record.location !== '未知位置') {
+            return record.location;
+        }
+
+        // 如果有经纬度信息，计算距离最近的教学楼
+        if (record.latitude && record.longitude) {
+            // 教学楼坐标（示例数据，实际应从配置或API获取）
+            const buildings = [
+                { name: '文科楼', lat: 22.5342, lon: 113.9356 },
+                { name: '理科楼', lat: 22.5345, lon: 113.9360 },
+                { name: '工学院', lat: 22.5340, lon: 113.9350 },
+                { name: '计算机学院', lat: 22.5338, lon: 113.9365 }
+            ];
+
+            let nearestBuilding = null;
+            let minDistance = Infinity;
+
+            buildings.forEach(building => {
+                const distance = this.calculateDistance(
+                    record.latitude, record.longitude,
+                    building.lat, building.lon
+                );
+                if (distance < minDistance) {
+                    minDistance = distance;
+                    nearestBuilding = building;
+                }
+            });
+
+            if (nearestBuilding && minDistance < 1000) { // 1公里内
+                const distanceText = minDistance < 100 
+                    ? `${Math.round(minDistance)}${Utils.t('meters')}`
+                    : `${(minDistance / 1000).toFixed(1)}${Utils.t('kilometers')}`;
+                
+                return appState.currentLanguage === 'zh'
+                    ? `距离${nearestBuilding.name} ${distanceText}`
+                    : `${distanceText} from ${nearestBuilding.name}`;
+            }
+        }
+
+        // 默认返回未知位置
+        return Utils.t('unknown_location');
+    }
+
     updatePagination() {
         const totalPages = Math.ceil(this.filteredRecords.length / this.pageSize);
         const startRecord = (this.currentPage - 1) * this.pageSize + 1;
@@ -548,7 +647,12 @@ class RecordsPage {
         }
         
         if (pageInfo) {
-            pageInfo.textContent = `第 ${this.currentPage} 页，共 ${totalPages} 页`;
+            const pageText = appState.currentLanguage === 'zh' 
+                ? `第 ${this.currentPage} 页，共 ${totalPages} 页`
+                : `Page ${this.currentPage} of ${totalPages}`;
+            pageInfo.textContent = pageText;
+            pageInfo.setAttribute('data-zh', `第 ${this.currentPage} 页，共 ${totalPages} 页`);
+            pageInfo.setAttribute('data-en', `Page ${this.currentPage} of ${totalPages}`);
         }
     }
     

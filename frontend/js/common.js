@@ -93,6 +93,8 @@ const LANGUAGES = {
         unknown_location: '未知',
         latitude: '纬度',
         longitude: '经度',
+        meters: '米',
+        kilometers: '公里',
         
         // 表单相关
         form_reset: '表单已重置',
@@ -221,6 +223,8 @@ const LANGUAGES = {
         unknown_location: 'Unknown',
         latitude: 'Latitude',
         longitude: 'Longitude',
+        meters: 'm',
+        kilometers: 'km',
         
         // Form related
         form_reset: 'Form has been reset',

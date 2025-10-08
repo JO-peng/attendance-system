@@ -357,6 +357,10 @@ class StatisticsPage {
                     <span class="detail-label" data-zh="位置" data-en="Location">位置</span>
                     <span class="detail-value">${record.location ? `${Utils.t('latitude')}: ${record.location.latitude.toFixed(4)}, ${Utils.t('longitude')}: ${record.location.longitude.toFixed(4)}` : Utils.t('unknown_location')}</span>
                 </div>
+                <div class="detail-item">
+                    <span class="detail-label" data-zh="教学楼" data-en="Building">教学楼</span>
+                    <span class="detail-value">${record.building || record.buildingName || Utils.t('unknown_location')}</span>
+                </div>
             `;
         } else {
             contentElement.innerHTML = `
