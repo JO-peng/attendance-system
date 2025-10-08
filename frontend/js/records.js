@@ -198,7 +198,7 @@ class RecordsPage {
                     attendanceRate: 0
                 });
                 
-                Utils.showMessage('授权已过期，统计数据无法加载', 'warning');
+                Utils.showMessage(Utils.t('auth_expired_stats'), 'warning');
             } else {
                 // 其他错误：如果API调用失败，计算本地数据
                 const attendedCount = this.filteredRecords.filter(r => r.status === 'attended').length;
@@ -219,7 +219,7 @@ class RecordsPage {
                 };
                 
                 this.updateAttendanceStats(attendanceData);
-                Utils.showMessage('加载出勤数据失败，使用本地计算', 'warning');
+                Utils.showMessage(Utils.t('load_attendance_failed'), 'warning');
             }
             
             this.hideLoadingState('attendance');
@@ -239,7 +239,7 @@ class RecordsPage {
                 this.totalRecords = 0;
                 this.renderRecords();
                 this.hideLoadingState('records');
-                Utils.showMessage('无法获取用户信息，请刷新页面重试', 'warning');
+                Utils.showMessage(Utils.t('user_info_load_failed'), 'warning');
                 return;
             }
             
@@ -267,7 +267,7 @@ class RecordsPage {
                 // 如果API调用失败，显示空状态
                 console.warn('API调用失败，无法获取记录数据');
                 this.records = [];
-                Utils.showMessage('无法获取记录数据，请检查网络连接', 'error');
+                Utils.showMessage(Utils.t('load_records_failed'), 'error');
             }
             
             this.filteredRecords = [...this.records];
@@ -291,7 +291,7 @@ class RecordsPage {
                 appState.clearStoredUserInfo();
                 sessionStorage.removeItem('userInfo_retry_count');
                 
-                Utils.showMessage('授权已过期，请刷新页面重新登录', 'warning', 5000);
+                Utils.showMessage(Utils.t('auth_expired'), 'warning', 5000);
                 
                 // 显示友好的错误状态
                 const recordsContainer = document.getElementById('recordsContainer');
@@ -313,13 +313,13 @@ class RecordsPage {
                 this.renderRecords();
                 
                 // 根据错误类型显示不同的消息
-                let errorMessage = '加载记录失败';
+                let errorMessage = Utils.t('load_records_failed');
                 if (error.message && error.message.includes('网络')) {
-                    errorMessage = '网络连接失败，请检查网络设置后重试';
+                    errorMessage = Utils.t('network_error');
                 } else if (error.message && error.message.includes('500')) {
-                    errorMessage = '服务器暂时不可用，请稍后重试';
+                    errorMessage = Utils.t('server_error');
                 } else if (error.message) {
-                    errorMessage = `加载失败: ${error.message}`;
+                    errorMessage = `${Utils.t('error')}: ${error.message}`;
                 }
                 
                 Utils.showMessage(errorMessage, 'error');
@@ -575,20 +575,22 @@ class RecordsPage {
     
     async exportRecords() {
         try {
-            Utils.showMessage('正在导出数据...', 'info');
+            Utils.showMessage(Utils.t('exporting_data'), 'info');
             
             // 模拟导出延迟
             await Utils.delay(1500);
             
             // 创建CSV内容
-            const headers = ['姓名', '学号', '课程', '位置', '状态', '时间'];
+            const headers = appState.currentLanguage === 'zh' 
+                ? ['姓名', '学号', '课程', '位置', '状态', '时间']
+                : ['Name', 'Student ID', 'Course', 'Location', 'Status', 'Time'];
             const csvContent = [headers.join(',')];
             
             this.filteredRecords.forEach(record => {
                 const statusText = {
-                    'attended': '已签到',
-                    'late': '迟到',
-                    'absent': '缺勤'
+                    'attended': Utils.t('status_present'),
+                    'late': Utils.t('status_late'),
+                    'absent': Utils.t('status_absent')
                 }[record.status] || record.status;
                 
                 const row = [
@@ -616,11 +618,10 @@ class RecordsPage {
             link.click();
             document.body.removeChild(link);
             
-            Utils.showMessage('导出成功', 'success');
-            
+            Utils.showMessage(Utils.t('export_success'), 'success');
         } catch (error) {
             console.error('导出失败:', error);
-            Utils.showMessage('导出失败', 'error');
+            Utils.showMessage(Utils.t('export_failed'), 'error');
         }
     }
     

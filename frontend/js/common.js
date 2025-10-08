@@ -84,8 +84,60 @@ const LANGUAGES = {
         export_success: '导出成功',
         export_failed: '导出失败',
         
+        // 状态相关
+        status_present: '已签到',
+        status_late: '迟到',
+        status_absent: '缺勤',
+        
+        // 位置相关
+        unknown_location: '未知',
+        latitude: '纬度',
+        longitude: '经度',
+        
         // 表单相关
-        form_reset: '表单已重置'
+        form_reset: '表单已重置',
+        
+        // 签到状态
+        status_present: '正常签到',
+        status_late: '迟到签到',
+        status_absent: '缺席',
+        status_no_class: '当前无课程',
+        
+        // 位置信息
+        distance_to_building: '距离最近签到楼',
+        building_too_far: '距离签到楼太远',
+        unknown_location: '位置未知',
+        current_coordinates: '当前位置坐标',
+        meters: '米',
+        latitude: '纬度',
+        longitude: '经度',
+        
+        // 时间选择
+        year: '年',
+        month: '月',
+        january: '一月',
+        february: '二月',
+        march: '三月',
+        april: '四月',
+        may: '五月',
+        june: '六月',
+        july: '七月',
+        august: '八月',
+        september: '九月',
+        october: '十月',
+        november: '十一月',
+        december: '十二月',
+        
+        // 反馈相关
+        rating_required: '请选择评分',
+        max_images_exceeded: '最多只能上传{count}张图片',
+        invalid_image_file: '{filename} 不是有效的图片文件',
+        image_too_large_specific: '{filename} 文件过大，请选择小于5MB的图片',
+        submit_failed_retry: '提交失败，请稍后重试',
+        
+        // 确认对话框
+        reset_confirm_title: '确认重置',
+        reset_confirm_message: '确定要重置表单吗？所有已填写的内容将被清除。'
     },
     en: {
         // Common
@@ -160,8 +212,60 @@ const LANGUAGES = {
         export_success: 'Export successful',
         export_failed: 'Export failed',
         
+        // Status related
+        status_present: 'Present',
+        status_late: 'Late',
+        status_absent: 'Absent',
+        
+        // Location related
+        unknown_location: 'Unknown',
+        latitude: 'Latitude',
+        longitude: 'Longitude',
+        
         // Form related
-        form_reset: 'Form has been reset'
+        form_reset: 'Form has been reset',
+        
+        // Sign-in status
+        status_present: 'Present',
+        status_late: 'Late',
+        status_absent: 'Absent',
+        status_no_class: 'No Class',
+        
+        // Location info
+        distance_to_building: 'Distance to nearest building',
+        building_too_far: 'Too far from building',
+        unknown_location: 'Unknown location',
+        current_coordinates: 'Current coordinates',
+        meters: 'meters',
+        latitude: 'Latitude',
+        longitude: 'Longitude',
+        
+        // Time selection
+        year: 'Year',
+        month: 'Month',
+        january: 'January',
+        february: 'February',
+        march: 'March',
+        april: 'April',
+        may: 'May',
+        june: 'June',
+        july: 'July',
+        august: 'August',
+        september: 'September',
+        october: 'October',
+        november: 'November',
+        december: 'December',
+        
+        // Feedback related
+        rating_required: 'Please select a rating',
+        max_images_exceeded: 'Maximum {count} images allowed',
+        invalid_image_file: '{filename} is not a valid image file',
+        image_too_large_specific: '{filename} is too large, please select image smaller than 5MB',
+        submit_failed_retry: 'Submit failed, please try again later',
+        
+        // Confirm dialog
+        reset_confirm_title: 'Confirm Reset',
+        reset_confirm_message: 'Are you sure you want to reset the form? All filled content will be cleared.'
     }
 };
 
@@ -416,8 +520,18 @@ const ResourceManager = {
 // 工具函数
 const Utils = {
     // 获取多语言文本
-    t(key) {
-        return LANGUAGES[appState.currentLanguage][key] || key;
+    t(key, params = {}) {
+        let text = LANGUAGES[appState.currentLanguage][key] || key;
+        
+        // 支持参数替换，格式：{paramName}
+        if (params && typeof params === 'object') {
+            Object.keys(params).forEach(param => {
+                const placeholder = `{${param}}`;
+                text = text.replace(new RegExp(placeholder, 'g'), params[param]);
+            });
+        }
+        
+        return text;
     },
     
     // 显示消息提示
@@ -563,8 +677,8 @@ const Utils = {
         dialog.innerHTML = `
             <div style="margin-bottom: 20px; font-size: 16px; line-height: 1.5;">${message}</div>
             <div style="display: flex; gap: 12px; justify-content: flex-end;">
-                <button id="cancelBtn" style="padding: 8px 16px; border: 1px solid #ccc; background: white; border-radius: 6px; cursor: pointer;">取消</button>
-                <button id="confirmBtn" style="padding: 8px 16px; border: none; background: #3B82F6; color: white; border-radius: 6px; cursor: pointer;">确认</button>
+                <button id="cancelBtn" style="padding: 8px 16px; border: 1px solid #ccc; background: white; border-radius: 6px; cursor: pointer;">${Utils.t('cancel')}</button>
+                <button id="confirmBtn" style="padding: 8px 16px; border: none; background: #3B82F6; color: white; border-radius: 6px; cursor: pointer;">${Utils.t('confirm')}</button>
             </div>
         `;
         

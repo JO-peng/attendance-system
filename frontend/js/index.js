@@ -316,24 +316,32 @@ class SignInPage {
         
         const lat = this.currentLocation.latitude.toFixed(4);
         const lng = this.currentLocation.longitude.toFixed(4);
-        const coordsText = `(${lat}, ${lng})`;
+        
+        // 创建用户友好的坐标显示
+        const coordsLabel = Utils.t('current_coordinates');
+        const coordsText = `${coordsLabel}: ${lat}, ${lng}`;
         
         if (buildingInfo.building && buildingInfo.is_valid_location) {
             // 在有效范围内，显示建筑名称和坐标
-            buildingNameElement.innerHTML = `${buildingInfo.building.name}<br><small style="font-size: 0.8em; color: #666;">${coordsText}</small>`;
+            const buildingName = appState.currentLanguage === 'zh' ? buildingInfo.building.name : buildingInfo.building.name_en;
+            buildingNameElement.innerHTML = `${buildingName}<br><small style="font-size: 0.8em; color: #666;">${coordsText}</small>`;
             buildingNameElement.setAttribute('data-zh', buildingInfo.building.name);
             buildingNameElement.setAttribute('data-en', buildingInfo.building.name_en);
         } else if (buildingInfo.building) {
             // 找到最近建筑但距离太远
             const distance = buildingInfo.distance;
-            buildingNameElement.innerHTML = `${buildingInfo.building.name} (${distance}m)<br><small style="font-size: 0.8em; color: #666;">${coordsText}</small>`;
-            buildingNameElement.setAttribute('data-zh', `${buildingInfo.building.name} (距离${distance}米)`);
-            buildingNameElement.setAttribute('data-en', `${buildingInfo.building.name_en} (${distance}m away)`);
+            const buildingName = appState.currentLanguage === 'zh' ? buildingInfo.building.name : buildingInfo.building.name_en;
+            const distanceText = Utils.t('distance_to_building', { distance: distance });
+            
+            buildingNameElement.innerHTML = `${buildingName} (${distanceText})<br><small style="font-size: 0.8em; color: #666;">${coordsText}</small>`;
+            buildingNameElement.setAttribute('data-zh', `${buildingInfo.building.name} (${Utils.t('distance_to_building', { distance: distance })})`);
+            buildingNameElement.setAttribute('data-en', `${buildingInfo.building.name_en} (${Utils.t('distance_to_building', { distance: distance })})`);
         } else {
             // 没有找到任何建筑
-            buildingNameElement.innerHTML = `位置未知<br><small style="font-size: 0.8em; color: #666;">${coordsText}</small>`;
-            buildingNameElement.setAttribute('data-zh', '位置未知');
-            buildingNameElement.setAttribute('data-en', 'Unknown Location');
+            const unknownText = Utils.t('unknown_location');
+            buildingNameElement.innerHTML = `${unknownText}<br><small style="font-size: 0.8em; color: #666;">${coordsText}</small>`;
+            buildingNameElement.setAttribute('data-zh', Utils.t('unknown_location'));
+            buildingNameElement.setAttribute('data-en', Utils.t('unknown_location'));
         }
     }
     
@@ -792,13 +800,10 @@ class SignInPage {
                         
                         // 如果有课程信息，显示课程状态
                         if (buildingInfo.course) {
-                            const statusText = {
-                                'present': '正常签到',
-                                'late': '迟到签到',
-                                'absent': '缺席',
-                                'no_class': '当前无课程'
-                            };
-                            Utils.showMessage(`课程: ${buildingInfo.course.name} - ${statusText[buildingInfo.status] || buildingInfo.status}`, 'info', 2000);
+                            const statusKey = `status_${buildingInfo.status}`;
+                            const statusText = Utils.t(statusKey) !== statusKey ? Utils.t(statusKey) : buildingInfo.status;
+                            const courseLabel = appState.currentLanguage === 'zh' ? '课程' : 'Course';
+                            Utils.showMessage(`${courseLabel}: ${buildingInfo.course.name} - ${statusText}`, 'info', 2000);
                         }
                     }
                 } catch (error) {

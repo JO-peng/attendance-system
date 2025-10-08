@@ -124,7 +124,7 @@ class StatisticsPage {
                 this.renderCalendar();
                 this.updateStatistics();
                 this.hideLoadingState();
-                Utils.showMessage('无法获取用户信息，请刷新页面重试', 'warning');
+                Utils.showMessage(Utils.t('user_info_load_failed'), 'warning');
                 return;
             }
             
@@ -191,7 +191,7 @@ class StatisticsPage {
             this.renderCalendar();
             this.updateStatistics();
             
-            Utils.showMessage('加载数据失败：' + error.message, 'error');
+            Utils.showMessage(`${Utils.t('error')}: ${error.message}`, 'error');
         }
     }
     
@@ -355,7 +355,7 @@ class StatisticsPage {
                 </div>
                 <div class="detail-item">
                     <span class="detail-label" data-zh="位置" data-en="Location">位置</span>
-                    <span class="detail-value">${record.location ? `${record.location.latitude.toFixed(4)}, ${record.location.longitude.toFixed(4)}` : '未知'}</span>
+                    <span class="detail-value">${record.location ? `${Utils.t('latitude')}: ${record.location.latitude.toFixed(4)}, ${Utils.t('longitude')}: ${record.location.longitude.toFixed(4)}` : Utils.t('unknown_location')}</span>
                 </div>
             `;
         } else {

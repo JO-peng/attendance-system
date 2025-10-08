@@ -191,7 +191,12 @@ class FeedbackPage {
         const resetBtn = document.getElementById('resetBtn');
         if (resetBtn) {
             resetBtn.addEventListener('click', () => {
-                this.resetForm();
+                Utils.showConfirm(
+                    Utils.t('reset_confirm_message'),
+                    () => {
+                        this.resetForm();
+                    }
+                );
             });
         }
         
@@ -225,15 +230,20 @@ class FeedbackPage {
         const ratingText = document.getElementById('ratingText');
         if (!ratingText) return;
         
-        const texts = {
+        const texts = appState.currentLanguage === 'zh' ? {
             1: '很不满意',
             2: '不满意',
             3: '一般',
             4: '满意',
             5: '非常满意'
+        } : {
+            1: 'Very Dissatisfied',
+            2: 'Dissatisfied',
+            3: 'Neutral',
+            4: 'Satisfied',
+            5: 'Very Satisfied'
         };
-        
-        ratingText.textContent = texts[rating] || '请选择评分';
+        ratingText.textContent = texts[rating] || Utils.t('feedback.selectRating');
     }
     
     updateCharCount() {
@@ -260,20 +270,29 @@ class FeedbackPage {
         
         // 检查图片数量限制
         if (this.selectedImages.length + fileArray.length > this.maxImages) {
-            Utils.showMessage(`最多只能上传${this.maxImages}张图片`, 'warning');
+            const message = appState.currentLanguage === 'zh' 
+                ? `最多只能上传${this.maxImages}张图片`
+                : `Maximum ${this.maxImages} images allowed`;
+            Utils.showMessage(message, 'warning');
             return;
         }
         
         fileArray.forEach(file => {
             // 检查文件类型
             if (!file.type.startsWith('image/')) {
-                Utils.showMessage(`${file.name} 不是有效的图片文件`, 'error');
+                const message = appState.currentLanguage === 'zh'
+                    ? `${file.name} 不是有效的图片文件`
+                    : `${file.name} is not a valid image file`;
+                Utils.showMessage(message, 'error');
                 return;
             }
             
             // 检查文件大小
             if (file.size > this.maxImageSize) {
-                Utils.showMessage(`${file.name} 文件过大，请选择小于5MB的图片`, 'error');
+                const message = appState.currentLanguage === 'zh'
+                    ? `${file.name} 文件过大，请选择小于5MB的图片`
+                    : `${file.name} is too large, please select an image under 5MB`;
+                Utils.showMessage(message, 'error');
                 return;
             }
             
@@ -345,21 +364,27 @@ class FeedbackPage {
         
         // 检查评分
         if (this.rating === 0) {
-            errors.push('请选择评分');
+            const message = appState.currentLanguage === 'zh' ? '请选择评分' : 'Please select a rating';
+            errors.push(message);
         }
         
         // 检查反馈类型
         const feedbackType = document.querySelector('input[name="feedbackType"]:checked');
         if (!feedbackType) {
-            errors.push('请选择反馈类型');
+            const message = appState.currentLanguage === 'zh' ? '请选择反馈类型' : 'Please select feedback type';
+            errors.push(message);
         }
         
         // 检查反馈内容
         const feedbackContent = document.getElementById('feedbackContent');
         if (!feedbackContent || !feedbackContent.value.trim()) {
-            errors.push('请填写反馈内容');
+            const message = appState.currentLanguage === 'zh' ? '请填写反馈内容' : 'Please enter feedback content';
+            errors.push(message);
         } else if (feedbackContent.value.length > this.maxContentLength) {
-            errors.push(`反馈内容不能超过${this.maxContentLength}个字符`);
+            const message = appState.currentLanguage === 'zh' 
+                ? `反馈内容不能超过${this.maxContentLength}个字符`
+                : `Feedback content cannot exceed ${this.maxContentLength} characters`;
+            errors.push(message);
         }
         
         // 检查联系方式格式（如果填写了）
@@ -370,7 +395,10 @@ class FeedbackPage {
             const phoneRegex = /^1[3-9]\d{9}$/;
             
             if (!emailRegex.test(contact) && !phoneRegex.test(contact)) {
-                errors.push('请填写有效的邮箱或手机号');
+                const message = appState.currentLanguage === 'zh' 
+                    ? '请填写有效的邮箱或手机号'
+                    : 'Please enter a valid email or phone number';
+                errors.push(message);
             }
         }
         
@@ -422,7 +450,10 @@ class FeedbackPage {
             
         } catch (error) {
             console.error('提交反馈失败:', error);
-            Utils.showMessage(error.message || '提交失败，请稍后重试', 'error');
+            const errorMessage = error.message || (appState.currentLanguage === 'zh' 
+                ? '提交失败，请稍后重试'
+                : 'Submission failed, please try again later');
+            Utils.showMessage(errorMessage, 'error');
         } finally {
             this.setSubmitLoading(false);
         }
@@ -497,7 +528,7 @@ class FeedbackPage {
         // 更新上传按钮
         this.updateUploadButton();
         
-        Utils.showMessage('表单已重置', 'info');
+        Utils.showMessage(Utils.t('form_reset'), 'info');
     }
 }
 
