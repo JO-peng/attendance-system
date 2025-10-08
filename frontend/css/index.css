@@ -80,6 +80,63 @@
     position: relative;
 }
 
+/* 地图控制按钮样式 */
+.map-controls {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 1000;
+}
+
+.location-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: white;
+    border: 1px solid var(--gray-300);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    transition: all 0.3s ease;
+}
+
+.location-btn:hover {
+    background: var(--gray-50);
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.location-btn:active {
+    transform: scale(0.95);
+}
+
+.location-btn svg {
+    color: var(--primary-color);
+}
+
+/* 高德地图自定义定位按钮样式 */
+.amap-custom-location-btn {
+    position: absolute;
+    top: 10px;
+    right: 50px;
+    z-index: 1000;
+}
+
+.amap-custom-location-btn div {
+    transition: all 0.3s ease;
+}
+
+.amap-custom-location-btn div:hover {
+    background: #f5f5f5;
+    transform: scale(1.05);
+}
+
+.amap-custom-location-btn div:active {
+    transform: scale(0.95);
+}
+
 /* 地图加载状态 */
 .map-container::before {
     content: '';

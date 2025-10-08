@@ -569,6 +569,8 @@ class SignInPage {
                 
                 if (result.success && result.data) {
                     this.updateCourseInfo(result.data);
+                    // 显示地图区域
+                    this.showMapSection();
                 }
             } catch (error) {
                 console.warn('获取位置和课程信息失败:', error);
@@ -1019,8 +1021,17 @@ class SignInPage {
     
     // 初始化地图
     initMap() {
+        // 检查高德地图API是否加载成功
         if (!window.AMap) {
-            console.warn('高德地图API未加载');
+            console.warn('高德地图API未加载，尝试重新加载...');
+            this.loadAMapAPI();
+            return;
+        }
+
+        // 检查AMap对象是否包含必要的构造函数
+        if (!AMap.Map || !AMap.Scale || !AMap.ToolBar) {
+            console.warn('高德地图API组件不完整，重新加载...');
+            this.loadAMapAPI();
             return;
         }
 
@@ -1050,33 +1061,307 @@ class SignInPage {
             this.map.on('complete', () => {
                 mapContainer.classList.add('loaded');
                 console.log('地图加载完成');
+                
+                // 延迟添加控件，确保地图完全加载
+                setTimeout(() => {
+                    this.addMapControls();
+                }, 500);
+                
+                // 如果有当前位置和建筑信息，立即更新地图显示
+                if (this.currentLocation) {
+                    this.updateMapDisplay(this.currentLocation, this.currentBuildingInfo);
+                }
+                
+                Utils.showMessage('地图加载成功', 'success', 2000);
             });
 
-            // 添加地图控件
-            this.map.addControl(new AMap.Scale({
-                position: {
-                    bottom: '10px',
-                    left: '10px'
-                }
-            }));
-            
-            this.map.addControl(new AMap.ToolBar({
-                position: {
-                    top: '10px',
-                    right: '10px'
-                },
-                locate: false,
-                noIpLocate: true
-            }));
+            // 地图加载失败事件
+            this.map.on('error', (error) => {
+                console.error('地图加载错误:', error);
+                this.showMapError('地图加载失败，请检查网络连接');
+            });
 
         } catch (error) {
             console.error('地图初始化失败:', error);
+            this.showMapError('地图初始化失败: ' + error.message);
+        }
+    }
+
+    // 添加地图控件
+    addMapControls() {
+        if (!this.map || !window.AMap) {
+            console.warn('地图或API未就绪，无法添加控件');
+            return;
+        }
+
+        try {
+            // 添加比例尺控件
+            if (AMap.Scale) {
+                this.map.addControl(new AMap.Scale({
+                    position: {
+                        bottom: '10px',
+                        left: '10px'
+                    }
+                }));
+            } else {
+                console.warn('比例尺控件不可用');
+            }
+            
+            // 添加工具栏控件（包含定位功能）
+            if (AMap.ToolBar) {
+                this.map.addControl(new AMap.ToolBar({
+                    position: {
+                        top: '10px',
+                        right: '10px'
+                    },
+                    locate: true, // 启用定位功能
+                    noIpLocate: true
+                }));
+            } else {
+                console.warn('工具栏控件不可用');
+            }
+            
+            // 添加自定义定位按钮
+            this.addCustomLocationButton();
+            
+        } catch (error) {
+            console.error('添加地图控件失败:', error);
+        }
+    }
+
+    // 添加自定义定位按钮
+    addCustomLocationButton() {
+        if (!this.map) return;
+        
+        // 创建定位按钮
+        const locationBtn = document.createElement('div');
+        locationBtn.className = 'amap-custom-location-btn';
+        locationBtn.innerHTML = `
+            <div style="width: 30px; height: 30px; background: white; border-radius: 2px; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.3);">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="#666">
+                    <path d="M8 0C3.58 0 0 3.58 0 8s3.58 8 8 8 8-3.58 8-8-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6s2.69-6 6-6 6 2.69 6 6-2.69 6-6 6zm0-11c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zm0 8c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3z"/>
+                </svg>
+            </div>
+        `;
+        
+        // 定位按钮点击事件
+        locationBtn.onclick = () => {
+            this.backToUserLocation();
+        };
+        
+        // 将按钮添加到地图控件容器
+        this.map.plugin(['AMap.ToolBar'], () => {
+            const toolBarContainer = this.map.getContainer().querySelector('.amap-toolbar');
+            if (toolBarContainer) {
+                // 在工具栏上方添加定位按钮
+                toolBarContainer.parentNode.insertBefore(locationBtn, toolBarContainer);
+            }
+        });
+    }
+
+    // 加载高德地图API
+    loadAMapAPI() {
+        // 检查是否已经在加载中
+        if (this.isLoadingAMap) {
+            console.log('高德地图API正在加载中...');
+            return;
+        }
+        
+        this.isLoadingAMap = true;
+        
+        // 先移除可能存在的旧脚本
+        const existingScripts = document.querySelectorAll('script[src*="webapi.amap.com"]');
+        existingScripts.forEach(script => script.remove());
+        
+        // 重置AMap对象
+        window.AMap = null;
+        
+        const script = document.createElement('script');
+        // 使用更稳定的API版本和加载方式
+        script.src = 'https://webapi.amap.com/maps?v=2.0&key=947de6f6c206f80edc09bcdbc1d0c4d4&plugin=AMap.Geolocation,AMap.Scale,AMap.ToolBar&callback=onAMapLoaded';
+        
+        // 设置全局回调函数
+        window.onAMapLoaded = () => {
+            console.log('高德地图API加载成功');
+            this.isLoadingAMap = false;
+            
+            // 检查API是否完整加载
+            if (window.AMap && AMap.Map && AMap.Scale && AMap.ToolBar) {
+                console.log('高德地图API组件加载完整');
+                // 延迟重新初始化地图，确保所有组件就绪
+                setTimeout(() => {
+                    this.initMap();
+                }, 1000);
+            } else {
+                console.warn('高德地图API组件不完整，尝试备用方案');
+                this.tryAlternativeAMapLoad();
+            }
+        };
+        
+        script.onerror = () => {
+            console.error('高德地图API加载失败');
+            this.isLoadingAMap = false;
+            this.showMapError('高德地图API加载失败，请检查网络连接');
+        };
+        
+        document.head.appendChild(script);
+        
+        // 设置超时检查
+        setTimeout(() => {
+            if (this.isLoadingAMap) {
+                console.warn('高德地图API加载超时');
+                this.isLoadingAMap = false;
+                this.tryAlternativeAMapLoad();
+            }
+        }, 10000); // 10秒超时
+    }
+    
+    // 尝试备用加载方案
+    tryAlternativeAMapLoad() {
+        console.log('尝试备用高德地图API加载方案...');
+        
+        // 方案1：使用更简单的API版本
+        const script = document.createElement('script');
+        script.src = 'https://webapi.amap.com/maps?v=1.4.15&key=947de6f6c206f80edc09bcdbc1d0c4d4';
+        
+        script.onload = () => {
+            console.log('备用高德地图API加载成功');
+            this.isLoadingAMap = false;
+            
+            // 检查基本功能是否可用
+            if (window.AMap && AMap.Map) {
+                console.log('备用API基本功能可用');
+                setTimeout(() => {
+                    this.initSimpleMap();
+                }, 500);
+            } else {
+                this.showMapError('高德地图API无法加载，请检查网络或密钥配置');
+            }
+        };
+        
+        script.onerror = () => {
+            console.error('备用高德地图API加载失败');
+            this.isLoadingAMap = false;
+            this.showMapError('高德地图服务暂时不可用，请稍后重试');
+        };
+        
+        document.head.appendChild(script);
+    }
+    
+    // 初始化简化版地图（无控件）
+    initSimpleMap() {
+        const mapContainer = document.getElementById('mapContainer');
+        if (!mapContainer || !window.AMap || !AMap.Map) {
+            this.showMapError('地图初始化失败');
+            return;
+        }
+        
+        try {
+            this.map = new AMap.Map('mapContainer', {
+                zoom: 16,
+                center: [114.0579, 22.5431],
+                resizeEnable: true
+            });
+            
+            this.map.on('complete', () => {
+                mapContainer.classList.add('loaded');
+                console.log('简化版地图加载完成');
+                Utils.showMessage('地图加载成功（简化版）', 'success', 2000);
+                
+                // 更新地图显示
+                if (this.currentLocation) {
+                    this.updateSimpleMapDisplay(this.currentLocation, this.currentBuildingInfo);
+                }
+            });
+            
+        } catch (error) {
+            console.error('简化版地图初始化失败:', error);
+            this.showMapError('地图初始化失败: ' + error.message);
+        }
+    }
+    
+    // 更新简化版地图显示
+    updateSimpleMapDisplay(userLocation, buildingInfo = null) {
+        if (!this.map || !userLocation) return;
+        
+        const userLng = parseFloat(userLocation.longitude);
+        const userLat = parseFloat(userLocation.latitude);
+        
+        // 设置地图中心
+        this.map.setCenter([userLng, userLat]);
+        
+        // 如果有建筑信息，调整视野
+        if (buildingInfo && buildingInfo.longitude && buildingInfo.latitude) {
+            const buildingLng = parseFloat(buildingInfo.longitude);
+            const buildingLat = parseFloat(buildingInfo.latitude);
+            
+            // 简单的视野调整
+            this.map.setZoom(15);
+        }
+    }
+
+    // 显示地图错误信息
+    showMapError(message) {
+        const mapContainer = document.getElementById('mapContainer');
+        if (mapContainer) {
             mapContainer.innerHTML = `
-                <div style="display: flex; align-items: center; justify-content: center; height: 100%; color: var(--gray-500); font-size: var(--font-size-sm);">
-                    ${appState.currentLanguage === 'zh' ? '地图加载失败' : 'Map loading failed'}
+                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: var(--gray-500); font-size: var(--font-size-sm); text-align: center; padding: 20px;">
+                    <div style="font-size: 48px; margin-bottom: 10px;">🗺️</div>
+                    <div style="margin-bottom: 10px;">${message}</div>
+                    <button onclick="window.signinPage.retryMapLoad()" style="padding: 8px 16px; background: var(--primary-color); color: white; border: none; border-radius: 4px; cursor: pointer;">
+                        ${appState.currentLanguage === 'zh' ? '重试加载' : 'Retry'}
+                    </button>
                 </div>
             `;
         }
+        Utils.showMessage(message, 'error', 5000);
+    }
+
+    // 重试地图加载
+    retryMapLoad() {
+        const mapContainer = document.getElementById('mapContainer');
+        if (mapContainer) {
+            mapContainer.innerHTML = '<div style="display: flex; align-items: center; justify-content: center; height: 100%; color: var(--gray-500);">正在重新加载地图...</div>';
+        }
+        setTimeout(() => {
+            this.initMap();
+        }, 1000);
+    }
+
+    // 绑定回到用户位置按钮事件
+    bindLocationButton() {
+        const locationBtn = document.getElementById('locationBtn');
+        if (locationBtn) {
+            locationBtn.onclick = () => {
+                this.backToUserLocation();
+            };
+        }
+    }
+
+    // 回到用户位置
+    backToUserLocation() {
+        if (!this.map || !this.currentLocation) {
+            Utils.showMessage(
+                appState.currentLanguage === 'zh' ? '无法获取当前位置信息' : 'Unable to get current location',
+                'warning',
+                3000
+            );
+            return;
+        }
+
+        const userLng = parseFloat(this.currentLocation.longitude);
+        const userLat = parseFloat(this.currentLocation.latitude);
+        
+        // 设置地图中心为用户位置
+        this.map.setCenter([userLng, userLat]);
+        this.map.setZoom(16);
+        
+        // 显示成功消息
+        Utils.showMessage(
+            appState.currentLanguage === 'zh' ? '已回到用户位置' : 'Returned to user location',
+            'success',
+            2000
+        );
     }
 
     // 更新地图显示
@@ -1173,16 +1458,29 @@ class SignInPage {
         if (mapSection) {
             mapSection.style.display = 'block';
             
+            // 确保地图容器有合适的高度
+            const mapContainer = document.getElementById('mapContainer');
+            if (mapContainer) {
+                mapContainer.style.height = '300px';
+                mapContainer.style.minHeight = '300px';
+            }
+            
             // 延迟初始化地图以确保容器已显示
             setTimeout(() => {
                 if (!this.map) {
                     this.initMap();
-                }
-                if (this.map) {
+                } else {
+                    // 如果地图已存在，重新调整大小
                     this.map.getViewport().resize();
-                    this.updateMapDisplay(this.currentLocation, this.currentBuildingInfo);
+                    // 强制更新地图显示，确保标记被绘制
+                    if (this.currentLocation) {
+                        this.updateMapDisplay(this.currentLocation, this.currentBuildingInfo);
+                    }
                 }
-            }, 100);
+                
+                // 绑定回到用户位置按钮事件
+                this.bindLocationButton();
+            }, 300); // 增加延迟时间确保DOM更新完成
         }
     }
 
