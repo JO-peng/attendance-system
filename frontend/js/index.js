@@ -10,7 +10,10 @@ class SignInPage {
         this.userMarker = null;
         this.buildingMarker = null;
         this.buildingCircle = null;
+        this.connectionLine = null;
         this.currentBuildingInfo = null;
+        this.customLocationBtn = null;
+        this.customLocationContainer = null;
         
         this.init();
     }
@@ -1133,30 +1136,82 @@ class SignInPage {
     addCustomLocationButton() {
         if (!this.map) return;
         
-        // 创建定位按钮
-        const locationBtn = document.createElement('div');
-        locationBtn.className = 'amap-custom-location-btn';
-        locationBtn.innerHTML = `
-            <div style="width: 30px; height: 30px; background: white; border-radius: 2px; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.3);">
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="#666">
-                    <path d="M8 0C3.58 0 0 3.58 0 8s3.58 8 8 8 8-3.58 8-8-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6s2.69-6 6-6 6 2.69 6 6-2.69 6-6 6zm0-11c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zm0 8c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3z"/>
-                </svg>
-            </div>
+        // 创建定位按钮容器
+        const locationBtnContainer = document.createElement('div');
+        locationBtnContainer.className = 'amap-custom-location-container';
+        locationBtnContainer.style.cssText = `
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
         `;
         
-        // 定位按钮点击事件
-        locationBtn.onclick = () => {
-            this.backToUserLocation();
-        };
+        // 创建定位按钮
+        const locationBtn = document.createElement('button');
+        locationBtn.className = 'amap-custom-location-btn';
+        locationBtn.innerHTML = `
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3A8.994 8.994 0 0 0 13 3.06V1h-2v2.06A8.994 8.994 0 0 0 3.06 11H1v2h2.06A8.994 8.994 0 0 0 11 20.94V23h2v-2.06A8.994 8.994 0 0 0 20.94 13H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/>
+            </svg>
+        `;
         
-        // 将按钮添加到地图控件容器
-        this.map.plugin(['AMap.ToolBar'], () => {
-            const toolBarContainer = this.map.getContainer().querySelector('.amap-toolbar');
-            if (toolBarContainer) {
-                // 在工具栏上方添加定位按钮
-                toolBarContainer.parentNode.insertBefore(locationBtn, toolBarContainer);
-            }
+        // 设置按钮样式
+        locationBtn.style.cssText = `
+            width: 44px;
+            height: 44px;
+            background: #1890ff;
+            border: none;
+            border-radius: 50%;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 12px rgba(24, 144, 255, 0.3);
+            transition: all 0.3s ease;
+            font-size: 0;
+        `;
+        
+        // 添加悬停效果
+        locationBtn.addEventListener('mouseenter', () => {
+            locationBtn.style.transform = 'scale(1.1)';
+            locationBtn.style.boxShadow = '0 6px 16px rgba(24, 144, 255, 0.4)';
         });
+        
+        locationBtn.addEventListener('mouseleave', () => {
+            locationBtn.style.transform = 'scale(1)';
+            locationBtn.style.boxShadow = '0 4px 12px rgba(24, 144, 255, 0.3)';
+        });
+        
+        // 添加点击效果
+        locationBtn.addEventListener('mousedown', () => {
+            locationBtn.style.transform = 'scale(0.95)';
+        });
+        
+        locationBtn.addEventListener('mouseup', () => {
+            locationBtn.style.transform = 'scale(1.1)';
+        });
+        
+        // 定位按钮点击事件
+        locationBtn.addEventListener('click', () => {
+            this.backToUserLocation();
+        });
+        
+        // 添加工具提示
+        locationBtn.title = appState.currentLanguage === 'zh' ? '回到我的位置' : 'Back to my location';
+        
+        // 将按钮添加到容器
+        locationBtnContainer.appendChild(locationBtn);
+        
+        // 将容器添加到地图容器
+        const mapContainer = this.map.getContainer();
+        if (mapContainer) {
+            mapContainer.appendChild(locationBtnContainer);
+        }
+        
+        // 保存按钮引用以便后续操作
+        this.customLocationBtn = locationBtn;
+        this.customLocationContainer = locationBtnContainer;
     }
 
     // 加载高德地图API
@@ -1341,24 +1396,67 @@ class SignInPage {
     // 回到用户位置
     backToUserLocation() {
         if (!this.map || !this.currentLocation) {
-            Utils.showMessage(
-                appState.currentLanguage === 'zh' ? '无法获取当前位置信息' : 'Unable to get current location',
-                'warning',
-                3000
-            );
+            // 尝试重新获取位置
+            this.getCurrentLocation().then(() => {
+                if (this.currentLocation) {
+                    this.backToUserLocation();
+                } else {
+                    Utils.showMessage(
+                        appState.currentLanguage === 'zh' ? '无法获取您的位置，请检查定位权限' : 'Unable to get your location, please check location permissions',
+                        'error',
+                        3000
+                    );
+                }
+            }).catch(() => {
+                Utils.showMessage(
+                    appState.currentLanguage === 'zh' ? '定位失败，请重试' : 'Location failed, please try again',
+                    'error',
+                    3000
+                );
+            });
             return;
+        }
+
+        // 添加按钮点击动画
+        if (this.customLocationBtn) {
+            this.customLocationBtn.style.background = '#52c41a';
+            setTimeout(() => {
+                if (this.customLocationBtn) {
+                    this.customLocationBtn.style.background = '#1890ff';
+                }
+            }, 300);
         }
 
         const userLng = parseFloat(this.currentLocation.longitude);
         const userLat = parseFloat(this.currentLocation.latitude);
         
-        // 设置地图中心为用户位置
+        // 平滑移动到用户位置
         this.map.setCenter([userLng, userLat]);
-        this.map.setZoom(16);
+        this.map.setZoom(17);
+        
+        // 如果用户标记存在，添加跳动动画
+        if (this.userMarker) {
+            const originalIcon = this.userMarker.getIcon();
+            // 创建放大的图标
+            const enlargedIcon = new AMap.Icon({
+                size: new AMap.Size(32, 32),
+                image: originalIcon.image,
+                imageSize: new AMap.Size(32, 32)
+            });
+            
+            this.userMarker.setIcon(enlargedIcon);
+            
+            // 500ms后恢复原始大小
+            setTimeout(() => {
+                if (this.userMarker && originalIcon) {
+                    this.userMarker.setIcon(originalIcon);
+                }
+            }, 500);
+        }
         
         // 显示成功消息
         Utils.showMessage(
-            appState.currentLanguage === 'zh' ? '已回到用户位置' : 'Returned to user location',
+            appState.currentLanguage === 'zh' ? '已回到您的位置' : 'Returned to your location',
             'success',
             2000
         );
@@ -1376,21 +1474,41 @@ class SignInPage {
         // 清除之前的标记
         this.clearMapMarkers();
 
-        // 添加用户位置标记
+        // 添加用户位置标记 - 使用更醒目的蓝色定位图标
         this.userMarker = new AMap.Marker({
             position: [userLng, userLat],
             title: appState.currentLanguage === 'zh' ? '我的位置' : 'My Location',
             icon: new AMap.Icon({
-                size: new AMap.Size(25, 34),
+                size: new AMap.Size(32, 32),
                 image: 'data:image/svg+xml;base64,' + btoa(`
-                    <svg xmlns="http://www.w3.org/2000/svg" width="25" height="34" viewBox="0 0 25 34">
-                        <path fill="#1890ff" d="M12.5 0C5.6 0 0 5.6 0 12.5c0 12.5 12.5 21.5 12.5 21.5s12.5-9 12.5-21.5C25 5.6 19.4 0 12.5 0zm0 17c-2.5 0-4.5-2-4.5-4.5s2-4.5 4.5-4.5 4.5 2 4.5 4.5-2 4.5-4.5 4.5z"/>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+                        <circle cx="16" cy="16" r="15" fill="#1890ff" stroke="white" stroke-width="2"/>
+                        <circle cx="16" cy="16" r="8" fill="white"/>
+                        <circle cx="16" cy="16" r="4" fill="#1890ff"/>
                     </svg>
                 `),
-                imageOffset: new AMap.Pixel(-12, -34)
-            })
+                imageOffset: new AMap.Pixel(-16, -16)
+            }),
+            anchor: 'center',
+            zIndex: 100
         });
         this.map.add(this.userMarker);
+
+        // 添加用户位置标签
+        const userInfoWindow = new AMap.InfoWindow({
+            content: `<div style="padding: 8px; font-size: 12px; color: #333;">
+                        <strong style="color: #1890ff;">${appState.currentLanguage === 'zh' ? '我的位置' : 'My Location'}</strong><br>
+                        <span style="color: #666;">经度: ${userLng.toFixed(6)}</span><br>
+                        <span style="color: #666;">纬度: ${userLat.toFixed(6)}</span>
+                      </div>`,
+            offset: new AMap.Pixel(0, -30),
+            closeWhenClickMap: true
+        });
+
+        // 点击用户标记显示信息窗口
+        this.userMarker.on('click', () => {
+            userInfoWindow.open(this.map, [userLng, userLat]);
+        });
 
         // 如果有建筑信息，添加建筑标记和范围圆圈
         if (buildingInfo && buildingInfo.longitude && buildingInfo.latitude) {
@@ -1398,37 +1516,83 @@ class SignInPage {
             const buildingLat = parseFloat(buildingInfo.latitude);
             const radius = parseFloat(buildingInfo.radius || 100);
 
-            // 添加建筑标记
+            // 添加建筑标记 - 使用红色建筑图标
             this.buildingMarker = new AMap.Marker({
                 position: [buildingLng, buildingLat],
                 title: buildingInfo.name || (appState.currentLanguage === 'zh' ? '教学楼' : 'Building'),
                 icon: new AMap.Icon({
-                    size: new AMap.Size(25, 34),
+                    size: new AMap.Size(36, 42),
                     image: 'data:image/svg+xml;base64,' + btoa(`
-                        <svg xmlns="http://www.w3.org/2000/svg" width="25" height="34" viewBox="0 0 25 34">
-                            <path fill="#ff4d4f" d="M12.5 0C5.6 0 0 5.6 0 12.5c0 12.5 12.5 21.5 12.5 21.5s12.5-9 12.5-21.5C25 5.6 19.4 0 12.5 0zm0 17c-2.5 0-4.5-2-4.5-4.5s2-4.5 4.5-4.5 4.5 2 4.5 4.5-2 4.5-4.5 4.5z"/>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="36" height="42" viewBox="0 0 36 42">
+                            <path fill="#ff4d4f" stroke="white" stroke-width="2" d="M18 1C8.6 1 1 8.6 1 18c0 18 17 22 17 22s17-4 17-22C35 8.6 27.4 1 18 1z"/>
+                            <rect x="10" y="10" width="16" height="12" rx="1" fill="white"/>
+                            <rect x="12" y="12" width="3" height="2" fill="#ff4d4f"/>
+                            <rect x="15.5" y="12" width="3" height="2" fill="#ff4d4f"/>
+                            <rect x="19" y="12" width="3" height="2" fill="#ff4d4f"/>
+                            <rect x="12" y="15" width="3" height="2" fill="#ff4d4f"/>
+                            <rect x="15.5" y="15" width="3" height="2" fill="#ff4d4f"/>
+                            <rect x="19" y="15" width="3" height="2" fill="#ff4d4f"/>
+                            <rect x="12" y="18" width="10" height="3" fill="#ff4d4f"/>
                         </svg>
                     `),
-                    imageOffset: new AMap.Pixel(-12, -34)
-                })
+                    imageOffset: new AMap.Pixel(-18, -42)
+                }),
+                anchor: 'bottom-center',
+                zIndex: 99
             });
             this.map.add(this.buildingMarker);
 
-            // 添加签到范围圆圈
+            // 添加建筑信息窗口
+            const buildingInfoWindow = new AMap.InfoWindow({
+                content: `<div style="padding: 8px; font-size: 12px; color: #333;">
+                            <strong style="color: #ff4d4f;">${buildingInfo.name || (appState.currentLanguage === 'zh' ? '教学楼' : 'Building')}</strong><br>
+                            <span style="color: #666;">签到半径: ${radius}米</span><br>
+                            <span style="color: #666;">经度: ${buildingLng.toFixed(6)}</span><br>
+                            <span style="color: #666;">纬度: ${buildingLat.toFixed(6)}</span>
+                          </div>`,
+                offset: new AMap.Pixel(0, -42),
+                closeWhenClickMap: true
+            });
+
+            // 点击建筑标记显示信息窗口
+            this.buildingMarker.on('click', () => {
+                buildingInfoWindow.open(this.map, [buildingLng, buildingLat]);
+            });
+
+            // 添加签到范围圆圈 - 使用渐变效果
             this.buildingCircle = new AMap.Circle({
                 center: [buildingLng, buildingLat],
                 radius: radius,
                 fillColor: '#ff4d4f',
-                fillOpacity: 0.1,
+                fillOpacity: 0.15,
                 strokeColor: '#ff4d4f',
                 strokeWeight: 2,
-                strokeOpacity: 0.8
+                strokeOpacity: 0.8,
+                strokeStyle: 'dashed',
+                zIndex: 50
             });
             this.map.add(this.buildingCircle);
 
+            // 计算用户与建筑的距离
+            const distance = AMap.GeometryUtil.distance([userLng, userLat], [buildingLng, buildingLat]);
+            const isInRange = distance <= radius;
+
+            // 如果用户在签到范围内，添加连接线
+            if (isInRange) {
+                this.connectionLine = new AMap.Polyline({
+                    path: [[userLng, userLat], [buildingLng, buildingLat]],
+                    strokeColor: '#52c41a',
+                    strokeWeight: 3,
+                    strokeOpacity: 0.8,
+                    strokeStyle: 'solid',
+                    zIndex: 60
+                });
+                this.map.add(this.connectionLine);
+            }
+
             // 调整地图视野以包含所有标记
             const bounds = new AMap.Bounds([userLng, userLat], [buildingLng, buildingLat]);
-            this.map.setBounds(bounds, false, [20, 20, 20, 20]);
+            this.map.setBounds(bounds, false, [40, 40, 40, 80]); // 增加边距以更好地显示标记
         } else {
             // 只有用户位置时，以用户位置为中心
             this.map.setCenter([userLng, userLat]);
@@ -1449,6 +1613,10 @@ class SignInPage {
         if (this.buildingCircle) {
             this.map.remove(this.buildingCircle);
             this.buildingCircle = null;
+        }
+        if (this.connectionLine) {
+            this.map.remove(this.connectionLine);
+            this.connectionLine = null;
         }
     }
 
