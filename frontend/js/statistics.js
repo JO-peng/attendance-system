@@ -314,7 +314,7 @@ class StatisticsPage {
     }
     
     // 显示签到详情
-    async showSigninDetails(date) {
+    showSigninDetails(date) {
         const record = this.signinRecords.find(r => r.date === date);
         const detailsElement = document.getElementById('signinDetails');
         const contentElement = document.getElementById('detailsContent');
@@ -330,8 +330,8 @@ class StatisticsPage {
                 `<img src="${record.photo}" alt="签到照片" class="detail-photo" onclick="window.showPhotoPreview('${record.photo}', '签到照片')" style="cursor: pointer; max-width: 100px; max-height: 100px; border-radius: 4px;">` : 
                 '<span class="text-gray-400">无照片</span>';
             
-            // 异步获取位置信息
-            const locationInfo = await this.formatLocationWithDistance(record);
+            // 直接获取位置信息（现在是同步的）
+            const locationInfo = this.formatLocationWithDistance(record);
             
             contentElement.innerHTML = `
                 <div class="detail-item">
@@ -421,73 +421,20 @@ class StatisticsPage {
         return R * c;
     }
 
-    // 格式化位置信息，包含距离提示
-    async formatLocationWithDistance(record) {
-        // 如果有建筑信息，显示建筑名称和距离
-        if (record.building_name) {
-            if (record.distance !== undefined && record.distance !== null) {
-                const distanceText = appState.currentLanguage === 'zh' 
-                    ? `距离 ${record.distance} 米` 
-                    : `${record.distance}m away`;
-                return `${record.building_name} (${distanceText})`;
-            } else {
-                return record.building_name;
-            }
+    // 格式化位置信息，直接显示存储的位置描述
+    formatLocationWithDistance(record) {
+        // 直接返回存储在数据库中的位置描述信息
+        // 这些信息在签到时已经生成并存储，包含了详细的位置状态
+        if (record.location && record.location.trim() !== '') {
+            return record.location;
         }
 
-        // 如果没有坐标信息，尝试调用API获取最近教学楼信息
-        if (!record.latitude || !record.longitude) {
-            return appState.currentLanguage === 'zh' ? '位置未知' : 'Unknown Location';
-        }
-
-        try {
-            // 调用API获取最近的教学楼信息
-            const response = await fetch('/api/v1/location-info', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    longitude: parseFloat(record.longitude),
-                    latitude: parseFloat(record.latitude),
-                    timestamp: Math.floor(Date.now() / 1000)
-                })
-            });
-
-            if (response.ok) {
-                const result = await response.json();
-                
-                if (result.success && result.data && result.data.building) {
-                    const building = result.data.building;
-                    const distance = result.data.distance;
-                    const buildingName = appState.currentLanguage === 'zh' ? building.name : building.name_en;
-                    
-                    if (result.data.is_valid_location) {
-                        // 在有效范围内
-                        return appState.currentLanguage === 'zh' 
-                            ? `${buildingName} (范围内)`
-                            : `${buildingName} (Within range)`;
-                    } else {
-                        // 显示距离，并标注未知位置
-                        const distanceText = appState.currentLanguage === 'zh' 
-                            ? `距离 ${Math.round(distance)} 米` 
-                            : `${Math.round(distance)}m away`;
-                        return appState.currentLanguage === 'zh' 
-                            ? `距离${buildingName} ${Math.round(distance)}米 (未知位置)`
-                            : `${Math.round(distance)}m from ${buildingName} (Unknown Location)`;
-                    }
-                }
-            }
-        } catch (error) {
-            console.error('获取位置信息失败:', error);
-        }
-
-        // 如果API调用失败，返回默认的未知位置
+        // 如果没有位置信息，返回未知位置
         return appState.currentLanguage === 'zh' ? '位置未知' : 'Unknown Location';
     }
     
     // 刷新显示文本（用于语言切换时）
-    async refreshDisplayTexts() {
+    refreshDisplayTexts() {
         // 重新渲染日历以更新状态文本
         this.renderCalendar();
         
@@ -496,7 +443,7 @@ class StatisticsPage {
         if (detailsPanel && !detailsPanel.classList.contains('hidden')) {
             const currentDate = detailsPanel.getAttribute('data-current-date');
             if (currentDate) {
-                await this.showSigninDetails(currentDate);
+                this.showSigninDetails(currentDate);
             }
         }
     }
