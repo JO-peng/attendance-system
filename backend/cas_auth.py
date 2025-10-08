@@ -159,34 +159,23 @@ class CASClient:
         
         # 配置SSL
         self.session = requests.Session()
-        if ca_bundle_path and os.path.exists(ca_bundle_path):
-            # 使用配置文件中指定的证书路径
-            self.session.verify = ca_bundle_path
-            try:
-                current_app.logger.info(f"Using configured CA bundle: {ca_bundle_path}")
-            except:
-                print(f"Using configured CA bundle: {ca_bundle_path}")
-        elif not ssl_verify:
+        if not ssl_verify:
             self.session.verify = False
             # 禁用SSL警告
             import urllib3
             urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+            try:
+                current_app.logger.info("SSL verification disabled for CAS client")
+            except:
+                print("SSL verification disabled for CAS client")
         else:
-            # 如果没有指定证书路径，使用默认的项目证书
-            project_ca_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'ca', 'kpeak.szu.edu.cn-chain.pem')
-            if os.path.exists(project_ca_path):
-                self.session.verify = project_ca_path
-                try:
-                    current_app.logger.info(f"Using default project CA bundle: {project_ca_path}")
-                except:
-                    print(f"Using default project CA bundle: {project_ca_path}")
-            else:
-                try:
-                    current_app.logger.error("No valid CA bundle found, SSL verification may fail")
-                except:
-                    print("No valid CA bundle found, SSL verification may fail")
-                # 保持默认的SSL验证行为
-                self.session.verify = True
+            # 对于CAS认证服务器，使用系统默认的证书验证
+            # 因为我们的项目证书只适用于kpeak.szu.edu.cn，不适用于authserver.szu.edu.cn
+            self.session.verify = True
+            try:
+                current_app.logger.info("Using system default SSL verification for CAS authentication")
+            except:
+                print("Using system default SSL verification for CAS authentication")
     
     def get_login_url(self) -> str:
         """获取CAS登录URL"""
@@ -335,7 +324,7 @@ def init_cas_client(app):
             login_path=app.config.get('CAS_LOGIN_PATH', '/cas/login'),
             logout_path=app.config.get('CAS_LOGOUT_PATH', '/cas/logout'),
             callback_path=app.config.get('CAS_CALLBACK_PATH', '/cas/callback'),
-            ca_bundle_path=app.config.get('SSL_CA_BUNDLE_PATH')
+            ssl_verify=True  # 使用系统默认SSL验证
         )
         
         app.cas_client = cas_client
