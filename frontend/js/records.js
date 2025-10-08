@@ -72,20 +72,20 @@ class RecordsPage {
         const nextBtn = document.getElementById('nextPage');
         
         if (prevBtn) {
-            prevBtn.addEventListener('click', () => {
+            prevBtn.addEventListener('click', async () => {
                 if (this.currentPage > 1) {
                     this.currentPage--;
-                    this.renderRecords();
+                    await this.renderRecords();
                 }
             });
         }
         
         if (nextBtn) {
-            nextBtn.addEventListener('click', () => {
+            nextBtn.addEventListener('click', async () => {
                 const totalPages = Math.ceil(this.filteredRecords.length / this.pageSize);
                 if (this.currentPage < totalPages) {
                     this.currentPage++;
-                    this.renderRecords();
+                    await this.renderRecords();
                 }
             });
         }
@@ -243,7 +243,7 @@ class RecordsPage {
                 this.records = [];
                 this.filteredRecords = [];
                 this.totalRecords = 0;
-                this.renderRecords();
+                await this.renderRecords();
                 this.hideLoadingState('records');
                 Utils.showMessage(Utils.t('user_info_load_failed'), 'warning');
                 return;
@@ -279,7 +279,7 @@ class RecordsPage {
             this.filteredRecords = [...this.records];
             this.totalRecords = this.records.length;
             
-            this.renderRecords();
+            await this.renderRecords();
             this.updateStatsBasedOnTimeRange(); // 基于时间范围重新计算出勤数据
             this.hideLoadingState('records');
             
@@ -316,7 +316,7 @@ class RecordsPage {
                 this.records = [];
                 this.filteredRecords = [];
                 this.totalRecords = 0;
-                this.renderRecords();
+                await this.renderRecords();
                 
                 // 根据错误类型显示不同的消息
                 let errorMessage = Utils.t('load_records_failed');
@@ -474,7 +474,7 @@ class RecordsPage {
         this.updateAttendanceStats(attendanceData);
     }
 
-    filterRecords() {
+    async filterRecords() {
         this.filteredRecords = this.records.filter(record => {
             // 搜索过滤
             const searchMatch = !this.currentFilter.search || 
@@ -517,13 +517,13 @@ class RecordsPage {
         });
         
         this.currentPage = 1; // 重置到第一页
-        this.renderRecords();
+        await this.renderRecords();
         
         // 只在时间范围变化时更新统计数据，状态筛选不影响统计
         // 这个方法会在时间范围选择器变化时单独调用
     }
     
-    renderRecords() {
+    async renderRecords() {
         const tbody = document.querySelector('.records-table tbody');
         const emptyState = document.querySelector('.empty-state');
         const tableContainer = document.querySelector('.records-table-container');
@@ -546,8 +546,8 @@ class RecordsPage {
         const endIndex = startIndex + this.pageSize;
         const pageRecords = this.filteredRecords.slice(startIndex, endIndex);
         
-        // 渲染记录
-        tbody.innerHTML = pageRecords.map(record => {
+        // 异步渲染记录
+        const recordRows = await Promise.all(pageRecords.map(async record => {
             const statusText = {
                 'attended': Utils.t('status_present'),
                 'late': Utils.t('status_late'),
@@ -558,18 +558,23 @@ class RecordsPage {
                 `<img src="${record.photo}" alt="签到照片" class="photo-thumbnail" onclick="window.showPhotoPreview('${record.photo}', '签到照片')" style="cursor: pointer;">` : 
                 '<span class="text-gray-400">-</span>';
             
+            // 异步获取位置信息
+            const locationInfo = await this.formatLocationInfo(record);
+            
             return `
                 <tr>
                     <td>${record.name}</td>
                     <td>${record.studentId}</td>
                     <td>${record.course}</td>
-                    <td>${this.formatLocationInfo(record)}</td>
+                    <td>${locationInfo}</td>
                     <td><span class="status-badge ${record.status}">${statusText}</span></td>
                     <td>${Utils.formatDateTime(record.time)}</td>
                     <td>${photoCell}</td>
                 </tr>
             `;
-        }).join('');
+        }));
+        
+        tbody.innerHTML = recordRows.join('');
         
         // 更新分页信息
         this.updatePagination();
@@ -588,48 +593,57 @@ class RecordsPage {
     }
 
     // 格式化位置信息，包含距离最近教学楼的信息
-    formatLocationInfo(record) {
-        // 如果有明确的位置信息
-        if (record.location && record.location !== '未知位置') {
+    async formatLocationInfo(record) {
+        // 如果有明确的位置信息且不是未知位置
+        if (record.location && record.location !== '未知位置' && record.location !== 'Unknown Location') {
             return record.location;
         }
 
-        // 如果有经纬度信息，计算距离最近的教学楼
-        if (record.latitude && record.longitude) {
-            // 教学楼坐标（示例数据，实际应从配置或API获取）
-            const buildings = [
-                { name: '文科楼', lat: 22.5342, lon: 113.9356 },
-                { name: '理科楼', lat: 22.5345, lon: 113.9360 },
-                { name: '工学院', lat: 22.5340, lon: 113.9350 },
-                { name: '计算机学院', lat: 22.5338, lon: 113.9365 }
-            ];
-
-            let nearestBuilding = null;
-            let minDistance = Infinity;
-
-            buildings.forEach(building => {
-                const distance = this.calculateDistance(
-                    record.latitude, record.longitude,
-                    building.lat, building.lon
-                );
-                if (distance < minDistance) {
-                    minDistance = distance;
-                    nearestBuilding = building;
-                }
-            });
-
-            if (nearestBuilding && minDistance < 1000) { // 1公里内
-                const distanceText = minDistance < 100 
-                    ? `${Math.round(minDistance)}${Utils.t('meters')}`
-                    : `${(minDistance / 1000).toFixed(1)}${Utils.t('kilometers')}`;
-                
-                return appState.currentLanguage === 'zh'
-                    ? `距离${nearestBuilding.name} ${distanceText}`
-                    : `${distanceText} from ${nearestBuilding.name}`;
-            }
+        // 如果没有经纬度信息，返回未知位置
+        if (!record.latitude || !record.longitude) {
+            return Utils.t('unknown_location');
         }
 
-        // 默认返回未知位置
+        try {
+            // 调用API获取最近的教学楼信息
+            const response = await fetch('/api/v1/location-info', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    longitude: parseFloat(record.longitude),
+                    latitude: parseFloat(record.latitude),
+                    timestamp: Math.floor(Date.now() / 1000)
+                })
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                
+                if (result.success && result.data && result.data.building) {
+                    const building = result.data.building;
+                    const distance = result.data.distance;
+                    const buildingName = appState.currentLanguage === 'zh' ? building.name : building.name_en;
+                    
+                    if (result.data.is_valid_location) {
+                        // 在有效范围内
+                        return appState.currentLanguage === 'zh' 
+                            ? `${buildingName} (范围内)`
+                            : `${buildingName} (Within range)`;
+                    } else {
+                        // 显示距离，并标注未知位置
+                        return appState.currentLanguage === 'zh' 
+                            ? `距离${buildingName} ${Math.round(distance)}米 (未知位置)`
+                            : `${Math.round(distance)}m from ${buildingName} (Unknown Location)`;
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('获取位置信息失败:', error);
+        }
+
+        // 如果API调用失败，返回默认的未知位置
         return Utils.t('unknown_location');
     }
 

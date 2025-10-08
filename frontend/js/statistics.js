@@ -314,7 +314,7 @@ class StatisticsPage {
     }
     
     // 显示签到详情
-    showSigninDetails(date) {
+    async showSigninDetails(date) {
         const record = this.signinRecords.find(r => r.date === date);
         const detailsElement = document.getElementById('signinDetails');
         const contentElement = document.getElementById('detailsContent');
@@ -329,6 +329,9 @@ class StatisticsPage {
             const photoCell = record.photo ? 
                 `<img src="${record.photo}" alt="签到照片" class="detail-photo" onclick="window.showPhotoPreview('${record.photo}', '签到照片')" style="cursor: pointer; max-width: 100px; max-height: 100px; border-radius: 4px;">` : 
                 '<span class="text-gray-400">无照片</span>';
+            
+            // 异步获取位置信息
+            const locationInfo = await this.formatLocationWithDistance(record);
             
             contentElement.innerHTML = `
                 <div class="detail-item">
@@ -367,7 +370,7 @@ class StatisticsPage {
                 </div>
                 <div class="detail-item">
                     <span class="detail-label" data-zh="位置信息" data-en="Location Info">位置信息</span>
-                    <span class="detail-value">${this.formatLocationWithDistance(record)}</span>
+                    <span class="detail-value">${locationInfo}</span>
                 </div>
             `;
         } else {
@@ -419,12 +422,7 @@ class StatisticsPage {
     }
 
     // 格式化位置信息，包含距离提示
-    formatLocationWithDistance(record) {
-        // 如果没有坐标信息，显示位置未知
-        if (!record.latitude || !record.longitude) {
-            return appState.currentLanguage === 'zh' ? '位置未知' : 'Unknown Location';
-        }
-
+    async formatLocationWithDistance(record) {
         // 如果有建筑信息，显示建筑名称和距离
         if (record.building_name) {
             if (record.distance !== undefined && record.distance !== null) {
@@ -437,45 +435,59 @@ class StatisticsPage {
             }
         }
 
-        const userLat = parseFloat(record.latitude);
-        const userLon = parseFloat(record.longitude);
-        
-        let nearestBuilding = null;
-        let minDistance = Infinity;
-
-        // 找到最近的教学楼
-        buildings.forEach(building => {
-            const distance = this.calculateDistance(userLat, userLon, building.lat, building.lon);
-            if (distance < minDistance) {
-                minDistance = distance;
-                nearestBuilding = building;
-            }
-        });
-
-        if (nearestBuilding) {
-            const buildingName = appState.currentLanguage === 'zh' ? nearestBuilding.name : nearestBuilding.nameen;
-            const distanceText = minDistance < 1000 
-                ? `${Math.round(minDistance)}${appState.currentLanguage === 'zh' ? '米' : 'm'}`
-                : `${(minDistance / 1000).toFixed(1)}${appState.currentLanguage === 'zh' ? '公里' : 'km'}`;
-            
-            if (minDistance <= 50) {
-                // 在建筑范围内
-                return appState.currentLanguage === 'zh' 
-                    ? `${buildingName}（范围内）`
-                    : `${buildingName} (Within range)`;
-            } else {
-                // 显示距离
-                return appState.currentLanguage === 'zh' 
-                    ? `距离${buildingName} ${distanceText}`
-                    : `${distanceText} from ${buildingName}`;
-            }
+        // 如果没有坐标信息，尝试调用API获取最近教学楼信息
+        if (!record.latitude || !record.longitude) {
+            return appState.currentLanguage === 'zh' ? '位置未知' : 'Unknown Location';
         }
 
-        return appState.currentLanguage === 'zh' ? '未知位置' : 'Unknown location';
+        try {
+            // 调用API获取最近的教学楼信息
+            const response = await fetch('/api/v1/location-info', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    longitude: parseFloat(record.longitude),
+                    latitude: parseFloat(record.latitude),
+                    timestamp: Math.floor(Date.now() / 1000)
+                })
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                
+                if (result.success && result.data && result.data.building) {
+                    const building = result.data.building;
+                    const distance = result.data.distance;
+                    const buildingName = appState.currentLanguage === 'zh' ? building.name : building.name_en;
+                    
+                    if (result.data.is_valid_location) {
+                        // 在有效范围内
+                        return appState.currentLanguage === 'zh' 
+                            ? `${buildingName} (范围内)`
+                            : `${buildingName} (Within range)`;
+                    } else {
+                        // 显示距离，并标注未知位置
+                        const distanceText = appState.currentLanguage === 'zh' 
+                            ? `距离 ${Math.round(distance)} 米` 
+                            : `${Math.round(distance)}m away`;
+                        return appState.currentLanguage === 'zh' 
+                            ? `距离${buildingName} ${Math.round(distance)}米 (未知位置)`
+                            : `${Math.round(distance)}m from ${buildingName} (Unknown Location)`;
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('获取位置信息失败:', error);
+        }
+
+        // 如果API调用失败，返回默认的未知位置
+        return appState.currentLanguage === 'zh' ? '位置未知' : 'Unknown Location';
     }
     
     // 刷新显示文本（用于语言切换时）
-    refreshDisplayTexts() {
+    async refreshDisplayTexts() {
         // 重新渲染日历以更新状态文本
         this.renderCalendar();
         
@@ -484,7 +496,7 @@ class StatisticsPage {
         if (detailsPanel && !detailsPanel.classList.contains('hidden')) {
             const currentDate = detailsPanel.getAttribute('data-current-date');
             if (currentDate) {
-                this.showSigninDetails(currentDate);
+                await this.showSigninDetails(currentDate);
             }
         }
     }
