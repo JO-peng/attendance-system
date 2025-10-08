@@ -985,7 +985,7 @@ const WeChatAPI = {
     async getLocation() {
         return new Promise((resolve, reject) => {
             // 首先检查是否在企业微信环境中
-            const isInWeChat = this.isInWeChat();
+            const isInWeChat = this.isInWeChatWork();
             console.log('Location request - Environment check:', {
                 isInWeChat: isInWeChat,
                 isWeChatReady: appState.isWeChatReady,
