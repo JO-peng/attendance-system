@@ -168,18 +168,17 @@ class StatisticsPage {
                 });
                 
                 // 转换记录格式并构建attendanceData
+                const dailyStatusMap = {}; // 用于跟踪每天的状态
+                
                 currentMonthRecords.forEach(record => {
                     const recordDate = new Date(record.signed_at);
                     const dateStr = `${recordDate.getFullYear()}-${(recordDate.getMonth() + 1).toString().padStart(2, '0')}-${recordDate.getDate().toString().padStart(2, '0')}`;
                     
-                    // 设置考勤状态
-                    if (record.status === 'attended') {
-                        this.attendanceData[dateStr] = 'attended';
-                    } else if (record.status === 'late') {
-                        this.attendanceData[dateStr] = 'partial';
-                    } else if (record.status === 'absent') {
-                        this.attendanceData[dateStr] = 'missed';
+                    // 收集每天的状态
+                    if (!dailyStatusMap[dateStr]) {
+                        dailyStatusMap[dateStr] = [];
                     }
+                    dailyStatusMap[dateStr].push(record.status);
                     
                     // 添加签到记录
                     this.signinRecords.push({
@@ -196,6 +195,28 @@ class StatisticsPage {
                             longitude: record.longitude
                         }
                     });
+                });
+                
+                // 根据每天的所有状态确定最终的考勤状态
+                Object.keys(dailyStatusMap).forEach(dateStr => {
+                    const statuses = dailyStatusMap[dateStr];
+                    
+                    // 如果有任何一次是正常出勤，则标记为attended
+                    if (statuses.includes('attended')) {
+                        this.attendanceData[dateStr] = 'attended';
+                    } 
+                    // 如果没有正常出勤但有迟到，则标记为partial
+                    else if (statuses.includes('late')) {
+                        this.attendanceData[dateStr] = 'partial';
+                    } 
+                    // 如果全部是缺勤，则标记为missed
+                    else if (statuses.every(status => status === 'absent')) {
+                        this.attendanceData[dateStr] = 'missed';
+                    }
+                    // 默认情况下标记为partial（混合状态）
+                    else {
+                        this.attendanceData[dateStr] = 'partial';
+                    }
                 });
                 
                 this.renderCalendar();
@@ -357,8 +378,8 @@ class StatisticsPage {
                     <svg viewBox="0 0 24 24" fill="currentColor">
                         <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
                     </svg>
-                    <h3 data-zh="无签到记录" data-en="No Sign-in Record">无签到记录</h3>
-                    <p data-zh="该日期没有签到记录" data-en="No sign-in record for this date">该日期没有签到记录</p>
+                    <h3>${Utils.t('no_records_for_date')}</h3>
+                    <p>${Utils.t('no_records_for_date')}</p>
                 </div>
             `;
         }
@@ -436,23 +457,23 @@ class StatisticsPage {
         
         contentElement.innerHTML = `
             <div class="detail-item">
-                <span class="detail-label" data-zh="日期" data-en="Date">日期</span>
+                <span class="detail-label">${Utils.t('date')}</span>
                 <span class="detail-value">${record.date}</span>
             </div>
             <div class="detail-item">
-                <span class="detail-label" data-zh="时间" data-en="Time">时间</span>
+                <span class="detail-label">${Utils.t('time')}</span>
                 <span class="detail-value">${record.time}</span>
             </div>
             <div class="detail-item">
-                <span class="detail-label" data-zh="课程" data-en="Course">课程</span>
+                <span class="detail-label">${Utils.t('course')}</span>
                 <span class="detail-value">${record.courseName}</span>
             </div>
             <div class="detail-item">
-                <span class="detail-label" data-zh="教室" data-en="Classroom">教室</span>
+                <span class="detail-label">${Utils.t('classroom')}</span>
                 <span class="detail-value">${record.classroom}</span>
             </div>
             <div class="detail-item">
-                <span class="detail-label" data-zh="状态" data-en="Status">状态</span>
+                <span class="detail-label">${Utils.t('status')}</span>
                 <span class="detail-value">
                     <span class="status-badge ${record.status}">
                         ${this.getStatusText(record.status)}
@@ -460,17 +481,17 @@ class StatisticsPage {
                 </span>
             </div>
             <div class="detail-item">
-                <span class="detail-label" data-zh="照片" data-en="Photo">照片</span>
+                <span class="detail-label">${Utils.t('photo')}</span>
                 <span class="detail-value">
                     ${photoCell}
                 </span>
             </div>
             <div class="detail-item">
-                <span class="detail-label" data-zh="签到坐标" data-en="Sign-in Coordinates">签到坐标</span>
+                <span class="detail-label">${Utils.t('coordinates')}</span>
                 <span class="detail-value">${record.location ? `${Utils.t('latitude')}: ${record.location.latitude.toFixed(4)}, ${Utils.t('longitude')}: ${record.location.longitude.toFixed(4)}` : Utils.t('unknown_location')}</span>
             </div>
             <div class="detail-item">
-                <span class="detail-label" data-zh="位置信息" data-en="Location Info">位置信息</span>
+                <span class="detail-label">${Utils.t('location_info')}</span>
                 <span class="detail-value">${this.formatLocationWithDistance(record)}</span>
             </div>
         `;
