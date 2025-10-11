@@ -170,7 +170,7 @@ class SignInPage {
                 const signinBtn = document.getElementById('signinBtn');
                 if (signinBtn) {
                     signinBtn.disabled = true;
-                    signinBtn.title = '请在企业微信环境中访问以获取用户信息';
+                    signinBtn.title = '请登录后重试';
                 }
             }
         } catch (error) {

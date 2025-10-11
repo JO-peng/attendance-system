@@ -51,10 +51,10 @@ const LANGUAGES = {
         time_format: 'YYYY-MM-DD HH:mm:ss',
         date_format: 'YYYY-MM-DD',
         
-        // 用户信息相关
-        user_info_not_available: '无法获取用户信息，请在企业微信环境中访问',
-        user_info_not_loaded: '用户信息未获取，请在企业微信中访问或刷新页面',
-        user_info_refresh_required: '用户信息未获取，请刷新页面或在企业微信中访问',
+        // 用户信息
+        user_info_not_available: '无法获取用户信息，请登录后重试',
+        user_info_not_loaded: '用户信息未获取，请刷新页面重新登录',
+        user_info_refresh_required: '用户信息未获取，请刷新页面重新登录',
         user_info_load_failed: '无法获取用户信息，请刷新页面重试',
         auth_expired: '授权已过期，请刷新页面重新登录',
         auth_expired_stats: '授权已过期，统计数据无法加载',
@@ -181,10 +181,10 @@ const LANGUAGES = {
         time_format: 'YYYY-MM-DD HH:mm:ss',
         date_format: 'YYYY-MM-DD',
         
-        // User info related
-        user_info_not_available: 'Unable to get user info, please access in WeChat Work environment',
-        user_info_not_loaded: 'User info not loaded, please access in WeChat Work or refresh page',
-        user_info_refresh_required: 'User info not loaded, please refresh page or access in WeChat Work',
+        // 用户信息
+        user_info_not_available: 'Unable to get user info, please login and try again',
+        user_info_not_loaded: 'User info not loaded, please refresh page to login again',
+        user_info_refresh_required: 'User info not loaded, please refresh page to login again',
         user_info_load_failed: 'Unable to get user info, please refresh page and try again',
         auth_expired: 'Authorization expired, please refresh page to login again',
         auth_expired_stats: 'Authorization expired, statistics data cannot be loaded',
@@ -925,95 +925,13 @@ const WeChatAPI = {
                 return appState.userInfo;
             }
             
-            const urlParams = new URLSearchParams(window.location.search);
-            const code = urlParams.get('code');
-            
-            if (code) {
-                // 检查是否已经使用过这个授权码
-                const usedCode = sessionStorage.getItem('used_wechat_code');
-                if (usedCode === code) {
-                    console.log('Authorization code already used, redirecting to re-authorize...');
-                    this._redirectToWeChatAuth();
-                    return null;
-                }
-                
-                try {
-                    const response = await Utils.request('/api/wechat/userinfo', {
-                        method: 'POST',
-                        body: JSON.stringify({ code })
-                    });
-                    
-                    if (response.success) {
-                        // 标记授权码已使用
-                        sessionStorage.setItem('used_wechat_code', code);
-                        
-                        appState.userInfo = response.data;
-                        console.log('Successfully got user info from WeChat:', response.data);
-                        
-                        // 清除URL中的code参数，避免重复使用
-                        this._clearCodeFromUrl();
-                        
-                        return response.data;
-                    } else {
-                        console.error('WeChat API returned error:', response.message);
-                        
-                        // 检查是否是授权码失效错误
-                        if (response.message && response.message.includes('授权码已失效')) {
-                            console.log('Authorization code expired, redirecting to re-authorize...');
-                            sessionStorage.setItem('used_wechat_code', code);
-                            this._redirectToWeChatAuth();
-                            return null;
-                        }
-                        
-                        // 在企业微信环境中，如果API失败，提示用户重新授权
-                        if (this.isInWeChatWork()) {
-                            console.log('WeChat API failed, redirecting to re-authorize...');
-                            this._redirectToWeChatAuth();
-                            return null;
-                        }
-                        throw new Error(response.message || '获取用户信息失败');
-                    }
-                } catch (apiError) {
-                    console.error('WeChat API request failed:', apiError);
-                    
-                    // 标记授权码已使用（避免重复尝试）
-                    sessionStorage.setItem('used_wechat_code', code);
-                    
-                    // 检查是否是网络错误或授权码相关错误
-                    if (apiError.message && (apiError.message.includes('授权码') || apiError.message.includes('Invalid'))) {
-                        console.log('Authorization code related error, redirecting to re-authorize...');
-                        this._redirectToWeChatAuth();
-                        return null;
-                    }
-                    
-                    // 在企业微信环境中，API失败时重新授权
-                    if (this.isInWeChatWork()) {
-                        console.log('API error in WeChat environment, redirecting to re-authorize...');
-                        this._redirectToWeChatAuth();
-                        return null;
-                    }
-                    throw apiError;
-                }
-            } else if (this.isInWeChatWork()) {
-                // 重定向到企业微信授权页面
-                this._redirectToWeChatAuth();
-                return null;
-            }
-            
-            // 非企业微信环境时，尝试CAS认证
-            console.log('Not in WeChat environment, trying CAS authentication...');
+            // 统一使用身份认证登录，不再区分企业微信和浏览器环境
+            console.log('Using unified identity authentication...');
             return await this._handleCASAuthentication();
         } catch (error) {
             console.error('Failed to get user info:', error);
-            // 在企业微信环境中出错时，重新授权
-            if (this.isInWeChatWork()) {
-                console.log('Error in WeChat environment, redirecting to re-authorize...');
-                this._redirectToWeChatAuth();
-                return null;
-            } else {
-                // 非企业微信环境中出错时，返回null
-                return null;
-            }
+            // 统一错误处理，不再区分环境
+            return null;
         }
     },
     
@@ -1072,20 +990,7 @@ const WeChatAPI = {
         }
     },
     
-    // 重定向到企业微信授权页面
-    _redirectToWeChatAuth() {
-        const redirectUrl = encodeURIComponent(window.location.href.split('?')[0]);
-        const authUrl = `https://open.weixin.qq.com/connect/oauth2/authorize?appid=${CONFIG.WECHAT_CORP_ID}&redirect_uri=${redirectUrl}&response_type=code&scope=snsapi_base&state=attendance#wechat_redirect`;
-        window.location.href = authUrl;
-    },
-    
-    // 清除URL中的code参数
-    _clearCodeFromUrl() {
-        const url = new URL(window.location);
-        url.searchParams.delete('code');
-        url.searchParams.delete('state');
-        window.history.replaceState({}, document.title, url.toString());
-    },
+
     
     // 检查是否在企业微信环境中
     isInWeChatWork() {
@@ -1113,41 +1018,149 @@ const WeChatAPI = {
             console.log('Location request - Environment check:', {
                 isInWeChat: isInWeChat,
                 isWeChatReady: appState.isWeChatReady,
-                hasWxObject: typeof wx !== 'undefined'
+                hasWxObject: typeof wx !== 'undefined',
+                hasWwObject: typeof ww !== 'undefined'
             });
             
             // 如果在企业微信环境且SDK已准备好，优先使用企业微信定位
-            if (isInWeChat && appState.isWeChatReady && typeof wx !== 'undefined') {
-                console.log('Attempting to get location via WeChat JS-SDK...');
-                
-                wx.getLocation({
-                    type: 'gcj02',
-                    success: (res) => {
-                        console.log('WeChat location success:', res);
-                        const location = {
-                            latitude: res.latitude,
-                            longitude: res.longitude,
-                            accuracy: res.accuracy,
-                            speed: res.speed,
-                            altitude: res.altitude,
-                            source: 'wechat'
-                        };
-                        appState.location = location;
-                        resolve(location);
-                    },
-                    fail: (error) => {
-                        console.error('WeChat getLocation failed:', error);
-                        // 企业微信定位失败，尝试浏览器原生定位
+            if (isInWeChat && appState.isWeChatReady) {
+                // 优先使用企业微信内置API (ww.openLocation)
+                if (typeof ww !== 'undefined' && ww.getLocation) {
+                    console.log('Attempting to get location via WeChat Work API (ww.getLocation)...');
+                    
+                    ww.getLocation({
+                        type: 'gcj02',
+                        success: (res) => {
+                            console.log('WeChat Work location success:', res);
+                            const location = {
+                                latitude: res.latitude,
+                                longitude: res.longitude,
+                                accuracy: res.accuracy,
+                                speed: res.speed,
+                                altitude: res.altitude,
+                                source: 'wechat_work'
+                            };
+                            appState.location = location;
+                            resolve(location);
+                        },
+                        fail: (error) => {
+                            console.error('WeChat Work getLocation failed:', error);
+                            // 企业微信定位失败，尝试微信JS-SDK
+                            this._tryWeChatJSSDKLocation().then(resolve).catch((jssdkError) => {
+                                // 最后尝试浏览器原生定位
+                                console.log('Falling back to browser geolocation...');
+                                this._getBrowserLocation().then(resolve).catch((browserError) => {
+                                    reject(new Error(`All location methods failed. WeChat Work: ${JSON.stringify(error)}, JS-SDK: ${jssdkError.message}, Browser: ${browserError.message}`));
+                                });
+                            });
+                        }
+                    });
+                } else if (typeof wx !== 'undefined') {
+                    // 使用微信JS-SDK作为备选
+                    this._tryWeChatJSSDKLocation().then(resolve).catch((jssdkError) => {
+                        // 最后尝试浏览器原生定位
                         console.log('Falling back to browser geolocation...');
                         this._getBrowserLocation().then(resolve).catch((browserError) => {
-                            reject(new Error(`Both WeChat and browser location failed. WeChat: ${JSON.stringify(error)}, Browser: ${browserError.message}`));
+                            reject(new Error(`WeChat location methods failed. JS-SDK: ${jssdkError.message}, Browser: ${browserError.message}`));
                         });
-                    }
-                });
+                    });
+                } else {
+                    // 没有企业微信API，直接使用浏览器定位
+                    console.log('No WeChat APIs available, using browser geolocation...');
+                    this._getBrowserLocation().then(resolve).catch(reject);
+                }
             } else {
                 // 非企业微信环境或SDK未准备好，直接使用浏览器原生定位
                 console.log('Using browser geolocation (not in WeChat environment or SDK not ready)');
                 this._getBrowserLocation().then(resolve).catch(reject);
+            }
+        });
+    },
+
+    // 尝试使用微信JS-SDK获取位置
+    async _tryWeChatJSSDKLocation() {
+        return new Promise((resolve, reject) => {
+            if (typeof wx === 'undefined') {
+                reject(new Error('WeChat JS-SDK not available'));
+                return;
+            }
+            
+            console.log('Attempting to get location via WeChat JS-SDK...');
+            
+            wx.getLocation({
+                type: 'gcj02',
+                success: (res) => {
+                    console.log('WeChat JS-SDK location success:', res);
+                    const location = {
+                        latitude: res.latitude,
+                        longitude: res.longitude,
+                        accuracy: res.accuracy,
+                        speed: res.speed,
+                        altitude: res.altitude,
+                        source: 'wechat_jssdk'
+                    };
+                    appState.location = location;
+                    resolve(location);
+                },
+                fail: (error) => {
+                    console.error('WeChat JS-SDK getLocation failed:', error);
+                    reject(new Error(`WeChat JS-SDK location failed: ${JSON.stringify(error)}`));
+                }
+            });
+        });
+    },
+
+    // 使用企业微信内置地图查看位置
+    openLocation(latitude, longitude, name = '当前位置', address = '', scale = 14) {
+        return new Promise((resolve, reject) => {
+            // 检查是否在企业微信环境中
+            const isInWeChat = this.isInWeChatWork();
+            
+            if (!isInWeChat) {
+                console.warn('Not in WeChat Work environment, cannot use ww.openLocation');
+                reject(new Error('Not in WeChat Work environment'));
+                return;
+            }
+            
+            // 优先使用企业微信内置API (ww.openLocation)
+            if (typeof ww !== 'undefined' && ww.openLocation) {
+                console.log('Opening location via WeChat Work API (ww.openLocation)...');
+                
+                ww.openLocation({
+                    latitude: latitude,
+                    longitude: longitude,
+                    name: name,
+                    address: address,
+                    scale: scale,
+                    infoUrl: ''
+                });
+                
+                resolve({
+                    success: true,
+                    method: 'wechat_work',
+                    message: 'Location opened successfully'
+                });
+            } else if (typeof wx !== 'undefined' && wx.openLocation) {
+                // 使用微信JS-SDK作为备选
+                console.log('Opening location via WeChat JS-SDK (wx.openLocation)...');
+                
+                wx.openLocation({
+                    latitude: latitude,
+                    longitude: longitude,
+                    name: name,
+                    address: address,
+                    scale: scale,
+                    infoUrl: ''
+                });
+                
+                resolve({
+                    success: true,
+                    method: 'wechat_jssdk',
+                    message: 'Location opened successfully'
+                });
+            } else {
+                console.error('No WeChat location APIs available');
+                reject(new Error('WeChat location APIs not available'));
             }
         });
     },
