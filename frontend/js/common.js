@@ -1013,20 +1013,43 @@ const WeChatAPI = {
     // 获取地理位置
     async getLocation() {
         return new Promise((resolve, reject) => {
+            // 更新调试信息UI
+            this._updateLocationDebugUI('检测环境中...', 'info');
+            
             // 首先检查是否在企业微信环境中
             const isInWeChat = this.isInWeChatWork();
-            console.log('Location request - Environment check:', {
+            const environmentInfo = {
                 isInWeChat: isInWeChat,
                 isWeChatReady: appState.isWeChatReady,
                 hasWxObject: typeof wx !== 'undefined',
-                hasWwObject: typeof ww !== 'undefined'
-            });
+                hasWwObject: typeof ww !== 'undefined',
+                userAgent: navigator.userAgent.toLowerCase()
+            };
+            
+            console.log('Location request - Environment check:', environmentInfo);
+            
+            // 更新环境检测信息
+            let envText = '';
+            if (isInWeChat) {
+                if (typeof ww !== 'undefined') {
+                    envText = '企业微信环境 (ww API可用)';
+                } else if (typeof wx !== 'undefined') {
+                    envText = '微信环境 (wx API可用)';
+                } else {
+                    envText = '微信环境 (API不可用)';
+                }
+            } else {
+                envText = '浏览器环境';
+            }
+            this._updateEnvironmentInfo(envText);
             
             // 如果在企业微信环境且SDK已准备好，优先使用企业微信定位
             if (isInWeChat && appState.isWeChatReady) {
-                // 优先使用企业微信内置API (ww.openLocation)
+                // 优先使用企业微信内置API (ww.getLocation)
                 if (typeof ww !== 'undefined' && ww.getLocation) {
                     console.log('Attempting to get location via WeChat Work API (ww.getLocation)...');
+                    this._updateLocationDebugUI('使用企业微信定位 (ww.getLocation)', 'info');
+                    this._updateLocationStatus('正在获取企业微信定位...', 'info');
                     
                     ww.getLocation({
                         type: 'gcj02',
@@ -1041,15 +1064,26 @@ const WeChatAPI = {
                                 source: 'wechat_work'
                             };
                             appState.location = location;
+                            
+                            // 更新调试信息
+                            this._updateLocationDebugUI('企业微信定位 (ww.getLocation)', 'success');
+                            this._updateLocationStatus('企业微信定位成功', 'success');
+                            this._updateCoordinatesInfo(location);
+                            
                             resolve(location);
                         },
                         fail: (error) => {
                             console.error('WeChat Work getLocation failed:', error);
+                            this._updateLocationStatus('企业微信定位失败，尝试备选方案...', 'warning');
+                            
                             // 企业微信定位失败，尝试微信JS-SDK
                             this._tryWeChatJSSDKLocation().then(resolve).catch((jssdkError) => {
                                 // 最后尝试浏览器原生定位
                                 console.log('Falling back to browser geolocation...');
+                                this._updateLocationStatus('尝试浏览器定位...', 'warning');
                                 this._getBrowserLocation().then(resolve).catch((browserError) => {
+                                    this._updateLocationDebugUI('所有定位方式失败', 'error');
+                                    this._updateLocationStatus('定位失败', 'error');
                                     reject(new Error(`All location methods failed. WeChat Work: ${JSON.stringify(error)}, JS-SDK: ${jssdkError.message}, Browser: ${browserError.message}`));
                                 });
                             });
@@ -1057,21 +1091,32 @@ const WeChatAPI = {
                     });
                 } else if (typeof wx !== 'undefined') {
                     // 使用微信JS-SDK作为备选
+                    console.log('Using WeChat JS-SDK as fallback...');
+                    this._updateLocationDebugUI('使用微信JS-SDK定位 (wx.getLocation)', 'info');
+                    this._updateLocationStatus('正在获取微信JS-SDK定位...', 'info');
+                    
                     this._tryWeChatJSSDKLocation().then(resolve).catch((jssdkError) => {
                         // 最后尝试浏览器原生定位
                         console.log('Falling back to browser geolocation...');
+                        this._updateLocationStatus('尝试浏览器定位...', 'warning');
                         this._getBrowserLocation().then(resolve).catch((browserError) => {
+                            this._updateLocationDebugUI('所有定位方式失败', 'error');
+                            this._updateLocationStatus('定位失败', 'error');
                             reject(new Error(`WeChat location methods failed. JS-SDK: ${jssdkError.message}, Browser: ${browserError.message}`));
                         });
                     });
                 } else {
                     // 没有企业微信API，直接使用浏览器定位
                     console.log('No WeChat APIs available, using browser geolocation...');
+                    this._updateLocationDebugUI('浏览器原生定位 (navigator.geolocation)', 'warning');
+                    this._updateLocationStatus('正在获取浏览器定位...', 'warning');
                     this._getBrowserLocation().then(resolve).catch(reject);
                 }
             } else {
                 // 非企业微信环境或SDK未准备好，直接使用浏览器原生定位
                 console.log('Using browser geolocation (not in WeChat environment or SDK not ready)');
+                this._updateLocationDebugUI('浏览器原生定位 (navigator.geolocation)', 'warning');
+                this._updateLocationStatus('正在获取浏览器定位...', 'warning');
                 this._getBrowserLocation().then(resolve).catch(reject);
             }
         });
@@ -1100,10 +1145,17 @@ const WeChatAPI = {
                         source: 'wechat_jssdk'
                     };
                     appState.location = location;
+                    
+                    // 更新调试信息
+                    this._updateLocationDebugUI('微信JS-SDK定位 (wx.getLocation)', 'success');
+                    this._updateLocationStatus('微信JS-SDK定位成功', 'success');
+                    this._updateCoordinatesInfo(location);
+                    
                     resolve(location);
                 },
                 fail: (error) => {
                     console.error('WeChat JS-SDK getLocation failed:', error);
+                    this._updateLocationStatus('微信JS-SDK定位失败', 'error');
                     reject(new Error(`WeChat JS-SDK location failed: ${JSON.stringify(error)}`));
                 }
             });
@@ -1194,6 +1246,12 @@ const WeChatAPI = {
                         source: 'browser'
                     };
                     appState.location = location;
+                    
+                    // 更新调试信息
+                    this._updateLocationDebugUI('浏览器原生定位 (navigator.geolocation)', 'warning');
+                    this._updateLocationStatus('浏览器定位成功', 'warning');
+                    this._updateCoordinatesInfo(location);
+                    
                     resolve(location);
                 },
                 (error) => {
@@ -1214,6 +1272,10 @@ const WeChatAPI = {
                         default:
                             errorMessage = `定位失败: ${error.message}`;
                     }
+                    
+                    // 更新调试信息
+                    this._updateLocationDebugUI('浏览器定位失败', 'error');
+                    this._updateLocationStatus(errorMessage, 'error');
                     
                     reject(new Error(errorMessage));
                 },
@@ -1299,6 +1361,40 @@ const WeChatAPI = {
                 }
             });
         });
+    },
+
+    // 调试信息更新方法
+    _updateLocationDebugUI(method, status) {
+        const methodElement = document.getElementById('debug-location-method');
+        if (methodElement) {
+            methodElement.textContent = method;
+            methodElement.className = `debug-value status-${status}`;
+        }
+    },
+
+    _updateEnvironmentInfo(environment) {
+        const envElement = document.getElementById('debug-environment');
+        if (envElement) {
+            envElement.textContent = environment;
+        }
+    },
+
+    _updateLocationStatus(status, type) {
+        const statusElement = document.getElementById('debug-location-status');
+        if (statusElement) {
+            statusElement.textContent = status;
+            statusElement.className = `debug-value status-${type}`;
+        }
+    },
+
+    _updateCoordinatesInfo(location) {
+        const coordsElement = document.getElementById('debug-coordinates');
+        if (coordsElement && location) {
+            const coordsText = `${location.latitude.toFixed(6)}, ${location.longitude.toFixed(6)}`;
+            const accuracyText = location.accuracy ? ` (精度: ${Math.round(location.accuracy)}m)` : '';
+            coordsElement.textContent = coordsText + accuracyText;
+            coordsElement.className = 'debug-value status-success';
+        }
     }
 };
 

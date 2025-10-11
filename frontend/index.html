@@ -142,6 +142,31 @@
                     <div class="map-container" id="mapContainer"></div>
                 </div>
                 
+                <!-- 定位调试信息区域 -->
+                <div class="location-debug-section" id="locationDebugSection">
+                    <div class="debug-header">
+                        <span class="debug-title" data-zh="定位调试信息" data-en="Location Debug Info">定位调试信息</span>
+                    </div>
+                    <div class="debug-content">
+                        <div class="debug-item">
+                            <span class="debug-label" data-zh="定位方式" data-en="Location Method">定位方式：</span>
+                            <span class="debug-value" id="locationMethod">检测中...</span>
+                        </div>
+                        <div class="debug-item">
+                            <span class="debug-label" data-zh="环境检测" data-en="Environment">环境检测：</span>
+                            <span class="debug-value" id="environmentInfo">检测中...</span>
+                        </div>
+                        <div class="debug-item">
+                            <span class="debug-label" data-zh="定位状态" data-en="Location Status">定位状态：</span>
+                            <span class="debug-value" id="locationStatus">准备中...</span>
+                        </div>
+                        <div class="debug-item">
+                            <span class="debug-label" data-zh="坐标信息" data-en="Coordinates">坐标信息：</span>
+                            <span class="debug-value" id="coordinatesInfo">未获取</span>
+                        </div>
+                    </div>
+                </div>
+                
                 <div class="form-group">
                     <label data-zh="拍照" data-en="Photo">* 拍照</label>
                     <div class="photo-upload" id="photoUpload">

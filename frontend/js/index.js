@@ -7,10 +7,21 @@ class SignInPage {
     
     // 获取当前位置
     async getCurrentLocation() {
+        // 显示调试信息区域
+        this.showLocationDebugInfo();
+        
         // 检查是否有缓存的位置信息
         if (appState.location) {
             console.log('Using cached location:', appState.location);
             this.currentLocation = appState.location;
+            
+            // 更新调试信息显示缓存位置
+            if (window.WeChatAPI && WeChatAPI._updateLocationDebugUI) {
+                WeChatAPI._updateLocationDebugUI('使用缓存位置', 'success');
+                WeChatAPI._updateLocationStatus('使用缓存的位置信息', 'success');
+                WeChatAPI._updateCoordinatesInfo(appState.location);
+            }
+            
             // 使用缓存的建筑信息
             const cachedBuildingInfo = appState.getCache('buildingInfo');
             if (cachedBuildingInfo) {
@@ -109,6 +120,31 @@ class SignInPage {
                 const failedText = appState.currentLanguage === 'zh' ? '位置获取失败' : 'Location Failed';
                 buildingNameElement.textContent = failedText;
             }
+        }
+    }
+    
+    // 显示位置调试信息
+    showLocationDebugInfo() {
+        const debugSection = document.getElementById('location-debug-section');
+        if (debugSection) {
+            // 如果调试区域已存在，确保它是可见的
+            debugSection.style.display = 'block';
+            
+            // 初始化调试信息
+            if (window.WeChatAPI && WeChatAPI._updateLocationDebugUI) {
+                WeChatAPI._updateLocationDebugUI('准备获取位置...', 'info');
+                WeChatAPI._updateLocationStatus('初始化中...', 'info');
+                WeChatAPI._updateEnvironmentInfo('检测环境中...');
+                WeChatAPI._updateCoordinatesInfo(null);
+            }
+        }
+    }
+    
+    // 隐藏位置调试信息
+    hideLocationDebugInfo() {
+        const debugSection = document.getElementById('location-debug-section');
+        if (debugSection) {
+            debugSection.style.display = 'none';
         }
     }
     
