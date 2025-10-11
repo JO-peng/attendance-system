@@ -152,21 +152,15 @@ class StatisticsPage {
                 });
                 
                 // 转换记录格式并构建attendanceData
+                // 使用Map来按日期分组记录
+                const recordsByDate = new Map();
+                
                 currentMonthRecords.forEach(record => {
                     const recordDate = new Date(record.signed_at);
                     const dateStr = `${recordDate.getFullYear()}-${(recordDate.getMonth() + 1).toString().padStart(2, '0')}-${recordDate.getDate().toString().padStart(2, '0')}`;
                     
-                    // 设置考勤状态
-                    if (record.status === 'attended') {
-                        this.attendanceData[dateStr] = 'attended';
-                    } else if (record.status === 'late') {
-                        this.attendanceData[dateStr] = 'partial';
-                    } else if (record.status === 'absent') {
-                        this.attendanceData[dateStr] = 'missed';
-                    }
-                    
-                    // 添加签到记录
-                    this.signinRecords.push({
+                    // 创建记录对象
+                    const recordObj = {
                         id: record.id,
                         date: dateStr,
                         time: Utils.formatTime(new Date(record.signed_at)),
@@ -174,12 +168,38 @@ class StatisticsPage {
                         classroom: record.classroom || record.location_address,
                         status: record.status,
                         photo: record.photo_path ? `/api/uploads/${record.photo_path}` : null,
-                        location_address: record.location_address, // 添加详细位置信息
+                        location_address: record.location_address,
                         location: {
                             latitude: record.latitude,
                             longitude: record.longitude
-                        }
-                    });
+                        },
+                        signed_at: record.signed_at // 保留原始时间用于排序
+                    };
+                    
+                    // 按日期分组
+                    if (!recordsByDate.has(dateStr)) {
+                        recordsByDate.set(dateStr, []);
+                    }
+                    recordsByDate.get(dateStr).push(recordObj);
+                });
+                
+                // 处理每日记录
+                recordsByDate.forEach((records, dateStr) => {
+                    // 按时间排序（最新的在前）
+                    records.sort((a, b) => new Date(b.signed_at) - new Date(a.signed_at));
+                    
+                    // 设置日历显示状态（基于最新记录）
+                    const latestRecord = records[0];
+                    if (latestRecord.status === 'attended') {
+                        this.attendanceData[dateStr] = 'attended';
+                    } else if (latestRecord.status === 'late') {
+                        this.attendanceData[dateStr] = 'partial';
+                    } else if (latestRecord.status === 'absent') {
+                        this.attendanceData[dateStr] = 'missed';
+                    }
+                    
+                    // 将所有记录添加到signinRecords
+                    this.signinRecords.push(...records);
                 });
                 
                 this.renderCalendar();
@@ -316,62 +336,37 @@ class StatisticsPage {
     
     // 显示签到详情
     showSigninDetails(date) {
-        const record = this.signinRecords.find(r => r.date === date);
+        // 获取指定日期的所有记录
+        const records = this.signinRecords.filter(r => r.date === date);
         const detailsElement = document.getElementById('signinDetails');
         const contentElement = document.getElementById('detailsContent');
+        const navigationElement = document.getElementById('recordNavigation');
+        const counterElement = document.getElementById('recordCounter');
         
         if (!detailsElement || !contentElement) return;
         
-        // 保存当前日期，用于语言切换时重新渲染
+        // 保存当前日期和记录信息
         detailsElement.setAttribute('data-current-date', date);
+        this.currentDateRecords = records;
+        this.currentRecordIndex = 0;
         
-        if (record) {
-            // 处理照片显示
-            const photoCell = record.photo ? 
-                `<img src="${record.photo}" alt="签到照片" class="detail-photo" onclick="window.showPhotoPreview('${record.photo}', '签到照片')" style="cursor: pointer; max-width: 100px; max-height: 100px; border-radius: 4px;">` : 
-                '<span class="text-gray-400">无照片</span>';
+        if (records.length > 0) {
+            // 显示导航按钮（如果有多条记录）
+            if (records.length > 1) {
+                navigationElement.style.display = 'flex';
+                this.updateRecordNavigation();
+                this.bindNavigationEvents();
+            } else {
+                navigationElement.style.display = 'none';
+            }
             
-            contentElement.innerHTML = `
-                <div class="detail-item">
-                    <span class="detail-label" data-zh="日期" data-en="Date">日期</span>
-                    <span class="detail-value">${record.date}</span>
-                </div>
-                <div class="detail-item">
-                    <span class="detail-label" data-zh="时间" data-en="Time">时间</span>
-                    <span class="detail-value">${record.time}</span>
-                </div>
-                <div class="detail-item">
-                    <span class="detail-label" data-zh="课程" data-en="Course">课程</span>
-                    <span class="detail-value">${record.courseName}</span>
-                </div>
-                <div class="detail-item">
-                    <span class="detail-label" data-zh="教室" data-en="Classroom">教室</span>
-                    <span class="detail-value">${record.classroom}</span>
-                </div>
-                <div class="detail-item">
-                    <span class="detail-label" data-zh="状态" data-en="Status">状态</span>
-                    <span class="detail-value">
-                        <span class="status-badge ${record.status}">
-                            ${this.getStatusText(record.status)}
-                        </span>
-                    </span>
-                </div>
-                <div class="detail-item">
-                    <span class="detail-label" data-zh="照片" data-en="Photo">照片</span>
-                    <span class="detail-value">
-                        ${photoCell}
-                    </span>
-                </div>
-                <div class="detail-item">
-                    <span class="detail-label" data-zh="签到坐标" data-en="Sign-in Coordinates">签到坐标</span>
-                    <span class="detail-value">${record.location ? `${Utils.t('latitude')}: ${record.location.latitude.toFixed(4)}, ${Utils.t('longitude')}: ${record.location.longitude.toFixed(4)}` : Utils.t('unknown_location')}</span>
-                </div>
-                <div class="detail-item">
-                    <span class="detail-label" data-zh="位置信息" data-en="Location Info">位置信息</span>
-                    <span class="detail-value">${this.formatLocationWithDistance(record)}</span>
-                </div>
-            `;
+            // 显示第一条记录
+            this.renderRecordDetails(records[0]);
         } else {
+            // 隐藏导航按钮
+            navigationElement.style.display = 'none';
+            
+            // 显示空状态
             contentElement.innerHTML = `
                 <div class="empty-state">
                     <svg viewBox="0 0 24 24" fill="currentColor">
@@ -387,6 +382,105 @@ class StatisticsPage {
         appState.updateUI();
         
         detailsElement.style.display = 'block';
+    }
+    
+    // 渲染单条记录详情
+    renderRecordDetails(record) {
+        const contentElement = document.getElementById('detailsContent');
+        
+        // 处理照片显示
+        const photoCell = record.photo ? 
+            `<img src="${record.photo}" alt="签到照片" class="detail-photo" onclick="window.showPhotoPreview('${record.photo}', '签到照片')" style="cursor: pointer; max-width: 100px; max-height: 100px; border-radius: 4px;">` : 
+            '<span class="text-gray-400">无照片</span>';
+        
+        contentElement.innerHTML = `
+            <div class="detail-item">
+                <span class="detail-label" data-zh="日期" data-en="Date">日期</span>
+                <span class="detail-value">${record.date}</span>
+            </div>
+            <div class="detail-item">
+                <span class="detail-label" data-zh="时间" data-en="Time">时间</span>
+                <span class="detail-value">${record.time}</span>
+            </div>
+            <div class="detail-item">
+                <span class="detail-label" data-zh="课程" data-en="Course">课程</span>
+                <span class="detail-value">${record.courseName}</span>
+            </div>
+            <div class="detail-item">
+                <span class="detail-label" data-zh="教室" data-en="Classroom">教室</span>
+                <span class="detail-value">${record.classroom}</span>
+            </div>
+            <div class="detail-item">
+                <span class="detail-label" data-zh="状态" data-en="Status">状态</span>
+                <span class="detail-value">
+                    <span class="status-badge ${record.status}">
+                        ${this.getStatusText(record.status)}
+                    </span>
+                </span>
+            </div>
+            <div class="detail-item">
+                <span class="detail-label" data-zh="照片" data-en="Photo">照片</span>
+                <span class="detail-value">
+                    ${photoCell}
+                </span>
+            </div>
+            <div class="detail-item">
+                <span class="detail-label" data-zh="签到坐标" data-en="Sign-in Coordinates">签到坐标</span>
+                <span class="detail-value">${record.location ? `${Utils.t('latitude')}: ${record.location.latitude.toFixed(4)}, ${Utils.t('longitude')}: ${record.location.longitude.toFixed(4)}` : Utils.t('unknown_location')}</span>
+            </div>
+            <div class="detail-item">
+                <span class="detail-label" data-zh="位置信息" data-en="Location Info">位置信息</span>
+                <span class="detail-value">${this.formatLocationWithDistance(record)}</span>
+            </div>
+        `;
+    }
+    
+    // 更新记录导航状态
+    updateRecordNavigation() {
+        const counterElement = document.getElementById('recordCounter');
+        const prevBtn = document.getElementById('prevRecord');
+        const nextBtn = document.getElementById('nextRecord');
+        
+        if (!this.currentDateRecords || this.currentDateRecords.length === 0) return;
+        
+        // 更新计数器
+        counterElement.textContent = `${this.currentRecordIndex + 1}/${this.currentDateRecords.length}`;
+        
+        // 更新按钮状态
+        prevBtn.disabled = this.currentRecordIndex === 0;
+        nextBtn.disabled = this.currentRecordIndex === this.currentDateRecords.length - 1;
+    }
+    
+    // 绑定导航事件
+    bindNavigationEvents() {
+        const prevBtn = document.getElementById('prevRecord');
+        const nextBtn = document.getElementById('nextRecord');
+        
+        // 移除之前的事件监听器
+        prevBtn.replaceWith(prevBtn.cloneNode(true));
+        nextBtn.replaceWith(nextBtn.cloneNode(true));
+        
+        // 重新获取元素并绑定事件
+        const newPrevBtn = document.getElementById('prevRecord');
+        const newNextBtn = document.getElementById('nextRecord');
+        
+        newPrevBtn.addEventListener('click', () => {
+            if (this.currentRecordIndex > 0) {
+                this.currentRecordIndex--;
+                this.renderRecordDetails(this.currentDateRecords[this.currentRecordIndex]);
+                this.updateRecordNavigation();
+                appState.updateUI(); // 更新多语言
+            }
+        });
+        
+        newNextBtn.addEventListener('click', () => {
+            if (this.currentRecordIndex < this.currentDateRecords.length - 1) {
+                this.currentRecordIndex++;
+                this.renderRecordDetails(this.currentDateRecords[this.currentRecordIndex]);
+                this.updateRecordNavigation();
+                appState.updateUI(); // 更新多语言
+            }
+        });
     }
     
     // 隐藏签到详情
