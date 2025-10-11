@@ -80,8 +80,11 @@ def create_sample_data():
     for i in range(30):
         date = datetime.utcnow() - timedelta(days=i)
         
-        # 每天随机生成1-3条记录
-        daily_records = random.randint(1, 3)
+        # 每天随机生成1-3条记录，前几天确保有多条记录用于测试
+        if i < 5:  # 前5天确保有多条记录
+            daily_records = random.randint(2, 4)
+        else:
+            daily_records = random.randint(1, 3)
         
         for j in range(daily_records):
             user = random.choice(users)
@@ -91,9 +94,10 @@ def create_sample_data():
             # 根据权重随机选择状态
             status = random.choices(statuses, weights=status_weights)[0]
             
-            # 随机生成签到时间
+            # 随机生成签到时间，确保同一天的记录有不同时间
+            base_hour = 8 + j * 3  # 确保时间间隔
             sign_time = date.replace(
-                hour=random.randint(8, 17),
+                hour=min(base_hour + random.randint(0, 2), 17),
                 minute=random.randint(0, 59),
                 second=random.randint(0, 59)
             )
@@ -110,6 +114,49 @@ def create_sample_data():
             )
             
             db.session.add(attendance)
+    
+    # 特别添加今天的多条记录用于测试
+    today = datetime.utcnow()
+    test_user = users[0]  # 使用第一个用户
+    
+    # 今天的第一次签到
+    attendance1 = Attendance(
+        user_id=test_user.id,
+        course_name='高等数学',
+        classroom='教学楼A101',
+        latitude=22.5431,
+        longitude=113.9364,
+        location_address='深圳大学教学楼A101',
+        status='attended',
+        signed_at=today.replace(hour=9, minute=0, second=0)
+    )
+    db.session.add(attendance1)
+    
+    # 今天的第二次签到
+    attendance2 = Attendance(
+        user_id=test_user.id,
+        course_name='大学英语',
+        classroom='教学楼B203',
+        latitude=22.5435,
+        longitude=113.9368,
+        location_address='深圳大学教学楼B203',
+        status='attended',
+        signed_at=today.replace(hour=14, minute=30, second=0)
+    )
+    db.session.add(attendance2)
+    
+    # 今天的第三次签到
+    attendance3 = Attendance(
+        user_id=test_user.id,
+        course_name='计算机基础',
+        classroom='实验楼C305',
+        latitude=22.5428,
+        longitude=113.9360,
+        location_address='深圳大学实验楼C305',
+        status='late',
+        signed_at=today.replace(hour=16, minute=45, second=0)
+    )
+    db.session.add(attendance3)
     
     # 创建示例反馈
     feedback_types = ['bug', 'suggestion', 'praise', 'other']

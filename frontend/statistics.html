@@ -106,20 +106,22 @@
         <!-- 签到详情 -->
         <div class="signin-details" id="signinDetails" style="display: none;">
             <div class="details-header">
-                <h3 data-zh="签到详情" data-en="Sign-in Details">签到详情</h3>
-                <div class="record-navigation" id="recordNavigation" style="display: none;">
-                    <button class="nav-btn" id="prevRecord" title="上一条记录">
-                        <svg viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
-                        </svg>
-                    </button>
-                    <span class="record-counter" id="recordCounter">1/1</span>
-                    <button class="nav-btn" id="nextRecord" title="下一条记录">
-                        <svg viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/>
-                        </svg>
-                    </button>
+                <button class="nav-btn prev-btn" id="prevRecord" style="display: none;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
+                    </svg>
+                </button>
+                <div class="details-title">
+                    <h3 data-zh="签到详情" data-en="Sign-in Details">签到详情</h3>
+                    <div class="record-indicator" id="recordIndicator" style="display: none;">
+                        <span id="currentRecordIndex">1</span> / <span id="totalRecords">1</span>
+                    </div>
                 </div>
+                <button class="nav-btn next-btn" id="nextRecord" style="display: none;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M8.59 16.59L10 18l6-6-6-6-1.41 1.41L13.17 12z"/>
+                    </svg>
+                </button>
                 <button class="close-details" id="closeDetails">&times;</button>
             </div>
             <div class="details-content" id="detailsContent">
