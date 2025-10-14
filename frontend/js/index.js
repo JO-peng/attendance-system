@@ -1485,28 +1485,14 @@ class SignInPage {
             // 创建标准的大头针图标
             const standardIcon = new AMap.Icon({
                 size: new AMap.Size(32, 40),
-                image: 'data:image/svg+xml;base64,' + btoa(`
-                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="40" viewBox="0 0 32 40">
-                        <path d="M16 0C7.163 0 0 7.163 0 16c0 16 16 24 16 24s16-8 16-24C32 7.163 24.837 0 16 0z" 
-                              fill="#ff4d4f" stroke="white" stroke-width="2"/>
-                        <circle cx="16" cy="16" r="8" fill="white"/>
-                        <circle cx="16" cy="16" r="4" fill="#ff4d4f"/>
-                    </svg>
-                `),
+                image: 'icon/pin.png',
                 imageOffset: new AMap.Pixel(-16, -40)
             });
             
             // 创建放大的图标用于动画
             const enlargedIcon = new AMap.Icon({
                 size: new AMap.Size(40, 50),
-                image: 'data:image/svg+xml;base64,' + btoa(`
-                    <svg xmlns="http://www.w3.org/2000/svg" width="40" height="50" viewBox="0 0 40 50">
-                        <path d="M20 0C8.954 0 0 8.954 0 20c0 20 20 30 20 30s20-10 20-30C40 8.954 31.046 0 20 0z" 
-                              fill="#ff4d4f" stroke="white" stroke-width="2"/>
-                        <circle cx="20" cy="20" r="10" fill="white"/>
-                        <circle cx="20" cy="20" r="5" fill="#ff4d4f"/>
-                    </svg>
-                `),
+                image: 'icon/pin.png',
                 imageOffset: new AMap.Pixel(-20, -50)
             });
             
@@ -1543,20 +1529,13 @@ class SignInPage {
         // 清除之前的标记
         this.clearMapMarkers();
 
-        // 添加用户位置标记 - 使用大头针样式
+        // 添加用户位置标记 - 使用pin.png图标
         this.userMarker = new AMap.Marker({
             position: [userLng, userLat],
             title: appState.currentLanguage === 'zh' ? '我的位置' : 'My Location',
             icon: new AMap.Icon({
                 size: new AMap.Size(32, 40),
-                image: 'data:image/svg+xml;base64,' + btoa(`
-                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="40" viewBox="0 0 32 40">
-                        <path d="M16 0C7.163 0 0 7.163 0 16c0 16 16 24 16 24s16-8 16-24C32 7.163 24.837 0 16 0z" 
-                              fill="#ff4d4f" stroke="white" stroke-width="2"/>
-                        <circle cx="16" cy="16" r="8" fill="white"/>
-                        <circle cx="16" cy="16" r="4" fill="#ff4d4f"/>
-                    </svg>
-                `),
+                image: 'icon/pin.png',
                 imageOffset: new AMap.Pixel(-16, -40)
             }),
             anchor: 'bottom-center',
@@ -1588,25 +1567,13 @@ class SignInPage {
             const buildingLat = parseFloat(buildingInfo.latitude);
             const radius = parseFloat(buildingInfo.radius || 75);
 
-            // 添加建筑标记 - 使用红色建筑图标
+            // 添加建筑标记 - 使用pin.png图标
             this.buildingMarker = new AMap.Marker({
                 position: [buildingLng, buildingLat],
                 title: buildingInfo.name || (appState.currentLanguage === 'zh' ? '教学楼' : 'Building'),
                 icon: new AMap.Icon({
                     size: new AMap.Size(36, 42),
-                    image: 'data:image/svg+xml;base64,' + btoa(`
-                        <svg xmlns="http://www.w3.org/2000/svg" width="36" height="42" viewBox="0 0 36 42">
-                            <path fill="#ff4d4f" stroke="white" stroke-width="2" d="M18 1C8.6 1 1 8.6 1 18c0 18 17 22 17 22s17-4 17-22C35 8.6 27.4 1 18 1z"/>
-                            <rect x="10" y="10" width="16" height="12" rx="1" fill="white"/>
-                            <rect x="12" y="12" width="3" height="2" fill="#ff4d4f"/>
-                            <rect x="15.5" y="12" width="3" height="2" fill="#ff4d4f"/>
-                            <rect x="19" y="12" width="3" height="2" fill="#ff4d4f"/>
-                            <rect x="12" y="15" width="3" height="2" fill="#ff4d4f"/>
-                            <rect x="15.5" y="15" width="3" height="2" fill="#ff4d4f"/>
-                            <rect x="19" y="15" width="3" height="2" fill="#ff4d4f"/>
-                            <rect x="12" y="18" width="10" height="3" fill="#ff4d4f"/>
-                        </svg>
-                    `),
+                    image: 'icon/pin.png',
                     imageOffset: new AMap.Pixel(-18, -42)
                 }),
                 anchor: 'bottom-center',
@@ -1716,14 +1683,7 @@ class SignInPage {
                 title: building.name,
                 icon: new AMap.Icon({
                     size: new AMap.Size(24, 30),
-                    image: 'data:image/svg+xml;base64,' + btoa(`
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="30" viewBox="0 0 24 30">
-                            <path d="M12 0C5.373 0 0 5.373 0 12c0 12 12 18 12 18s12-6 12-18C24 5.373 18.627 0 12 0z" 
-                                  fill="#1890ff" stroke="white" stroke-width="2"/>
-                            <circle cx="12" cy="12" r="6" fill="white"/>
-                            <circle cx="12" cy="12" r="3" fill="#1890ff"/>
-                        </svg>
-                    `),
+                    image: 'icon/pin.png',
                     imageOffset: new AMap.Pixel(-12, -30)
                 }),
                 anchor: 'bottom-center',
