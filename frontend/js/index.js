@@ -704,10 +704,8 @@ class SignInPage {
         if (photoUpload) {
             photoUpload.innerHTML = `
                 <div class="upload-placeholder">
-                    <svg width="48" height="48" viewBox="0 0 48 48" fill="#ccc">
-                        <path d="M24 4L4 14v20c0 11.1 7.68 20 18 22 2.18-.42 4.18-1.28 6-2.2 1.82.92 3.82 1.78 6 2.2 10.32-2 18-10.9 18-22V14L24 4z"/>
-                    </svg>
-                    <p data-zh="点击拍照" data-en="Tap to take photo">+</p>
+                    <img src="icon/shot.png" alt="拍照" width="48" height="48">
+                    <p data-zh="点击拍照" data-en="Tap to take photo">点击拍照</p>
                 </div>
             `;
             photoUpload.classList.remove('has-photo');
@@ -1482,18 +1480,18 @@ class SignInPage {
         
         // 如果用户标记存在，添加跳动动画
         if (this.userMarker) {
-            // 创建标准的大头针图标
+            // 创建标准的用户图标
             const standardIcon = new AMap.Icon({
-                size: new AMap.Size(32, 40),
-                image: 'icon/pin.png',
-                imageOffset: new AMap.Pixel(-16, -40)
+                size: new AMap.Size(24, 32),
+                image: 'icon/user_pin.png',
+                imageOffset: new AMap.Pixel(-12, -32)
             });
             
             // 创建放大的图标用于动画
             const enlargedIcon = new AMap.Icon({
-                size: new AMap.Size(40, 50),
-                image: 'icon/pin.png',
-                imageOffset: new AMap.Pixel(-20, -50)
+                size: new AMap.Size(30, 40),
+                image: 'icon/user_pin.png',
+                imageOffset: new AMap.Pixel(-15, -40)
             });
             
             this.userMarker.setIcon(enlargedIcon);
@@ -1529,14 +1527,14 @@ class SignInPage {
         // 清除之前的标记
         this.clearMapMarkers();
 
-        // 添加用户位置标记 - 使用pin.png图标
+        // 添加用户位置标记 - 使用user_pin.png图标
         this.userMarker = new AMap.Marker({
             position: [userLng, userLat],
             title: appState.currentLanguage === 'zh' ? '我的位置' : 'My Location',
             icon: new AMap.Icon({
-                size: new AMap.Size(32, 40),
-                image: 'icon/pin.png',
-                imageOffset: new AMap.Pixel(-16, -40)
+                size: new AMap.Size(24, 32),
+                image: 'icon/user_pin.png',
+                imageOffset: new AMap.Pixel(-12, -32)
             }),
             anchor: 'bottom-center',
             zIndex: 100
@@ -1572,9 +1570,9 @@ class SignInPage {
                 position: [buildingLng, buildingLat],
                 title: buildingInfo.name || (appState.currentLanguage === 'zh' ? '教学楼' : 'Building'),
                 icon: new AMap.Icon({
-                    size: new AMap.Size(36, 42),
+                    size: new AMap.Size(28, 36),
                     image: 'icon/pin.png',
-                    imageOffset: new AMap.Pixel(-18, -42)
+                    imageOffset: new AMap.Pixel(-14, -36)
                 }),
                 anchor: 'bottom-center',
                 zIndex: 99
