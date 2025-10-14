@@ -1324,10 +1324,59 @@ const WeChatAPI = {
 
 // 页面自动更新管理器
 const PageUpdateManager = {
+    // 页面加载状态跟踪
+    pageLoadStartTime: Date.now(),
+    minLoadTime: 5000, // 最少给页面5秒加载时间
+    maxRetryCount: 3,
+    retryAttempts: 0,
+    
     // 检查用户数据是否有效
     checkUserDataValidity() {
         const userInfo = appState.getStoredUserInfo();
         return userInfo && userInfo.userid && userInfo.name;
+    },
+    
+    // 延迟检查用户数据（给页面足够的加载时间）
+    async checkUserDataWithDelay() {
+        const currentTime = Date.now();
+        const elapsedTime = currentTime - this.pageLoadStartTime;
+        
+        // 如果页面加载时间不足5秒，等待剩余时间
+        if (elapsedTime < this.minLoadTime) {
+            const remainingTime = this.minLoadTime - elapsedTime;
+            console.log(`页面加载中，等待 ${remainingTime}ms 后再检查用户数据`);
+            await new Promise(resolve => setTimeout(resolve, remainingTime));
+        }
+        
+        // 检查用户数据
+        if (!this.checkUserDataValidity()) {
+            // 尝试重新获取用户信息
+            if (this.retryAttempts < this.maxRetryCount) {
+                this.retryAttempts++;
+                console.log(`尝试重新获取用户信息 (${this.retryAttempts}/${this.maxRetryCount})`);
+                
+                try {
+                    await WeChatAPI.getUserInfo();
+                    if (this.checkUserDataValidity()) {
+                        console.log('用户信息获取成功');
+                        this.retryAttempts = 0; // 重置重试计数
+                        return true;
+                    }
+                } catch (error) {
+                    console.warn('重新获取用户信息失败:', error);
+                }
+                
+                // 等待2秒后再次尝试
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                return this.checkUserDataWithDelay();
+            } else {
+                // 达到最大重试次数，跳转到首页
+                console.log('达到最大重试次数，跳转到首页');
+                return false;
+            }
+        }
+        
+        return true;
     },
     
     // 自动跳转到首页
@@ -1340,8 +1389,14 @@ const PageUpdateManager = {
     async handlePageSwitch() {
         const currentPage = window.location.pathname.split('/').pop() || 'index.html';
         
-        // 检查用户数据
-        if (!this.checkUserDataValidity() && currentPage !== 'index.html') {
+        // 跳过首页的检查
+        if (currentPage === 'index.html') {
+            return;
+        }
+        
+        // 延迟检查用户数据
+        const isDataValid = await this.checkUserDataWithDelay();
+        if (!isDataValid) {
             this.redirectToHome();
             return;
         }
@@ -1387,10 +1442,10 @@ const PageUpdateManager = {
     setupVisibilityListener() {
         document.addEventListener('visibilitychange', () => {
             if (!document.hidden) {
-                // 页面变为可见时，执行更新检查
+                // 页面变为可见时，延迟执行更新检查
                 setTimeout(() => {
                     this.handlePageSwitch();
-                }, 500);
+                }, 1000); // 增加到1秒延迟
             }
         });
     },
@@ -1398,10 +1453,10 @@ const PageUpdateManager = {
     // 监听页面焦点变化
     setupFocusListener() {
         window.addEventListener('focus', () => {
-            // 页面获得焦点时，执行更新检查
+            // 页面获得焦点时，延迟执行更新检查
             setTimeout(() => {
                 this.handlePageSwitch();
-            }, 500);
+            }, 1000); // 增加到1秒延迟
         });
     }
 };
@@ -1452,14 +1507,17 @@ document.addEventListener('DOMContentLoaded', async () => {
             console.warn('Failed to load user info:', error);
         }
     } else {
-        // 非首页检查用户数据有效性
-        if (!PageUpdateManager.checkUserDataValidity()) {
-            PageUpdateManager.redirectToHome();
-            return;
-        }
-        
-        // 执行页面切换更新
-        await PageUpdateManager.handlePageSwitch();
+        // 非首页延迟检查用户数据有效性，给页面足够的加载时间
+        setTimeout(async () => {
+            const isDataValid = await PageUpdateManager.checkUserDataWithDelay();
+            if (!isDataValid) {
+                PageUpdateManager.redirectToHome();
+                return;
+            }
+            
+            // 执行页面初始化更新
+            await PageUpdateManager.handlePageSwitch();
+        }, 2000); // 给页面2秒的初始加载时间
     }
 });
 
