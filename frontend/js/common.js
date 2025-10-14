@@ -886,7 +886,7 @@ const WeChatAPI = {
                 
                 const wxConfig = {
                     beta: true,
-                    debug: false, // 可以临时设为true来调试
+                    debug: true, // 启用调试模式以获得更多信息
                     appId: config.corpId,
                     timestamp: config.timestamp,
                     nonceStr: config.nonceStr,
@@ -1146,18 +1146,22 @@ const WeChatAPI = {
                 isWeChatReady: appState.isWeChatReady,
                 hasWxObject: typeof wx !== 'undefined',
                 userAgent: navigator.userAgent,
-                timestamp: new Date().toISOString()
+                timestamp: new Date().toISOString(),
+                wxReadyState: typeof wx !== 'undefined' ? 'wx对象存在' : 'wx对象不存在',
+                currentUrl: window.location.href
             };
             
-            console.log('🔍 定位调试信息:', debugInfo);
+            console.log('🔍 [主应用] 定位调试信息:', debugInfo);
             
-            // 显示调试信息给用户
-            const debugMessage = `定位环境检测:
-• 企业微信环境: ${isInWeChat ? '是' : '否'}
-• SDK准备状态: ${appState.isWeChatReady ? '已准备' : '未准备'}
-• wx对象存在: ${typeof wx !== 'undefined' ? '是' : '否'}`;
+            // 显示详细调试信息给用户
+            const debugMessage = `[主应用] 定位环境检测:
+• 企业微信环境: ${isInWeChat ? '✅ 是' : '❌ 否'}
+• SDK准备状态: ${appState.isWeChatReady ? '✅ 已准备' : '❌ 未准备'}
+• wx对象存在: ${typeof wx !== 'undefined' ? '✅ 是' : '❌ 否'}
+• 当前URL: ${window.location.href}
+• 用户代理: ${navigator.userAgent.includes('wxwork') ? '✅ 企业微信' : '❌ 非企业微信'}`;
             
-            Utils.showMessage(debugMessage, 'info', 5000);
+            Utils.showMessage(debugMessage, 'info', 8000);
             
             // 如果在企业微信环境且SDK已准备好，优先使用企业微信定位
             if (isInWeChat && appState.isWeChatReady && typeof wx !== 'undefined') {
