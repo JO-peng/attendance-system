@@ -411,13 +411,29 @@ class FeedbackPage {
             // 收集表单数据
             const formData = this.collectFormData();
             
+            // 上传图片
+            const uploadedImages = [];
+            if (this.selectedImages.length > 0) {
+                for (const imageData of this.selectedImages) {
+                    try {
+                        const uploadResult = await this.uploadImage(imageData.file);
+                        if (uploadResult.success) {
+                            uploadedImages.push(uploadResult.data.filename);
+                        }
+                    } catch (uploadError) {
+                        console.error('图片上传失败:', uploadError);
+                        // 继续处理其他图片，不中断整个流程
+                    }
+                }
+            }
+            
             // 准备发送到后端的数据
             const apiData = {
                 rating: formData.rating,
                 feedback_type: formData.type,
                 content: formData.content,
                 contact_info: formData.contact,
-                images: formData.images,
+                images: uploadedImages, // 使用上传后的文件名
                 user_id: appState.userInfo?.id // 添加用户ID
             };
             
@@ -448,6 +464,18 @@ class FeedbackPage {
         } finally {
             this.setSubmitLoading(false);
         }
+    }
+    
+    async uploadImage(file) {
+        const formData = new FormData();
+        formData.append('file', file);
+        
+        const response = await fetch('/api/feedback/upload', {
+            method: 'POST',
+            body: formData
+        });
+        
+        return await response.json();
     }
     
     collectFormData() {

@@ -245,6 +245,51 @@
     border-radius: var(--radius-xl) var(--radius-xl) 0 0;
 }
 
+.details-navigation {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-3);
+}
+
+.nav-button {
+    background: var(--gray-100);
+    border: none;
+    border-radius: var(--radius-full);
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    color: var(--gray-600);
+    font-size: var(--font-size-lg);
+}
+
+.nav-button:hover {
+    background: var(--gray-200);
+    color: var(--gray-800);
+}
+
+.nav-button:disabled {
+    background: var(--gray-50);
+    color: var(--gray-300);
+    cursor: not-allowed;
+}
+
+.nav-button:disabled:hover {
+    background: var(--gray-50);
+    color: var(--gray-300);
+}
+
+.record-counter {
+    font-size: var(--font-size-sm);
+    color: var(--gray-600);
+    font-weight: 500;
+    min-width: 60px;
+    text-align: center;
+}
+
 .details-header h3 {
     font-size: var(--font-size-lg);
     font-weight: 600;

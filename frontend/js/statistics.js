@@ -316,61 +316,19 @@ class StatisticsPage {
     
     // 显示签到详情
     showSigninDetails(date) {
-        const record = this.signinRecords.find(r => r.date === date);
+        const records = this.signinRecords.filter(r => r.date === date);
         const detailsElement = document.getElementById('signinDetails');
         const contentElement = document.getElementById('detailsContent');
         
         if (!detailsElement || !contentElement) return;
         
-        // 保存当前日期，用于语言切换时重新渲染
+        // 保存当前日期和记录索引，用于导航和语言切换
         detailsElement.setAttribute('data-current-date', date);
+        detailsElement.setAttribute('data-current-index', '0');
+        detailsElement.setAttribute('data-total-records', records.length.toString());
         
-        if (record) {
-            // 处理照片显示
-            const photoCell = record.photo ? 
-                `<img src="${record.photo}" alt="签到照片" class="detail-photo" onclick="window.showPhotoPreview('${record.photo}', '签到照片')" style="cursor: pointer; max-width: 100px; max-height: 100px; border-radius: 4px;">` : 
-                '<span class="text-gray-400">无照片</span>';
-            
-            contentElement.innerHTML = `
-                <div class="detail-item">
-                    <span class="detail-label" data-zh="日期" data-en="Date">日期</span>
-                    <span class="detail-value">${record.date}</span>
-                </div>
-                <div class="detail-item">
-                    <span class="detail-label" data-zh="时间" data-en="Time">时间</span>
-                    <span class="detail-value">${record.time}</span>
-                </div>
-                <div class="detail-item">
-                    <span class="detail-label" data-zh="课程" data-en="Course">课程</span>
-                    <span class="detail-value">${record.courseName}</span>
-                </div>
-                <div class="detail-item">
-                    <span class="detail-label" data-zh="教室" data-en="Classroom">教室</span>
-                    <span class="detail-value">${record.classroom}</span>
-                </div>
-                <div class="detail-item">
-                    <span class="detail-label" data-zh="状态" data-en="Status">状态</span>
-                    <span class="detail-value">
-                        <span class="status-badge ${record.status}">
-                            ${this.getStatusText(record.status)}
-                        </span>
-                    </span>
-                </div>
-                <div class="detail-item">
-                    <span class="detail-label" data-zh="照片" data-en="Photo">照片</span>
-                    <span class="detail-value">
-                        ${photoCell}
-                    </span>
-                </div>
-                <div class="detail-item">
-                    <span class="detail-label" data-zh="签到坐标" data-en="Sign-in Coordinates">签到坐标</span>
-                    <span class="detail-value">${record.location ? `${Utils.t('latitude')}: ${record.location.latitude.toFixed(4)}, ${Utils.t('longitude')}: ${record.location.longitude.toFixed(4)}` : Utils.t('unknown_location')}</span>
-                </div>
-                <div class="detail-item">
-                    <span class="detail-label" data-zh="位置信息" data-en="Location Info">位置信息</span>
-                    <span class="detail-value">${this.formatLocationWithDistance(record)}</span>
-                </div>
-            `;
+        if (records.length > 0) {
+            this.renderRecordDetails(records, 0);
         } else {
             contentElement.innerHTML = `
                 <div class="empty-state">
@@ -387,6 +345,110 @@ class StatisticsPage {
         appState.updateUI();
         
         detailsElement.style.display = 'block';
+    }
+    
+    // 渲染记录详情
+    renderRecordDetails(records, currentIndex) {
+        const record = records[currentIndex];
+        const contentElement = document.getElementById('detailsContent');
+        const detailsElement = document.getElementById('signinDetails');
+        
+        if (!contentElement || !record) return;
+        
+        // 更新当前索引
+        detailsElement.setAttribute('data-current-index', currentIndex.toString());
+        
+        // 处理照片显示
+        const photoCell = record.photo ? 
+            `<img src="${record.photo}" alt="签到照片" class="detail-photo" onclick="window.showPhotoPreview('${record.photo}', '签到照片')" style="cursor: pointer; max-width: 100px; max-height: 100px; border-radius: 4px;">` : 
+            '<span class="text-gray-400">无照片</span>';
+        
+        // 导航按钮HTML
+        const navigationHtml = records.length > 1 ? `
+            <div class="record-navigation">
+                <button class="nav-btn prev-btn" onclick="statisticsPage.navigateRecord(-1)" ${currentIndex === 0 ? 'disabled' : ''}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
+                    </svg>
+                    <span data-zh="上一条" data-en="Previous">上一条</span>
+                </button>
+                <span class="record-counter">
+                    <span data-zh="${currentIndex + 1} / ${records.length}" data-en="${currentIndex + 1} / ${records.length}">${currentIndex + 1} / ${records.length}</span>
+                </span>
+                <button class="nav-btn next-btn" onclick="statisticsPage.navigateRecord(1)" ${currentIndex === records.length - 1 ? 'disabled' : ''}>
+                    <span data-zh="下一条" data-en="Next">下一条</span>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/>
+                    </svg>
+                </button>
+            </div>
+        ` : '';
+        
+        contentElement.innerHTML = `
+            ${navigationHtml}
+            <div class="detail-item">
+                <span class="detail-label" data-zh="日期" data-en="Date">日期</span>
+                <span class="detail-value">${record.date}</span>
+            </div>
+            <div class="detail-item">
+                <span class="detail-label" data-zh="时间" data-en="Time">时间</span>
+                <span class="detail-value">${record.time}</span>
+            </div>
+            <div class="detail-item">
+                <span class="detail-label" data-zh="课程" data-en="Course">课程</span>
+                <span class="detail-value">${record.courseName}</span>
+            </div>
+            <div class="detail-item">
+                <span class="detail-label" data-zh="教室" data-en="Classroom">教室</span>
+                <span class="detail-value">${record.classroom}</span>
+            </div>
+            <div class="detail-item">
+                <span class="detail-label" data-zh="状态" data-en="Status">状态</span>
+                <span class="detail-value">
+                    <span class="status-badge ${record.status}">
+                        ${this.getStatusText(record.status)}
+                    </span>
+                </span>
+            </div>
+            <div class="detail-item">
+                <span class="detail-label" data-zh="照片" data-en="Photo">照片</span>
+                <span class="detail-value">
+                    ${photoCell}
+                </span>
+            </div>
+            <div class="detail-item">
+                <span class="detail-label" data-zh="签到坐标" data-en="Sign-in Coordinates">签到坐标</span>
+                <span class="detail-value">${record.location ? `${Utils.t('latitude')}: ${record.location.latitude.toFixed(4)}, ${Utils.t('longitude')}: ${record.location.longitude.toFixed(4)}` : Utils.t('unknown_location')}</span>
+            </div>
+            <div class="detail-item">
+                <span class="detail-label" data-zh="位置信息" data-en="Location Info">位置信息</span>
+                <span class="detail-value">${this.formatLocationWithDistance(record)}</span>
+            </div>
+        `;
+        
+        // 更新多语言
+        appState.updateUI();
+    }
+    
+    // 导航记录
+    navigateRecord(direction) {
+        const detailsElement = document.getElementById('signinDetails');
+        if (!detailsElement) return;
+        
+        const currentDate = detailsElement.getAttribute('data-current-date');
+        const currentIndex = parseInt(detailsElement.getAttribute('data-current-index') || '0');
+        const totalRecords = parseInt(detailsElement.getAttribute('data-total-records') || '0');
+        
+        const newIndex = currentIndex + direction;
+        
+        // 检查边界
+        if (newIndex < 0 || newIndex >= totalRecords) return;
+        
+        // 获取当前日期的所有记录
+        const records = this.signinRecords.filter(r => r.date === currentDate);
+        
+        // 重新渲染
+        this.renderRecordDetails(records, newIndex);
     }
     
     // 隐藏签到详情

@@ -533,6 +533,49 @@ def get_attendance_statistics():
         }
     })
 
+@app.route('/api/feedback/upload', methods=['POST'])
+@handle_errors
+def upload_feedback_image():
+    """上传反馈图片"""
+    if 'file' not in request.files:
+        return jsonify({
+            'success': False,
+            'message': '没有选择文件'
+        }), 400
+    
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({
+            'success': False,
+            'message': '没有选择文件'
+        }), 400
+    
+    if file and allowed_file(file.filename):
+        # 生成唯一文件名
+        filename = secure_filename(file.filename)
+        file_ext = filename.rsplit('.', 1)[1].lower()
+        unique_filename = f"{uuid.uuid4().hex}.{file_ext}"
+        
+        # 保存到 uploads/feedback 目录
+        feedback_dir = os.path.join(app.config['UPLOAD_FOLDER'], 'feedback')
+        file_path = os.path.join(feedback_dir, unique_filename)
+        file.save(file_path)
+        
+        return jsonify({
+            'success': True,
+            'message': '图片上传成功',
+            'data': {
+                'filename': unique_filename,
+                'original_name': filename,
+                'url': f'/api/uploads/feedback/{unique_filename}'
+            }
+        })
+    else:
+        return jsonify({
+            'success': False,
+            'message': '不支持的文件格式'
+        }), 400
+
 @app.route('/api/feedback/submit', methods=['POST'])
 @handle_errors
 def submit_feedback():

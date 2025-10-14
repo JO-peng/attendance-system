@@ -1586,7 +1586,7 @@ class SignInPage {
         if (buildingInfo && buildingInfo.longitude && buildingInfo.latitude) {
             const buildingLng = parseFloat(buildingInfo.longitude);
             const buildingLat = parseFloat(buildingInfo.latitude);
-            const radius = parseFloat(buildingInfo.radius || 100);
+            const radius = parseFloat(buildingInfo.radius || 75);
 
             // 添加建筑标记 - 使用红色建筑图标
             this.buildingMarker = new AMap.Marker({
@@ -1679,26 +1679,26 @@ class SignInPage {
         // 深圳大学所有建筑数据
         const buildings = [
             // 沧海校区
-            { name: "致腾楼", name_en: "Zhiteng Building", campus: "沧海校区", longitude: 113.93677, latitude: 22.52601, radius: 100 },
-            { name: "致远楼", name_en: "Zhiyuan Building", campus: "沧海校区", longitude: 113.937826, latitude: 22.525709, radius: 100 },
-            { name: "致工楼", name_en: "Zhigong Building", campus: "沧海校区", longitude: 113.93861, latitude: 22.526338, radius: 100 },
-            { name: "致信楼", name_en: "Zhixin Building", campus: "沧海校区", longitude: 113.93758, latitude: 22.527523, radius: 100 },
-            { name: "致知楼", name_en: "Zhizhi Building", campus: "沧海校区", longitude: 113.939055, latitude: 22.527002, radius: 100 },
-            { name: "致艺楼", name_en: "Zhiyi Building", campus: "沧海校区", longitude: 113.939763, latitude: 22.529297, radius: 100 },
-            { name: "致理楼", name_en: "Zhili Building", campus: "沧海校区", longitude: 113.939913, latitude: 22.528048, radius: 100 },
-            { name: "致真楼", name_en: "Zhizhen Building", campus: "沧海校区", longitude: 113.94097, latitude: 22.5295, radius: 100 },
-            { name: "汇智楼", name_en: "Huizhi Building", campus: "沧海校区", longitude: 113.935938, latitude: 22.531457, radius: 100 },
-            { name: "汇子楼", name_en: "Huizi Building", campus: "沧海校区", longitude: 113.936557, latitude: 22.532779, radius: 100 },
-            { name: "汇典楼", name_en: "Huidian Building", campus: "沧海校区", longitude: 113.935447, latitude: 22.533408, radius: 100 },
-            { name: "汇文楼", name_en: "Huiwen Building", campus: "沧海校区", longitude: 113.934642, latitude: 22.537704, radius: 100 },
-            { name: "汇行楼", name_en: "Huixing Building", campus: "沧海校区", longitude: 113.9366, latitude: 22.535152, radius: 100 },
-            { name: "汇德楼", name_en: "Huide Building", campus: "沧海校区", longitude: 113.933001, latitude: 22.534245, radius: 100 },
-            { name: "汇园楼", name_en: "Huiyuan Building", campus: "沧海校区", longitude: 113.933001, latitude: 22.534245, radius: 100 },
+            { name: "致腾楼", name_en: "Zhiteng Building", campus: "沧海校区", longitude: 113.93677, latitude: 22.52601, radius: 75 },
+            { name: "致远楼", name_en: "Zhiyuan Building", campus: "沧海校区", longitude: 113.937826, latitude: 22.525709, radius: 75 },
+            { name: "致工楼", name_en: "Zhigong Building", campus: "沧海校区", longitude: 113.93861, latitude: 22.526338, radius: 75 },
+            { name: "致信楼", name_en: "Zhixin Building", campus: "沧海校区", longitude: 113.93758, latitude: 22.527523, radius: 75 },
+            { name: "致知楼", name_en: "Zhizhi Building", campus: "沧海校区", longitude: 113.939055, latitude: 22.527002, radius: 75 },
+            { name: "致艺楼", name_en: "Zhiyi Building", campus: "沧海校区", longitude: 113.939763, latitude: 22.529297, radius: 75 },
+            { name: "致理楼", name_en: "Zhili Building", campus: "沧海校区", longitude: 113.939913, latitude: 22.528048, radius: 75 },
+            { name: "致真楼", name_en: "Zhizhen Building", campus: "沧海校区", longitude: 113.94097, latitude: 22.5295, radius: 75 },
+            { name: "汇智楼", name_en: "Huizhi Building", campus: "沧海校区", longitude: 113.935938, latitude: 22.531457, radius: 75 },
+            { name: "汇子楼", name_en: "Huizi Building", campus: "沧海校区", longitude: 113.936557, latitude: 22.532779, radius: 75 },
+            { name: "汇典楼", name_en: "Huidian Building", campus: "沧海校区", longitude: 113.935447, latitude: 22.533408, radius: 75 },
+            { name: "汇文楼", name_en: "Huiwen Building", campus: "沧海校区", longitude: 113.934642, latitude: 22.537704, radius: 75 },
+            { name: "汇行楼", name_en: "Huixing Building", campus: "沧海校区", longitude: 113.9366, latitude: 22.535152, radius: 75 },
+            { name: "汇德楼", name_en: "Huide Building", campus: "沧海校区", longitude: 113.933001, latitude: 22.534245, radius: 75 },
+            { name: "汇园楼", name_en: "Huiyuan Building", campus: "沧海校区", longitude: 113.933001, latitude: 22.534245, radius: 75 },
             // 丽湖校区
-            { name: "四方楼", name_en: "Sifang Building", campus: "丽湖校区", longitude: 113.991746, latitude: 22.602008, radius: 100 },
-            { name: "明理楼", name_en: "Mingli Building", campus: "丽湖校区", longitude: 113.993462, latitude: 22.601239, radius: 100 },
-            { name: "守正楼", name_en: "Shouzheng Building", campus: "丽湖校区", longitude: 113.994057, latitude: 22.600552, radius: 100 },
-            { name: "文韬楼", name_en: "Wentao Building", campus: "丽湖校区", longitude: 113.994775, latitude: 22.599209, radius: 100 }
+            { name: "四方楼", name_en: "Sifang Building", campus: "丽湖校区", longitude: 113.991746, latitude: 22.602008, radius: 75 },
+            { name: "明理楼", name_en: "Mingli Building", campus: "丽湖校区", longitude: 113.993462, latitude: 22.601239, radius: 75 },
+            { name: "守正楼", name_en: "Shouzheng Building", campus: "丽湖校区", longitude: 113.994057, latitude: 22.600552, radius: 75 },
+            { name: "文韬楼", name_en: "Wentao Building", campus: "丽湖校区", longitude: 113.994775, latitude: 22.599209, radius: 75 }
         ];
 
         // 清除现有的建筑标记
@@ -1708,7 +1708,7 @@ class SignInPage {
         buildings.forEach((building, index) => {
             const buildingLng = parseFloat(building.longitude);
             const buildingLat = parseFloat(building.latitude);
-            const radius = building.radius || 100;
+            const radius = building.radius || 75;
 
             // 创建建筑标记
             const marker = new AMap.Marker({
