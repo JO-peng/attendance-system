@@ -428,7 +428,7 @@ class SignInPage {
         // 如果在企业微信环境中，等待SDK初始化完成
         const isInWeChat = navigator.userAgent.includes('wxwork') || navigator.userAgent.includes('micromessenger');
         if (isInWeChat && typeof wx !== 'undefined') {
-            console.log('🔄 [主应用] 检测到企业微信环境，等待SDK初始化...');
+            console.log('🔄 等待企业微信SDK初始化...');
             
             // 等待企业微信SDK初始化完成，最多等待10秒
             let waitCount = 0;
@@ -437,18 +437,12 @@ class SignInPage {
             while (!appState.isWeChatReady && waitCount < maxWait) {
                 await new Promise(resolve => setTimeout(resolve, 100));
                 waitCount++;
-                
-                if (waitCount % 10 === 0) { // 每秒输出一次日志
-                    console.log(`🔄 [主应用] 等待企业微信SDK初始化... (${waitCount/10}秒)`);
-                }
             }
             
             if (appState.isWeChatReady) {
-                console.log('✅ [主应用] 企业微信SDK初始化完成，开始定位');
-                Utils.showMessage('企业微信SDK已准备就绪，开始定位...', 'success', 2000);
+                console.log('✅ 企业微信SDK初始化完成');
             } else {
-                console.log('⚠️ [主应用] 企业微信SDK初始化超时，将使用浏览器定位');
-                Utils.showMessage('企业微信SDK初始化超时，使用浏览器定位', 'warning', 3000);
+                console.log('⚠️ 企业微信SDK初始化超时');
             }
         }
         

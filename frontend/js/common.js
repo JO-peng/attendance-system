@@ -866,27 +866,22 @@ const WeChatAPI = {
     // 初始化企业微信JS-SDK
     async init() {
         return new Promise((resolve, reject) => {
-            console.log('🔧 [WeChat Init] 开始初始化企业微信JS-SDK');
-            console.log('🔧 [WeChat Init] 当前URL:', window.location.href);
-            console.log('🔧 [WeChat Init] User Agent:', navigator.userAgent);
-            console.log('🔧 [WeChat Init] wx对象存在:', typeof wx !== 'undefined');
-            
-            if (typeof wx === 'undefined') {
-                const error = 'WeChat JS-SDK not loaded';
-                console.error('❌ [WeChat Init]', error);
-                Utils.showMessage('企业微信JS-SDK未加载', 'error');
-                reject(new Error(error));
-                return;
-            }
-            
-            // 获取签名等配置信息
-            console.log('🔧 [WeChat Init] 开始获取配置信息...');
-            this.getConfig().then(config => {
-                console.log('✅ [WeChat Init] 配置信息获取成功:', config);
+            console.log('🔧 初始化企业微信JS-SDK');
+        
+        if (typeof wx === 'undefined') {
+            const error = 'WeChat JS-SDK not loaded';
+            console.error('❌ 企业微信JS-SDK未加载');
+            reject(new Error(error));
+            return;
+        }
+        
+        // 获取签名等配置信息
+        this.getConfig().then(config => {
+            console.log('✅ 配置信息获取成功');
                 
                 const wxConfig = {
                     beta: true,
-                    debug: true, // 启用调试模式以获得更多信息
+                    debug: false, // 关闭调试模式
                     appId: config.corpId,
                     timestamp: config.timestamp,
                     nonceStr: config.nonceStr,
@@ -899,21 +894,16 @@ const WeChatAPI = {
                     ]
                 };
                 
-                console.log('🔧 [WeChat Init] wx.config参数:', wxConfig);
-                Utils.showMessage('正在初始化企业微信SDK...', 'info', 2000);
-                
                 wx.config(wxConfig);
                 
                 wx.ready(() => {
-                    console.log('✅ [WeChat Init] 企业微信JS-SDK初始化成功');
-                    Utils.showMessage('企业微信SDK初始化成功', 'success', 2000);
+                    console.log('✅ 企业微信JS-SDK初始化成功');
                     appState.isWeChatReady = true;
                     resolve();
                 });
                 
                 wx.error((res) => {
-                    console.error('❌ [WeChat Init] 企业微信JS-SDK错误:', res);
-                    Utils.showMessage(`企业微信SDK初始化失败: ${JSON.stringify(res)}`, 'error', 5000);
+                    console.error('❌ 企业微信JS-SDK初始化失败:', res);
                     reject(new Error('WeChat JS-SDK initialization failed: ' + JSON.stringify(res)));
                 });
             }).catch(error => {
@@ -1140,48 +1130,25 @@ const WeChatAPI = {
     async getLocation() {
         return new Promise((resolve, reject) => {
             // 首先检查是否在企业微信环境中
-            const isInWeChat = this.isInWeChatWork();
-            const debugInfo = {
-                isInWeChat: isInWeChat,
-                isWeChatReady: appState.isWeChatReady,
-                hasWxObject: typeof wx !== 'undefined',
-                userAgent: navigator.userAgent,
-                timestamp: new Date().toISOString(),
-                wxReadyState: typeof wx !== 'undefined' ? 'wx对象存在' : 'wx对象不存在',
-                currentUrl: window.location.href
-            };
-            
-            console.log('🔍 [主应用] 定位调试信息:', debugInfo);
-            
-            // 显示详细调试信息给用户
-            const debugMessage = `[主应用] 定位环境检测:
-• 企业微信环境: ${isInWeChat ? '✅ 是' : '❌ 否'}
-• SDK准备状态: ${appState.isWeChatReady ? '✅ 已准备' : '❌ 未准备'}
-• wx对象存在: ${typeof wx !== 'undefined' ? '✅ 是' : '❌ 否'}
-• 当前URL: ${window.location.href}
-• 用户代理: ${navigator.userAgent.includes('wxwork') ? '✅ 企业微信' : '❌ 非企业微信'}`;
-            
-            Utils.showMessage(debugMessage, 'info', 8000);
+        const isInWeChat = this.isInWeChatWork();
             
             // 如果在企业微信环境，强制使用企业微信定位
             if (isInWeChat) {
                 // 检查SDK是否准备好
                 if (!appState.isWeChatReady || typeof wx === 'undefined') {
                     const errorMsg = !appState.isWeChatReady ? 'SDK未准备好' : 'wx对象不存在';
-                    console.error(`❌ 企业微信环境中定位失败: ${errorMsg}`);
-                    Utils.showMessage(`企业微信环境中定位失败: ${errorMsg}，请刷新页面重试`, 'error', 5000);
+                    console.error(`❌ 企业微信定位失败: ${errorMsg}`);
+                    Utils.showMessage('定位服务初始化失败，请刷新页面重试', 'error', 3000);
                     reject(new Error(`企业微信环境中定位失败: ${errorMsg}`));
                     return;
                 }
                 
-                console.log('📍 企业微信环境 - 强制使用企业微信定位...');
-                Utils.showMessage('企业微信环境 - 正在获取精确定位...', 'info', 3000);
+                console.log('📍 使用企业微信定位...');
                 
                 wx.getLocation({
                     type: 'gcj02',
                     success: (res) => {
-                        console.log('✅ 企业微信定位成功:', res);
-                        Utils.showMessage('企业微信定位成功！', 'success', 3000);
+                        console.log('✅ 定位成功:', res);
                         
                         const location = {
                             latitude: res.latitude,
@@ -1195,15 +1162,14 @@ const WeChatAPI = {
                         resolve(location);
                     },
                     fail: (error) => {
-                        console.error('❌ 企业微信定位失败:', error);
-                        Utils.showMessage(`企业微信定位失败: ${JSON.stringify(error)}，请检查定位权限或刷新页面重试`, 'error', 8000);
+                        console.error('❌ 定位失败:', error);
+                        Utils.showMessage('定位失败，请检查定位权限或刷新页面重试', 'error', 5000);
                         reject(new Error(`企业微信定位失败: ${JSON.stringify(error)}`));
                     }
                 });
             } else {
                 // 非企业微信环境，使用浏览器原生定位
-                console.log('📍 非企业微信环境 - 使用浏览器定位');
-                Utils.showMessage('非企业微信环境 - 使用浏览器定位', 'info', 3000);
+                console.log('📍 使用浏览器定位');
                 
                 this._getBrowserLocation().then(result => {
                     result.source = 'browser';
@@ -1216,27 +1182,15 @@ const WeChatAPI = {
     // 浏览器原生定位API备选方案
     async _getBrowserLocation() {
         return new Promise((resolve, reject) => {
-            // 调试信息：检查浏览器定位支持
-            const debugInfo = {
-                timestamp: new Date().toISOString(),
-                userAgent: navigator.userAgent,
-                geolocationSupported: !!navigator.geolocation,
-                protocol: window.location.protocol,
-                host: window.location.host
-            };
-            
-            console.log('🌐 [浏览器定位调试] 开始浏览器定位:', debugInfo);
-            Utils.showMessage(`🌐 使用浏览器定位 (${debugInfo.timestamp})`, 'info', 2000);
+            console.log('📍 使用浏览器定位');
             
             if (!navigator.geolocation) {
                 const errorMsg = '浏览器不支持定位功能';
-                console.error('🌐 [浏览器定位调试] 错误:', errorMsg);
+                console.error('❌ 浏览器定位错误:', errorMsg);
                 Utils.showMessage(`❌ ${errorMsg}`, 'error', 3000);
                 reject(new Error(errorMsg));
                 return;
             }
-            
-            console.log('🌐 [浏览器定位调试] 浏览器支持定位，开始获取位置...');
             
             // 设置定位选项
             const options = {
@@ -1245,11 +1199,8 @@ const WeChatAPI = {
                 maximumAge: 300000        // 5分钟内的缓存位置可用
             };
             
-            console.log('🌐 [浏览器定位调试] 定位选项:', options);
-            
             navigator.geolocation.getCurrentPosition(
                 (position) => {
-                    console.log('🌐 [浏览器定位调试] 定位成功:', position);
                     const location = {
                         latitude: position.coords.latitude,
                         longitude: position.coords.longitude,
@@ -1259,40 +1210,31 @@ const WeChatAPI = {
                         source: 'browser'
                     };
                     
-                    Utils.showMessage(`✅ 浏览器定位成功 (精度: ${Math.round(location.accuracy)}米)`, 'success', 3000);
-                    console.log('🌐 [浏览器定位调试] 返回位置信息:', location);
-                    
+                    console.log('✅ 浏览器定位成功');
                     appState.location = location;
                     resolve(location);
                 },
                 (error) => {
-                    console.error('🌐 [浏览器定位调试] 定位失败:', error);
+                    console.error('❌ 浏览器定位失败:', error);
                     
                     // 根据错误类型提供更友好的错误信息
                     let errorMessage = '定位获取失败';
-                    let errorCode = 'UNKNOWN';
                     
                     switch (error.code) {
                         case error.PERMISSION_DENIED:
                             errorMessage = '定位权限被拒绝，请在浏览器设置中允许位置访问';
-                            errorCode = 'PERMISSION_DENIED';
                             break;
                         case error.POSITION_UNAVAILABLE:
                             errorMessage = '定位信息不可用，请检查设备GPS或网络连接';
-                            errorCode = 'POSITION_UNAVAILABLE';
                             break;
                         case error.TIMEOUT:
                             errorMessage = '定位请求超时，请稍后重试';
-                            errorCode = 'TIMEOUT';
                             break;
                         default:
                             errorMessage = `定位失败: ${error.message}`;
-                            errorCode = 'OTHER';
                     }
                     
-                    console.log(`🌐 [浏览器定位调试] 错误详情: 代码=${errorCode}, 消息=${errorMessage}`);
                     Utils.showMessage(`❌ 浏览器定位失败: ${errorMessage}`, 'error', 5000);
-                    
                     reject(new Error(errorMessage));
                 },
                 options
