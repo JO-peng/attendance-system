@@ -1163,10 +1163,19 @@ const WeChatAPI = {
             
             Utils.showMessage(debugMessage, 'info', 8000);
             
-            // 如果在企业微信环境且SDK已准备好，优先使用企业微信定位
-            if (isInWeChat && appState.isWeChatReady && typeof wx !== 'undefined') {
-                console.log('📍 尝试使用企业微信定位...');
-                Utils.showMessage('正在使用企业微信定位...', 'info', 3000);
+            // 如果在企业微信环境，强制使用企业微信定位
+            if (isInWeChat) {
+                // 检查SDK是否准备好
+                if (!appState.isWeChatReady || typeof wx === 'undefined') {
+                    const errorMsg = !appState.isWeChatReady ? 'SDK未准备好' : 'wx对象不存在';
+                    console.error(`❌ 企业微信环境中定位失败: ${errorMsg}`);
+                    Utils.showMessage(`企业微信环境中定位失败: ${errorMsg}，请刷新页面重试`, 'error', 5000);
+                    reject(new Error(`企业微信环境中定位失败: ${errorMsg}`));
+                    return;
+                }
+                
+                console.log('📍 企业微信环境 - 强制使用企业微信定位...');
+                Utils.showMessage('企业微信环境 - 正在获取精确定位...', 'info', 3000);
                 
                 wx.getLocation({
                     type: 'gcj02',
@@ -1187,26 +1196,14 @@ const WeChatAPI = {
                     },
                     fail: (error) => {
                         console.error('❌ 企业微信定位失败:', error);
-                        Utils.showMessage(`企业微信定位失败: ${JSON.stringify(error)}，切换到浏览器定位`, 'warning', 5000);
-                        
-                        // 企业微信定位失败，尝试浏览器原生定位
-                        console.log('🔄 降级到浏览器定位...');
-                        this._getBrowserLocation().then(result => {
-                            result.source = 'browser_fallback';
-                            resolve(result);
-                        }).catch((browserError) => {
-                            reject(new Error(`企业微信和浏览器定位都失败。企业微信: ${JSON.stringify(error)}, 浏览器: ${browserError.message}`));
-                        });
+                        Utils.showMessage(`企业微信定位失败: ${JSON.stringify(error)}，请检查定位权限或刷新页面重试`, 'error', 8000);
+                        reject(new Error(`企业微信定位失败: ${JSON.stringify(error)}`));
                     }
                 });
             } else {
-                // 非企业微信环境或SDK未准备好，直接使用浏览器原生定位
-                const reason = !isInWeChat ? '非企业微信环境' : 
-                              !appState.isWeChatReady ? 'SDK未准备好' : 
-                              'wx对象不存在';
-                              
-                console.log(`📍 使用浏览器定位 (原因: ${reason})`);
-                Utils.showMessage(`使用浏览器定位 (${reason})`, 'info', 3000);
+                // 非企业微信环境，使用浏览器原生定位
+                console.log('📍 非企业微信环境 - 使用浏览器定位');
+                Utils.showMessage('非企业微信环境 - 使用浏览器定位', 'info', 3000);
                 
                 this._getBrowserLocation().then(result => {
                     result.source = 'browser';
