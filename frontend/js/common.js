@@ -1322,6 +1322,90 @@ const WeChatAPI = {
     }
 };
 
+// 页面自动更新管理器
+const PageUpdateManager = {
+    // 检查用户数据是否有效
+    checkUserDataValidity() {
+        const userInfo = appState.getStoredUserInfo();
+        return userInfo && userInfo.userid && userInfo.name;
+    },
+    
+    // 自动跳转到首页
+    redirectToHome() {
+        console.log('Redirecting to home page due to missing user data');
+        window.location.href = 'index.html';
+    },
+    
+    // 页面切换时的自动更新
+    async handlePageSwitch() {
+        const currentPage = window.location.pathname.split('/').pop() || 'index.html';
+        
+        // 检查用户数据
+        if (!this.checkUserDataValidity() && currentPage !== 'index.html') {
+            this.redirectToHome();
+            return;
+        }
+        
+        // 根据页面类型执行相应的更新
+        switch (currentPage) {
+            case 'statistics.html':
+                if (window.statisticsPage && typeof window.statisticsPage.init === 'function') {
+                    try {
+                        await window.statisticsPage.init();
+                        console.log('Statistics page refreshed');
+                    } catch (error) {
+                        console.error('Failed to refresh statistics page:', error);
+                    }
+                }
+                break;
+                
+            case 'records.html':
+                if (window.recordsPage && typeof window.recordsPage.init === 'function') {
+                    try {
+                        await window.recordsPage.init();
+                        console.log('Records page refreshed');
+                    } catch (error) {
+                        console.error('Failed to refresh records page:', error);
+                    }
+                }
+                break;
+                
+            case 'feedback.html':
+                if (window.feedbackPage && typeof window.feedbackPage.init === 'function') {
+                    try {
+                        await window.feedbackPage.init();
+                        console.log('Feedback page refreshed');
+                    } catch (error) {
+                        console.error('Failed to refresh feedback page:', error);
+                    }
+                }
+                break;
+        }
+    },
+    
+    // 监听页面可见性变化
+    setupVisibilityListener() {
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) {
+                // 页面变为可见时，执行更新检查
+                setTimeout(() => {
+                    this.handlePageSwitch();
+                }, 500);
+            }
+        });
+    },
+    
+    // 监听页面焦点变化
+    setupFocusListener() {
+        window.addEventListener('focus', () => {
+            // 页面获得焦点时，执行更新检查
+            setTimeout(() => {
+                this.handlePageSwitch();
+            }, 500);
+        });
+    }
+};
+
 // DOM加载完成后初始化
 document.addEventListener('DOMContentLoaded', async () => {
     // 初始化UI语言
@@ -1337,6 +1421,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     // 预加载页面资源
     ResourceManager.preloadPageResources();
+    
+    // 初始化页面更新管理器
+    PageUpdateManager.setupVisibilityListener();
+    PageUpdateManager.setupFocusListener();
     
     // 初始化企业微信
     try {
@@ -1363,6 +1451,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         } catch (error) {
             console.warn('Failed to load user info:', error);
         }
+    } else {
+        // 非首页检查用户数据有效性
+        if (!PageUpdateManager.checkUserDataValidity()) {
+            PageUpdateManager.redirectToHome();
+            return;
+        }
+        
+        // 执行页面切换更新
+        await PageUpdateManager.handlePageSwitch();
     }
 });
 
@@ -1371,4 +1468,5 @@ window.AppState = appState;
 window.Utils = Utils;
 window.WeChatAPI = WeChatAPI;
 window.ResourceManager = ResourceManager;
+window.PageUpdateManager = PageUpdateManager;
 window.CONFIG = CONFIG;

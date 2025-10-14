@@ -248,46 +248,73 @@
 .details-navigation {
     display: flex;
     align-items: center;
-    gap: var(--spacing-3);
+    justify-content: center;
+    gap: var(--spacing-4);
+    background: var(--gray-50);
+    border-radius: var(--radius-xl);
+    padding: var(--spacing-2) var(--spacing-4);
+    border: 1px solid var(--gray-200);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
 .nav-button {
-    background: var(--gray-100);
-    border: none;
+    background: var(--white);
+    border: 1px solid var(--gray-300);
     border-radius: var(--radius-full);
-    width: 32px;
-    height: 32px;
+    width: 36px;
+    height: 36px;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    transition: all 0.2s ease;
-    color: var(--gray-600);
+    transition: all 0.3s ease;
+    color: var(--gray-700);
     font-size: var(--font-size-lg);
+    font-weight: 600;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .nav-button:hover {
-    background: var(--gray-200);
-    color: var(--gray-800);
+    background: var(--primary-color);
+    color: var(--white);
+    border-color: var(--primary-color);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(229, 62, 62, 0.3);
+}
+
+.nav-button:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 6px rgba(229, 62, 62, 0.2);
 }
 
 .nav-button:disabled {
-    background: var(--gray-50);
-    color: var(--gray-300);
+    background: var(--gray-100);
+    color: var(--gray-400);
+    border-color: var(--gray-200);
     cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
 }
 
 .nav-button:disabled:hover {
-    background: var(--gray-50);
-    color: var(--gray-300);
+    background: var(--gray-100);
+    color: var(--gray-400);
+    border-color: var(--gray-200);
+    transform: none;
+    box-shadow: none;
 }
 
 .record-counter {
     font-size: var(--font-size-sm);
-    color: var(--gray-600);
-    font-weight: 500;
-    min-width: 60px;
+    color: var(--gray-700);
+    font-weight: 600;
+    min-width: 50px;
     text-align: center;
+    background: var(--white);
+    padding: var(--spacing-1) var(--spacing-3);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--gray-300);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .details-header h3 {
