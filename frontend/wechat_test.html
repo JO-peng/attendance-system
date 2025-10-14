@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>企业微信配置测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .test-section h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .status.success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .status.info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        button:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+        }
+        .log-area {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 10px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .clear-btn {
+            background-color: #6c757d;
+        }
+        .clear-btn:hover {
+            background-color: #545b62;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>企业微信配置测试</h1>
+        
+        <div class="test-section">
+            <h3>1. 环境检测</h3>
+            <div id="env-status"></div>
+            <button onclick="checkEnvironment()">检测环境</button>
+        </div>
+
+        <div class="test-section">
+            <h3>2. 企业微信配置获取</h3>
+            <div id="config-status"></div>
+            <button onclick="testConfig()">测试配置获取</button>
+        </div>
+
+        <div class="test-section">
+            <h3>3. 企业微信SDK初始化</h3>
+            <div id="init-status"></div>
+            <button onclick="testInit()">测试SDK初始化</button>
+        </div>
+
+        <div class="test-section">
+            <h3>4. 定位功能测试</h3>
+            <div id="location-status"></div>
+            <button onclick="testLocation()" id="location-btn">测试定位</button>
+        </div>
+
+        <div class="test-section">
+            <h3>5. 调试日志</h3>
+            <button onclick="clearLogs()" class="clear-btn">清空日志</button>
+            <div id="log-area" class="log-area"></div>
+        </div>
+    </div>
+
+    <!-- 引入企业微信JS-SDK -->
+    <script src="https://res.wx.qq.com/open/js/jweixin-1.6.0.js"></script>
+    
+    <script>
+        // 日志记录函数
+        function log(message, type = 'info') {
+            const logArea = document.getElementById('log-area');
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.innerHTML = `[${timestamp}] ${message}`;
+            logEntry.style.color = type === 'error' ? '#dc3545' : type === 'success' ? '#28a745' : '#6c757d';
+            logArea.appendChild(logEntry);
+            logArea.scrollTop = logArea.scrollHeight;
+        }
+
+        function clearLogs() {
+            document.getElementById('log-area').innerHTML = '';
+        }
+
+        function setStatus(elementId, message, type) {
+            const element = document.getElementById(elementId);
+            element.innerHTML = `<div class="status ${type}">${message}</div>`;
+        }
+
+        // 1. 环境检测
+        function checkEnvironment() {
+            log('开始环境检测...');
+            
+            const userAgent = navigator.userAgent;
+            const isWeChatWork = userAgent.includes('wxwork') || userAgent.includes('micromessenger');
+            const hasWx = typeof wx !== 'undefined';
+            const protocol = window.location.protocol;
+            const host = window.location.host;
+            
+            log(`User Agent: ${userAgent}`);
+            log(`是否在企业微信环境: ${isWeChatWork}`);
+            log(`wx对象是否存在: ${hasWx}`);
+            log(`当前协议: ${protocol}`);
+            log(`当前域名: ${host}`);
+            
+            let status = '';
+            if (isWeChatWork && hasWx) {
+                status = '✅ 环境检测通过：在企业微信环境中且wx对象存在';
+                setStatus('env-status', status, 'success');
+                log(status, 'success');
+            } else if (!isWeChatWork) {
+                status = '⚠️ 警告：不在企业微信环境中，将使用浏览器定位';
+                setStatus('env-status', status, 'info');
+                log(status, 'info');
+            } else {
+                status = '❌ 错误：wx对象不存在，请检查JS-SDK加载';
+                setStatus('env-status', status, 'error');
+                log(status, 'error');
+            }
+        }
+
+        // 2. 测试配置获取
+        async function testConfig() {
+            log('开始测试配置获取...');
+            
+            try {
+                const url = window.location.href.split('#')[0];
+                log(`请求URL: ${url}`);
+                
+                const response = await fetch('/api/wechat/config', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ url: url })
+                });
+                
+                log(`响应状态: ${response.status}`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const result = await response.json();
+                log(`响应数据: ${JSON.stringify(result, null, 2)}`);
+                
+                if (result.success && result.data) {
+                    const config = result.data;
+                    setStatus('config-status', '✅ 配置获取成功', 'success');
+                    log('配置获取成功', 'success');
+                    log(`CorpId: ${config.corpId}`);
+                    log(`AgentId: ${config.agentId}`);
+                    log(`Timestamp: ${config.timestamp}`);
+                    log(`NonceStr: ${config.nonceStr}`);
+                    log(`Signature: ${config.signature}`);
+                } else {
+                    throw new Error('配置数据格式错误');
+                }
+            } catch (error) {
+                const errorMsg = `❌ 配置获取失败: ${error.message}`;
+                setStatus('config-status', errorMsg, 'error');
+                log(errorMsg, 'error');
+            }
+        }
+
+        // 3. 测试SDK初始化
+        async function testInit() {
+            log('开始测试SDK初始化...');
+            
+            if (typeof wx === 'undefined') {
+                const errorMsg = '❌ wx对象不存在，无法初始化SDK';
+                setStatus('init-status', errorMsg, 'error');
+                log(errorMsg, 'error');
+                return;
+            }
+            
+            try {
+                const url = window.location.href.split('#')[0];
+                const response = await fetch('/api/wechat/config', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ url: url })
+                });
+                
+                const result = await response.json();
+                if (!result.success || !result.data) {
+                    throw new Error('获取配置失败');
+                }
+                
+                const config = result.data;
+                log('开始调用wx.config...');
+                
+                wx.config({
+                    beta: true,
+                    debug: true,
+                    appId: config.corpId,
+                    timestamp: config.timestamp,
+                    nonceStr: config.nonceStr,
+                    signature: config.signature,
+                    jsApiList: ['getLocation', 'chooseImage', 'uploadImage', 'downloadImage']
+                });
+                
+                wx.ready(function() {
+                    const successMsg = '✅ 企业微信SDK初始化成功';
+                    setStatus('init-status', successMsg, 'success');
+                    log(successMsg, 'success');
+                    document.getElementById('location-btn').disabled = false;
+                });
+                
+                wx.error(function(res) {
+                    const errorMsg = `❌ 企业微信SDK初始化失败: ${JSON.stringify(res)}`;
+                    setStatus('init-status', errorMsg, 'error');
+                    log(errorMsg, 'error');
+                });
+                
+            } catch (error) {
+                const errorMsg = `❌ SDK初始化异常: ${error.message}`;
+                setStatus('init-status', errorMsg, 'error');
+                log(errorMsg, 'error');
+            }
+        }
+
+        // 4. 测试定位功能
+        function testLocation() {
+            log('开始测试定位功能...');
+            
+            const userAgent = navigator.userAgent;
+            const isWeChatWork = userAgent.includes('wxwork') || userAgent.includes('micromessenger');
+            
+            if (isWeChatWork && typeof wx !== 'undefined') {
+                log('尝试使用企业微信定位...');
+                
+                wx.getLocation({
+                    type: 'gcj02',
+                    success: function(res) {
+                        const successMsg = `✅ 企业微信定位成功: 纬度${res.latitude}, 经度${res.longitude}`;
+                        setStatus('location-status', successMsg, 'success');
+                        log(successMsg, 'success');
+                        log(`精度: ${res.accuracy}米`);
+                        log(`速度: ${res.speed}m/s`);
+                    },
+                    fail: function(res) {
+                        log(`企业微信定位失败: ${JSON.stringify(res)}`, 'error');
+                        log('尝试使用浏览器定位...', 'info');
+                        getBrowserLocation();
+                    }
+                });
+            } else {
+                log('不在企业微信环境，使用浏览器定位...', 'info');
+                getBrowserLocation();
+            }
+        }
+
+        function getBrowserLocation() {
+            if (!navigator.geolocation) {
+                const errorMsg = '❌ 浏览器不支持地理定位';
+                setStatus('location-status', errorMsg, 'error');
+                log(errorMsg, 'error');
+                return;
+            }
+            
+            log('开始浏览器定位...');
+            
+            navigator.geolocation.getCurrentPosition(
+                function(position) {
+                    const successMsg = `✅ 浏览器定位成功: 纬度${position.coords.latitude}, 经度${position.coords.longitude}`;
+                    setStatus('location-status', successMsg, 'success');
+                    log(successMsg, 'success');
+                    log(`精度: ${position.coords.accuracy}米`);
+                },
+                function(error) {
+                    let errorMsg = '❌ 浏览器定位失败: ';
+                    switch(error.code) {
+                        case error.PERMISSION_DENIED:
+                            errorMsg += '用户拒绝了定位请求';
+                            break;
+                        case error.POSITION_UNAVAILABLE:
+                            errorMsg += '位置信息不可用';
+                            break;
+                        case error.TIMEOUT:
+                            errorMsg += '定位请求超时';
+                            break;
+                        default:
+                            errorMsg += '未知错误';
+                            break;
+                    }
+                    setStatus('location-status', errorMsg, 'error');
+                    log(errorMsg, 'error');
+                },
+                {
+                    enableHighAccuracy: true,
+                    timeout: 15000,
+                    maximumAge: 0
+                }
+            );
+        }
+
+        // 页面加载完成后自动检测环境
+        window.onload = function() {
+            log('页面加载完成，开始自动检测...');
+            checkEnvironment();
+        };
+    </script>
+</body>
+</html>
