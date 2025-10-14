@@ -14,9 +14,64 @@ class FeedbackPage {
     }
     
     init() {
+        // 首先检查用户数据
+        if (!this.validateUserData()) {
+            this.showUserDataError();
+            return;
+        }
+        
         this.bindEvents();
         this.updateCharCount();
         this.initLanguageSupport();
+        
+        // 监听页面自动更新事件
+        document.addEventListener('pageAutoUpdate', (event) => {
+            if (event.detail.pageType === 'feedback') {
+                console.log('Feedback page auto-update triggered');
+                this.handleAutoUpdate();
+            }
+        });
+    }
+    
+    // 验证用户数据
+    validateUserData() {
+        const userInfo = appState.getStoredUserInfo();
+        return userInfo && userInfo.userid && userInfo.name;
+    }
+    
+    // 显示用户数据错误提示
+    showUserDataError() {
+        if (window.PageUpdateManager) {
+            window.PageUpdateManager.showUserDataError();
+        } else {
+            // 备用方案
+            alert('用户数据已丢失，请返回首页重新获取用户信息');
+            window.location.href = 'index.html';
+        }
+    }
+    
+    // 处理自动更新
+    handleAutoUpdate() {
+        // 检查用户数据是否有效
+        const userInfo = appState.getStoredUserInfo();
+        if (!userInfo || !userInfo.userid) {
+            console.warn('User data not available, skipping auto-update');
+            return;
+        }
+        
+        // 反馈页面通常不需要重新加载数据，但可以检查表单状态
+        // 如果用户正在填写表单，不要重置
+        const feedbackContent = document.getElementById('feedbackContent');
+        const hasContent = feedbackContent && feedbackContent.value.trim().length > 0;
+        const hasImages = this.selectedImages && this.selectedImages.length > 0;
+        const hasRating = this.rating > 0;
+        
+        if (!hasContent && !hasImages && !hasRating) {
+            // 如果没有用户输入，可以安全地刷新页面状态
+            this.updateLanguageDisplay();
+        }
+        
+        console.log('Feedback page auto-update completed');
     }
     
     initLanguageSupport() {

@@ -1324,140 +1324,173 @@ const WeChatAPI = {
 
 // 页面自动更新管理器
 const PageUpdateManager = {
-    // 页面加载状态跟踪
-    pageLoadStartTime: Date.now(),
-    minLoadTime: 5000, // 最少给页面5秒加载时间
-    maxRetryCount: 3,
-    retryAttempts: 0,
+    lastUpdateTime: Date.now(),
+    updateInterval: 30000, // 30秒检查一次
     
-    // 检查用户数据是否有效
-    checkUserDataValidity() {
+    init() {
+        // 监听页面可见性变化
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) {
+                this.handlePageVisible();
+            }
+        });
+        
+        // 监听页面显示事件（从缓存返回）
+        window.addEventListener('pageshow', (event) => {
+            if (event.persisted) {
+                this.handlePageVisible();
+            }
+        });
+        
+        // 定期检查是否需要更新
+        setInterval(() => {
+            if (!document.hidden && this.shouldUpdate()) {
+                this.triggerPageUpdate();
+            }
+        }, this.updateInterval);
+    },
+    
+    handlePageVisible() {
+        // 页面变为可见时检查是否需要更新
+        if (this.shouldUpdate()) {
+            this.triggerPageUpdate();
+        }
+    },
+    
+    shouldUpdate() {
+        const now = Date.now();
+        const timeSinceLastUpdate = now - this.lastUpdateTime;
+        return timeSinceLastUpdate > this.updateInterval;
+    },
+    
+    triggerPageUpdate() {
+        this.lastUpdateTime = Date.now();
+        
+        // 检查用户数据是否有效
+        if (!this.validateUserData()) {
+            this.showUserDataError();
+            return;
+        }
+        
+        // 触发页面特定的更新事件
+        const currentPage = this.getCurrentPageType();
+        const updateEvent = new CustomEvent('pageAutoUpdate', {
+            detail: { pageType: currentPage, timestamp: this.lastUpdateTime }
+        });
+        document.dispatchEvent(updateEvent);
+        
+        console.log(`Page auto-update triggered for ${currentPage}`);
+    },
+    
+    getCurrentPageType() {
+        const path = window.location.pathname;
+        if (path.includes('statistics.html')) return 'statistics';
+        if (path.includes('records.html')) return 'records';
+        if (path.includes('feedback.html')) return 'feedback';
+        if (path.includes('index.html') || path.endsWith('/')) return 'index';
+        return 'unknown';
+    },
+    
+    validateUserData() {
         const userInfo = appState.getStoredUserInfo();
         return userInfo && userInfo.userid && userInfo.name;
     },
     
-    // 延迟检查用户数据（给页面足够的加载时间）
-    async checkUserDataWithDelay() {
-        const currentTime = Date.now();
-        const elapsedTime = currentTime - this.pageLoadStartTime;
+    showUserDataError() {
+        const currentLang = appState.language;
+        const message = currentLang === 'zh' 
+            ? '用户数据已丢失，请返回首页重新获取用户信息'
+            : 'User data lost, please return to homepage to refresh user information';
         
-        // 如果页面加载时间不足5秒，等待剩余时间
-        if (elapsedTime < this.minLoadTime) {
-            const remainingTime = this.minLoadTime - elapsedTime;
-            console.log(`页面加载中，等待 ${remainingTime}ms 后再检查用户数据`);
-            await new Promise(resolve => setTimeout(resolve, remainingTime));
-        }
+        // 创建提示框
+        const alertDiv = document.createElement('div');
+        alertDiv.className = 'user-data-alert';
+        alertDiv.innerHTML = `
+            <div class="alert-content">
+                <div class="alert-icon">⚠️</div>
+                <div class="alert-message">${message}</div>
+                <div class="alert-actions">
+                    <button class="alert-btn primary" onclick="window.location.href='index.html'">
+                        ${currentLang === 'zh' ? '返回首页' : 'Go to Homepage'}
+                    </button>
+                    <button class="alert-btn secondary" onclick="this.parentElement.parentElement.parentElement.remove()">
+                        ${currentLang === 'zh' ? '关闭' : 'Close'}
+                    </button>
+                </div>
+            </div>
+        `;
         
-        // 检查用户数据
-        if (!this.checkUserDataValidity()) {
-            // 尝试重新获取用户信息
-            if (this.retryAttempts < this.maxRetryCount) {
-                this.retryAttempts++;
-                console.log(`尝试重新获取用户信息 (${this.retryAttempts}/${this.maxRetryCount})`);
-                
-                try {
-                    await WeChatAPI.getUserInfo();
-                    if (this.checkUserDataValidity()) {
-                        console.log('用户信息获取成功');
-                        this.retryAttempts = 0; // 重置重试计数
-                        return true;
-                    }
-                } catch (error) {
-                    console.warn('重新获取用户信息失败:', error);
+        // 添加样式
+        if (!document.getElementById('user-data-alert-styles')) {
+            const style = document.createElement('style');
+            style.id = 'user-data-alert-styles';
+            style.textContent = `
+                .user-data-alert {
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    bottom: 0;
+                    background: rgba(0, 0, 0, 0.5);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    z-index: 10000;
+                    padding: 20px;
                 }
-                
-                // 等待2秒后再次尝试
-                await new Promise(resolve => setTimeout(resolve, 2000));
-                return this.checkUserDataWithDelay();
-            } else {
-                // 达到最大重试次数，跳转到首页
-                console.log('达到最大重试次数，跳转到首页');
-                return false;
-            }
-        }
-        
-        return true;
-    },
-    
-    // 自动跳转到首页
-    redirectToHome() {
-        console.log('Redirecting to home page due to missing user data');
-        window.location.href = 'index.html';
-    },
-    
-    // 页面切换时的自动更新
-    async handlePageSwitch() {
-        const currentPage = window.location.pathname.split('/').pop() || 'index.html';
-        
-        // 跳过首页的检查
-        if (currentPage === 'index.html') {
-            return;
-        }
-        
-        // 延迟检查用户数据
-        const isDataValid = await this.checkUserDataWithDelay();
-        if (!isDataValid) {
-            this.redirectToHome();
-            return;
-        }
-        
-        // 根据页面类型执行相应的更新
-        switch (currentPage) {
-            case 'statistics.html':
-                if (window.statisticsPage && typeof window.statisticsPage.init === 'function') {
-                    try {
-                        await window.statisticsPage.init();
-                        console.log('Statistics page refreshed');
-                    } catch (error) {
-                        console.error('Failed to refresh statistics page:', error);
-                    }
+                .alert-content {
+                    background: white;
+                    border-radius: 12px;
+                    padding: 24px;
+                    max-width: 400px;
+                    width: 100%;
+                    text-align: center;
+                    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
                 }
-                break;
-                
-            case 'records.html':
-                if (window.recordsPage && typeof window.recordsPage.init === 'function') {
-                    try {
-                        await window.recordsPage.init();
-                        console.log('Records page refreshed');
-                    } catch (error) {
-                        console.error('Failed to refresh records page:', error);
-                    }
+                .alert-icon {
+                    font-size: 48px;
+                    margin-bottom: 16px;
                 }
-                break;
-                
-            case 'feedback.html':
-                if (window.feedbackPage && typeof window.feedbackPage.init === 'function') {
-                    try {
-                        await window.feedbackPage.init();
-                        console.log('Feedback page refreshed');
-                    } catch (error) {
-                        console.error('Failed to refresh feedback page:', error);
-                    }
+                .alert-message {
+                    font-size: 16px;
+                    color: #333;
+                    margin-bottom: 24px;
+                    line-height: 1.5;
                 }
-                break;
+                .alert-actions {
+                    display: flex;
+                    gap: 12px;
+                    justify-content: center;
+                }
+                .alert-btn {
+                    padding: 10px 20px;
+                    border: none;
+                    border-radius: 6px;
+                    font-size: 14px;
+                    font-weight: 600;
+                    cursor: pointer;
+                    transition: all 0.2s ease;
+                }
+                .alert-btn.primary {
+                    background: #e53e3e;
+                    color: white;
+                }
+                .alert-btn.primary:hover {
+                    background: #c53030;
+                }
+                .alert-btn.secondary {
+                    background: #f7fafc;
+                    color: #4a5568;
+                    border: 1px solid #e2e8f0;
+                }
+                .alert-btn.secondary:hover {
+                    background: #edf2f7;
+                }
+            `;
+            document.head.appendChild(style);
         }
-    },
-    
-    // 监听页面可见性变化
-    setupVisibilityListener() {
-        document.addEventListener('visibilitychange', () => {
-            if (!document.hidden) {
-                // 页面变为可见时，延迟执行更新检查
-                setTimeout(() => {
-                    this.handlePageSwitch();
-                }, 1000); // 增加到1秒延迟
-            }
-        });
-    },
-    
-    // 监听页面焦点变化
-    setupFocusListener() {
-        window.addEventListener('focus', () => {
-            // 页面获得焦点时，延迟执行更新检查
-            setTimeout(() => {
-                this.handlePageSwitch();
-            }, 1000); // 增加到1秒延迟
-        });
+        
+        document.body.appendChild(alertDiv);
     }
 };
 
@@ -1477,9 +1510,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     // 预加载页面资源
     ResourceManager.preloadPageResources();
     
-    // 初始化页面更新管理器
-    PageUpdateManager.setupVisibilityListener();
-    PageUpdateManager.setupFocusListener();
+    // 初始化页面自动更新管理器
+    PageUpdateManager.init();
     
     // 初始化企业微信
     try {
@@ -1506,18 +1538,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         } catch (error) {
             console.warn('Failed to load user info:', error);
         }
-    } else {
-        // 非首页延迟检查用户数据有效性，给页面足够的加载时间
-        setTimeout(async () => {
-            const isDataValid = await PageUpdateManager.checkUserDataWithDelay();
-            if (!isDataValid) {
-                PageUpdateManager.redirectToHome();
-                return;
-            }
-            
-            // 执行页面初始化更新
-            await PageUpdateManager.handlePageSwitch();
-        }, 2000); // 给页面2秒的初始加载时间
     }
 });
 

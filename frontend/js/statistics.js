@@ -11,6 +11,12 @@ class StatisticsPage {
     }
     
     init() {
+        // 首先检查用户数据
+        if (!this.validateUserData()) {
+            this.showUserDataError();
+            return;
+        }
+        
         this.initDateSelectors();
         this.bindEvents();
         this.loadAttendanceData();
@@ -19,6 +25,52 @@ class StatisticsPage {
         document.addEventListener('languageChanged', () => {
             this.refreshDisplayTexts();
         });
+        
+        // 监听页面自动更新事件
+        document.addEventListener('pageAutoUpdate', (event) => {
+            if (event.detail.pageType === 'statistics') {
+                console.log('Statistics page auto-update triggered');
+                this.handleAutoUpdate();
+            }
+        });
+    }
+    
+    // 验证用户数据
+    validateUserData() {
+        const userInfo = appState.getStoredUserInfo();
+        return userInfo && userInfo.userid && userInfo.name;
+    }
+    
+    // 显示用户数据错误提示
+    showUserDataError() {
+        if (window.PageUpdateManager) {
+            window.PageUpdateManager.showUserDataError();
+        } else {
+            // 备用方案
+            alert('用户数据已丢失，请返回首页重新获取用户信息');
+            window.location.href = 'index.html';
+        }
+    }
+    
+    // 处理自动更新
+    handleAutoUpdate() {
+        // 检查用户数据是否有效
+        const userInfo = appState.getStoredUserInfo();
+        if (!userInfo || !userInfo.userid) {
+            console.warn('User data not available, skipping auto-update');
+            return;
+        }
+        
+        // 重新加载数据
+        this.loadAttendanceData();
+        
+        // 如果有打开的详情窗口，关闭它
+        const detailsElement = document.querySelector('.signin-details');
+        if (detailsElement) {
+            this.hideSigninDetails();
+        }
+        
+        console.log('Statistics page data refreshed');
     }
     
     // 初始化日期选择器
@@ -352,7 +404,6 @@ class StatisticsPage {
         const record = records[currentIndex];
         const contentElement = document.getElementById('detailsContent');
         const detailsElement = document.getElementById('signinDetails');
-        const headerElement = detailsElement.querySelector('.details-header');
         
         if (!contentElement || !record) return;
         
@@ -364,27 +415,29 @@ class StatisticsPage {
             `<img src="${record.photo}" alt="签到照片" class="detail-photo" onclick="window.showPhotoPreview('${record.photo}', '签到照片')" style="cursor: pointer; max-width: 100px; max-height: 100px; border-radius: 4px;">` : 
             '<span class="text-gray-400">无照片</span>';
         
-        // 更新header，添加导航按钮
+        // 导航按钮HTML
         const navigationHtml = records.length > 1 ? `
-            <div class="details-navigation">
-                <button class="nav-button" onclick="statisticsPage.navigateRecord(-1)" ${currentIndex === 0 ? 'disabled' : ''}>
-                    ‹
+            <div class="record-navigation">
+                <button class="nav-btn prev-btn" onclick="statisticsPage.navigateRecord(-1)" ${currentIndex === 0 ? 'disabled' : ''}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
+                    </svg>
+                    <span data-zh="上一条" data-en="Previous">上一条</span>
                 </button>
-                <span class="record-counter">${currentIndex + 1}/${records.length}</span>
-                <button class="nav-button" onclick="statisticsPage.navigateRecord(1)" ${currentIndex === records.length - 1 ? 'disabled' : ''}>
-                    ›
+                <span class="record-counter">
+                    <span data-zh="${currentIndex + 1} / ${records.length}" data-en="${currentIndex + 1} / ${records.length}">${currentIndex + 1} / ${records.length}</span>
+                </span>
+                <button class="nav-btn next-btn" onclick="statisticsPage.navigateRecord(1)" ${currentIndex === records.length - 1 ? 'disabled' : ''}>
+                    <span data-zh="下一条" data-en="Next">下一条</span>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/>
+                    </svg>
                 </button>
             </div>
         ` : '';
         
-        // 更新header内容
-        headerElement.innerHTML = `
-            <h3 data-zh="${record.date} 签到详情" data-en="${record.date} Sign-in Details">${record.date} 签到详情</h3>
-            ${navigationHtml}
-            <button class="close-details" onclick="statisticsPage.hideSigninDetails()">×</button>
-        `;
-        
         contentElement.innerHTML = `
+            ${navigationHtml}
             <div class="detail-item">
                 <span class="detail-label" data-zh="日期" data-en="Date">日期</span>
                 <span class="detail-value">${record.date}</span>
