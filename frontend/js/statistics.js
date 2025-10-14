@@ -11,66 +11,19 @@ class StatisticsPage {
     }
     
     init() {
-        // 首先检查用户数据
-        if (!this.validateUserData()) {
-            this.showUserDataError();
-            return;
-        }
-        
         this.initDateSelectors();
         this.bindEvents();
         this.loadAttendanceData();
+        
+        // 注册到页面更新管理器
+        if (window.PageUpdateManager) {
+            window.PageUpdateManager.registerPage('statistics', this);
+        }
         
         // 监听语言切换事件
         document.addEventListener('languageChanged', () => {
             this.refreshDisplayTexts();
         });
-        
-        // 监听页面自动更新事件
-        document.addEventListener('pageAutoUpdate', (event) => {
-            if (event.detail.pageType === 'statistics') {
-                console.log('Statistics page auto-update triggered');
-                this.handleAutoUpdate();
-            }
-        });
-    }
-    
-    // 验证用户数据
-    validateUserData() {
-        const userInfo = appState.getStoredUserInfo();
-        return userInfo && userInfo.userid && userInfo.name;
-    }
-    
-    // 显示用户数据错误提示
-    showUserDataError() {
-        if (window.PageUpdateManager) {
-            window.PageUpdateManager.showUserDataError();
-        } else {
-            // 备用方案
-            alert('用户数据已丢失，请返回首页重新获取用户信息');
-            window.location.href = 'index.html';
-        }
-    }
-    
-    // 处理自动更新
-    handleAutoUpdate() {
-        // 检查用户数据是否有效
-        const userInfo = appState.getStoredUserInfo();
-        if (!userInfo || !userInfo.userid) {
-            console.warn('User data not available, skipping auto-update');
-            return;
-        }
-        
-        // 重新加载数据
-        this.loadAttendanceData();
-        
-        // 如果有打开的详情窗口，关闭它
-        const detailsElement = document.querySelector('.signin-details');
-        if (detailsElement) {
-            this.hideSigninDetails();
-        }
-        
-        console.log('Statistics page data refreshed');
     }
     
     // 初始化日期选择器

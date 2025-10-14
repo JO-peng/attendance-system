@@ -19,67 +19,19 @@ class RecordsPage {
     }
     
     init() {
-        // 首先检查用户数据
-        if (!this.validateUserData()) {
-            this.showUserDataError();
-            return;
-        }
-        
         this.bindEvents();
         this.loadAttendanceData();
         this.loadRecords();
+        
+        // 注册到页面更新管理器
+        if (window.PageUpdateManager) {
+            window.PageUpdateManager.registerPage('records', this);
+        }
         
         // 监听语言切换事件
         document.addEventListener('languageChanged', () => {
             this.refreshDisplayTexts();
         });
-        
-        // 监听页面自动更新事件
-        document.addEventListener('pageAutoUpdate', (event) => {
-            if (event.detail.pageType === 'records') {
-                console.log('Records page auto-update triggered');
-                this.handleAutoUpdate();
-            }
-        });
-    }
-    
-    // 验证用户数据
-    validateUserData() {
-        const userInfo = appState.getStoredUserInfo();
-        return userInfo && userInfo.userid && userInfo.name;
-    }
-    
-    // 显示用户数据错误提示
-    showUserDataError() {
-        if (window.PageUpdateManager) {
-            window.PageUpdateManager.showUserDataError();
-        } else {
-            // 备用方案
-            alert('用户数据已丢失，请返回首页重新获取用户信息');
-            window.location.href = 'index.html';
-        }
-    }
-    
-    // 处理自动更新
-    handleAutoUpdate() {
-        // 检查用户数据是否有效
-        const userInfo = appState.getStoredUserInfo();
-        if (!userInfo || !userInfo.userid) {
-            console.warn('User data not available, skipping auto-update');
-            return;
-        }
-        
-        // 重新加载数据
-        this.loadAttendanceData();
-        this.loadRecords();
-        
-        // 关闭任何打开的详情窗口
-        const detailsModal = document.querySelector('.record-details-modal');
-        if (detailsModal) {
-            detailsModal.remove();
-        }
-        
-        console.log('Records page data refreshed');
     }
     
     bindEvents() {

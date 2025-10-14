@@ -1324,173 +1324,160 @@ const WeChatAPI = {
 
 // 页面自动更新管理器
 const PageUpdateManager = {
-    lastUpdateTime: Date.now(),
-    updateInterval: 30000, // 30秒检查一次
-    
-    init() {
-        // 监听页面可见性变化
-        document.addEventListener('visibilitychange', () => {
-            if (!document.hidden) {
-                this.handlePageVisible();
-            }
-        });
-        
-        // 监听页面显示事件（从缓存返回）
-        window.addEventListener('pageshow', (event) => {
-            if (event.persisted) {
-                this.handlePageVisible();
-            }
-        });
-        
-        // 定期检查是否需要更新
-        setInterval(() => {
-            if (!document.hidden && this.shouldUpdate()) {
-                this.triggerPageUpdate();
-            }
-        }, this.updateInterval);
+    // 页面实例引用
+    pageInstances: {
+        statistics: null,
+        records: null,
+        feedback: null
     },
     
-    handlePageVisible() {
-        // 页面变为可见时检查是否需要更新
-        if (this.shouldUpdate()) {
-            this.triggerPageUpdate();
-        }
+    // 注册页面实例
+    registerPage(pageName, instance) {
+        this.pageInstances[pageName] = instance;
     },
     
-    shouldUpdate() {
-        const now = Date.now();
-        const timeSinceLastUpdate = now - this.lastUpdateTime;
-        return timeSinceLastUpdate > this.updateInterval;
-    },
-    
-    triggerPageUpdate() {
-        this.lastUpdateTime = Date.now();
-        
-        // 检查用户数据是否有效
-        if (!this.validateUserData()) {
-            this.showUserDataError();
-            return;
-        }
-        
-        // 触发页面特定的更新事件
-        const currentPage = this.getCurrentPageType();
-        const updateEvent = new CustomEvent('pageAutoUpdate', {
-            detail: { pageType: currentPage, timestamp: this.lastUpdateTime }
-        });
-        document.dispatchEvent(updateEvent);
-        
-        console.log(`Page auto-update triggered for ${currentPage}`);
-    },
-    
-    getCurrentPageType() {
-        const path = window.location.pathname;
-        if (path.includes('statistics.html')) return 'statistics';
-        if (path.includes('records.html')) return 'records';
-        if (path.includes('feedback.html')) return 'feedback';
-        if (path.includes('index.html') || path.endsWith('/')) return 'index';
-        return 'unknown';
-    },
-    
-    validateUserData() {
+    // 检查用户数据是否有效
+    checkUserData() {
         const userInfo = appState.getStoredUserInfo();
-        return userInfo && userInfo.userid && userInfo.name;
+        if (!userInfo || !userInfo.userid) {
+            this.showDataLossPrompt();
+            return false;
+        }
+        return true;
     },
     
-    showUserDataError() {
+    // 显示数据丢失提示
+    showDataLossPrompt() {
         const currentLang = appState.language;
-        const message = currentLang === 'zh' 
-            ? '用户数据已丢失，请返回首页重新获取用户信息'
-            : 'User data lost, please return to homepage to refresh user information';
+        const message = currentLang === 'zh' ? 
+            '若数据未正常加载，返回首页刷新' : 
+            'If data is not loaded properly, return to homepage to refresh';
         
-        // 创建提示框
-        const alertDiv = document.createElement('div');
-        alertDiv.className = 'user-data-alert';
-        alertDiv.innerHTML = `
-            <div class="alert-content">
-                <div class="alert-icon">⚠️</div>
-                <div class="alert-message">${message}</div>
-                <div class="alert-actions">
-                    <button class="alert-btn primary" onclick="window.location.href='index.html'">
-                        ${currentLang === 'zh' ? '返回首页' : 'Go to Homepage'}
-                    </button>
-                    <button class="alert-btn secondary" onclick="this.parentElement.parentElement.parentElement.remove()">
-                        ${currentLang === 'zh' ? '关闭' : 'Close'}
-                    </button>
-                </div>
+        // 创建提示元素
+        const prompt = document.createElement('div');
+        prompt.className = 'data-loss-prompt';
+        prompt.innerHTML = `
+            <div class="prompt-content">
+                <span class="prompt-icon">⚠️</span>
+                <span class="prompt-text">${message}</span>
+                <button class="prompt-close" onclick="this.parentElement.parentElement.remove()">×</button>
             </div>
         `;
         
         // 添加样式
-        if (!document.getElementById('user-data-alert-styles')) {
+        if (!document.getElementById('data-loss-prompt-style')) {
             const style = document.createElement('style');
-            style.id = 'user-data-alert-styles';
+            style.id = 'data-loss-prompt-style';
             style.textContent = `
-                .user-data-alert {
+                .data-loss-prompt {
                     position: fixed;
-                    top: 0;
-                    left: 0;
-                    right: 0;
-                    bottom: 0;
-                    background: rgba(0, 0, 0, 0.5);
+                    top: 80px;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    background: #fff3cd;
+                    border: 1px solid #ffeaa7;
+                    border-radius: 8px;
+                    padding: 12px 16px;
+                    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+                    z-index: 9999;
+                    max-width: 90%;
+                    animation: slideDown 0.3s ease;
+                }
+                .prompt-content {
                     display: flex;
                     align-items: center;
-                    justify-content: center;
-                    z-index: 10000;
-                    padding: 20px;
-                }
-                .alert-content {
-                    background: white;
-                    border-radius: 12px;
-                    padding: 24px;
-                    max-width: 400px;
-                    width: 100%;
-                    text-align: center;
-                    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-                }
-                .alert-icon {
-                    font-size: 48px;
-                    margin-bottom: 16px;
-                }
-                .alert-message {
-                    font-size: 16px;
-                    color: #333;
-                    margin-bottom: 24px;
-                    line-height: 1.5;
-                }
-                .alert-actions {
-                    display: flex;
-                    gap: 12px;
-                    justify-content: center;
-                }
-                .alert-btn {
-                    padding: 10px 20px;
-                    border: none;
-                    border-radius: 6px;
+                    gap: 8px;
                     font-size: 14px;
-                    font-weight: 600;
+                    color: #856404;
+                }
+                .prompt-icon {
+                    font-size: 16px;
+                }
+                .prompt-close {
+                    background: none;
+                    border: none;
+                    font-size: 18px;
+                    color: #856404;
                     cursor: pointer;
-                    transition: all 0.2s ease;
+                    padding: 0;
+                    margin-left: 8px;
                 }
-                .alert-btn.primary {
-                    background: #e53e3e;
-                    color: white;
-                }
-                .alert-btn.primary:hover {
-                    background: #c53030;
-                }
-                .alert-btn.secondary {
-                    background: #f7fafc;
-                    color: #4a5568;
-                    border: 1px solid #e2e8f0;
-                }
-                .alert-btn.secondary:hover {
-                    background: #edf2f7;
+                @keyframes slideDown {
+                    from { transform: translateX(-50%) translateY(-20px); opacity: 0; }
+                    to { transform: translateX(-50%) translateY(0); opacity: 1; }
                 }
             `;
             document.head.appendChild(style);
         }
         
-        document.body.appendChild(alertDiv);
+        // 移除已存在的提示
+        const existingPrompt = document.querySelector('.data-loss-prompt');
+        if (existingPrompt) {
+            existingPrompt.remove();
+        }
+        
+        // 添加新提示
+        document.body.appendChild(prompt);
+        
+        // 5秒后自动消失
+        setTimeout(() => {
+            if (prompt.parentElement) {
+                prompt.remove();
+            }
+        }, 5000);
+    },
+    
+    // 刷新当前页面数据
+    refreshCurrentPage() {
+        const currentPage = window.location.pathname.split('/').pop() || 'index.html';
+        
+        // 检查用户数据
+        if (!this.checkUserData()) {
+            return;
+        }
+        
+        // 根据页面类型刷新数据
+        if (currentPage === 'statistics.html' && this.pageInstances.statistics) {
+            console.log('Refreshing statistics page data...');
+            this.pageInstances.statistics.loadAttendanceData();
+        } else if (currentPage === 'records.html' && this.pageInstances.records) {
+            console.log('Refreshing records page data...');
+            this.pageInstances.records.loadRecords();
+            this.pageInstances.records.loadAttendanceData();
+        } else if (currentPage === 'feedback.html' && this.pageInstances.feedback) {
+            console.log('Refreshing feedback page data...');
+            // 反馈页面通常不需要刷新数据，但可以检查用户状态
+        }
+    },
+    
+    // 初始化页面监听
+    init() {
+        // 监听页面可见性变化
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) {
+                // 页面变为可见时刷新数据
+                setTimeout(() => {
+                    this.refreshCurrentPage();
+                }, 100);
+            }
+        });
+        
+        // 监听页面获得焦点
+        window.addEventListener('focus', () => {
+            setTimeout(() => {
+                this.refreshCurrentPage();
+            }, 100);
+        });
+        
+        // 监听页面显示事件（从缓存恢复时）
+        window.addEventListener('pageshow', (event) => {
+            if (event.persisted) {
+                // 从缓存恢复时刷新数据
+                setTimeout(() => {
+                    this.refreshCurrentPage();
+                }, 100);
+            }
+        });
     }
 };
 
@@ -1510,7 +1497,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // 预加载页面资源
     ResourceManager.preloadPageResources();
     
-    // 初始化页面自动更新管理器
+    // 初始化页面更新管理器
     PageUpdateManager.init();
     
     // 初始化企业微信
