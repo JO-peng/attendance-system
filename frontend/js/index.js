@@ -1096,6 +1096,11 @@ class SignInPage {
                 mapContainer.classList.add('loaded');
                 console.log('地图加载完成');
                 
+                // 添加缩放事件监听器，实现图标自适应缩放
+                this.map.on('zoomchange', () => {
+                    this.updateIconSizesByZoom();
+                });
+                
                 // 延迟添加控件，确保地图完全加载
                 setTimeout(() => {
                     this.addMapControls();
@@ -1634,6 +1639,73 @@ class SignInPage {
             // 只有用户位置时，以用户位置为中心
             this.map.setCenter([userLng, userLat]);
             this.map.setZoom(16);
+        }
+    }
+
+    // 根据地图缩放级别更新图标大小
+    updateIconSizesByZoom() {
+        if (!this.map) return;
+        
+        const zoom = this.map.getZoom();
+        console.log('当前缩放级别:', zoom);
+        
+        // 计算缩放比例 (基准缩放级别为16)
+        const baseZoom = 16;
+        const scaleFactor = Math.pow(1.2, zoom - baseZoom); // 每级缩放1.2倍
+        const minScale = 0.5; // 最小缩放比例
+        const maxScale = 2.0; // 最大缩放比例
+        
+        // 限制缩放比例范围
+        const finalScale = Math.max(minScale, Math.min(maxScale, scaleFactor));
+        
+        // 更新用户位置图标
+        if (this.userMarker) {
+            const baseUserSize = { width: 32, height: 42 };
+            const newUserSize = {
+                width: Math.round(baseUserSize.width * finalScale),
+                height: Math.round(baseUserSize.height * finalScale)
+            };
+            
+            const userIcon = new AMap.Icon({
+                size: new AMap.Size(newUserSize.width, newUserSize.height),
+                image: 'icon/user_pin.png',
+                imageOffset: new AMap.Pixel(-newUserSize.width / 2, -newUserSize.height)
+            });
+            this.userMarker.setIcon(userIcon);
+        }
+        
+        // 更新建筑图标
+        if (this.buildingMarker) {
+            const baseBuildingSize = { width: 36, height: 46 };
+            const newBuildingSize = {
+                width: Math.round(baseBuildingSize.width * finalScale),
+                height: Math.round(baseBuildingSize.height * finalScale)
+            };
+            
+            const buildingIcon = new AMap.Icon({
+                size: new AMap.Size(newBuildingSize.width, newBuildingSize.height),
+                image: 'icon/pin.png',
+                imageOffset: new AMap.Pixel(-newBuildingSize.width / 2, -newBuildingSize.height)
+            });
+            this.buildingMarker.setIcon(buildingIcon);
+        }
+        
+        // 更新所有建筑标记
+        if (this.buildingMarkers && this.buildingMarkers.length > 0) {
+            const baseBuildingSize = { width: 32, height: 40 };
+            const newBuildingSize = {
+                width: Math.round(baseBuildingSize.width * finalScale),
+                height: Math.round(baseBuildingSize.height * finalScale)
+            };
+            
+            this.buildingMarkers.forEach(marker => {
+                const buildingIcon = new AMap.Icon({
+                    size: new AMap.Size(newBuildingSize.width, newBuildingSize.height),
+                    image: 'icon/pin.png',
+                    imageOffset: new AMap.Pixel(-newBuildingSize.width / 2, -newBuildingSize.height)
+                });
+                marker.setIcon(buildingIcon);
+            });
         }
     }
 
