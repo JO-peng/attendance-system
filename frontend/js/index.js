@@ -1482,16 +1482,16 @@ class SignInPage {
         if (this.userMarker) {
             // 创建标准的用户图标
             const standardIcon = new AMap.Icon({
-                size: new AMap.Size(24, 32),
+                size: new AMap.Size(32, 42),
                 image: 'icon/user_pin.png',
-                imageOffset: new AMap.Pixel(-12, -32)
+                imageOffset: new AMap.Pixel(-16, -42)
             });
             
             // 创建放大的图标用于动画
             const enlargedIcon = new AMap.Icon({
-                size: new AMap.Size(30, 40),
+                size: new AMap.Size(40, 52),
                 image: 'icon/user_pin.png',
-                imageOffset: new AMap.Pixel(-15, -40)
+                imageOffset: new AMap.Pixel(-20, -52)
             });
             
             this.userMarker.setIcon(enlargedIcon);
@@ -1532,9 +1532,9 @@ class SignInPage {
             position: [userLng, userLat],
             title: appState.currentLanguage === 'zh' ? '我的位置' : 'My Location',
             icon: new AMap.Icon({
-                size: new AMap.Size(24, 32),
+                size: new AMap.Size(32, 42),
                 image: 'icon/user_pin.png',
-                imageOffset: new AMap.Pixel(-12, -32)
+                imageOffset: new AMap.Pixel(-16, -42)
             }),
             anchor: 'bottom-center',
             zIndex: 100
@@ -1570,9 +1570,9 @@ class SignInPage {
                 position: [buildingLng, buildingLat],
                 title: buildingInfo.name || (appState.currentLanguage === 'zh' ? '教学楼' : 'Building'),
                 icon: new AMap.Icon({
-                    size: new AMap.Size(28, 36),
+                    size: new AMap.Size(36, 46),
                     image: 'icon/pin.png',
-                    imageOffset: new AMap.Pixel(-14, -36)
+                    imageOffset: new AMap.Pixel(-18, -46)
                 }),
                 anchor: 'bottom-center',
                 zIndex: 99
@@ -1680,9 +1680,9 @@ class SignInPage {
                 position: [buildingLng, buildingLat],
                 title: building.name,
                 icon: new AMap.Icon({
-                    size: new AMap.Size(24, 30),
+                    size: new AMap.Size(32, 40),
                     image: 'icon/pin.png',
-                    imageOffset: new AMap.Pixel(-12, -30)
+                    imageOffset: new AMap.Pixel(-16, -40)
                 }),
                 anchor: 'bottom-center',
                 zIndex: 98
