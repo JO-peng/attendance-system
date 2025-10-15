@@ -39,6 +39,28 @@ class SignInPage {
         // 监听语言切换事件
         document.addEventListener('languageChanged', () => {
             this.refreshLocationDisplay();
+            
+            // 如果地图存在，重新调整地图大小和重新渲染
+            if (this.map) {
+                setTimeout(() => {
+                    try {
+                        // 重新调整地图容器大小
+                        this.map.getViewport().resize();
+                        
+                        // 强制重新渲染地图
+                        this.map.setCenter(this.map.getCenter());
+                        
+                        // 如果有位置信息，重新更新地图显示
+                        if (this.currentLocation && this.currentBuildingInfo) {
+                            this.updateMapDisplay(this.currentLocation, this.currentBuildingInfo);
+                        }
+                        
+                        console.log('语言切换后地图重新渲染完成');
+                    } catch (error) {
+                        console.error('语言切换后地图重新渲染失败:', error);
+                    }
+                }, 200);
+            }
         });
     }
     
@@ -633,12 +655,41 @@ class SignInPage {
                 
                 if (result.success && result.data) {
                     this.updateCourseInfo(result.data);
-                    // 显示地图区域
-                    this.showMapSection();
+                } else {
+                    // 即使API返回空数据，也显示基本信息
+                    this.updateCourseInfo({
+                        course: null,
+                        building: this.currentBuildingInfo,
+                        status: 'unknown'
+                    });
                 }
+                
+                // 无论API调用结果如何，都显示地图区域
+                this.showMapSection();
+                
             } catch (error) {
                 console.warn('获取位置和课程信息失败:', error);
+                
+                // API调用失败时，显示基本信息
+                this.updateCourseInfo({
+                    course: null,
+                    building: this.currentBuildingInfo,
+                    status: 'error'
+                });
+                
+                // 即使API调用失败，也显示地图区域
+                this.showMapSection();
             }
+        } else {
+            // 没有位置信息时，也显示基本的课程信息区域
+            this.updateCourseInfo({
+                course: null,
+                building: null,
+                status: 'no_location'
+            });
+            
+            // 显示地图区域（可能显示默认位置）
+            this.showMapSection();
         }
     }
     
