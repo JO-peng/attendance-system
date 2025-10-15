@@ -543,6 +543,13 @@ class SignInPage {
             if (this.locationInfo) {
                 this.updateCourseInfo(this.locationInfo);
             }
+            // 如果地图已经存在，重新渲染地图以修复语言切换后的显示问题
+            if (this.map) {
+                setTimeout(() => {
+                    this.map.getSize();
+                    this.updateMapDisplay(this.currentLocation, this.locationInfo);
+                }, 100);
+            }
         } else if (this.currentLocation) {
             // 如果只有位置坐标，重新获取建筑信息
             this.updateBuildingInfo();
@@ -642,63 +649,62 @@ class SignInPage {
         const buildingDisplay = document.getElementById('buildingDisplay');
         const statusDisplay = document.getElementById('statusDisplay');
         
-        if (locationInfo.course || locationInfo.building) {
+        // 始终显示课程信息区域，即使没有课程或建筑信息
+        if (courseInfoSection) {
             courseInfoSection.style.display = 'block';
-            
-            // 显示课程信息
-            if (currentCourseDisplay) {
-                currentCourseDisplay.textContent = locationInfo.course?.name || Utils.t('no_current_course');
-            }
-            
-            // 显示教学楼信息
-            if (buildingDisplay) {
-                let buildingText = Utils.t('unknown_location');
-                if (locationInfo.building) {
-                    const buildingName = appState.currentLanguage === 'zh' ? 
-                        locationInfo.building.name : 
-                        (locationInfo.building.name_en || locationInfo.building.name);
-                    
-                    if (locationInfo.is_valid_location) {
-                        buildingText = buildingName;
-                    } else {
-                        const distanceText = appState.currentLanguage === 'zh' ? 
-                            `距离${locationInfo.distance}米` : 
-                            `${locationInfo.distance}m away`;
-                        buildingText = `${buildingName} (${distanceText})`;
-                    }
-                }
-                buildingDisplay.textContent = buildingText;
-            }
-            
-            // 显示签到状态
-            if (statusDisplay) {
-                const statusText = {
-                    'present': Utils.t('status_present'),
-                    'late': Utils.t('status_late'),
-                    'absent': Utils.t('status_absent'),
-                    'no_class': Utils.t('status_no_class')
-                };
-                
-                let statusMessage = statusText[locationInfo.status] || locationInfo.status || Utils.t('unknown_status');
-                
-                // 如果位置无效，添加位置提示
-                if (!locationInfo.is_valid_location && locationInfo.building) {
-                    const distanceWarning = ` (${Utils.t('location_too_far')})`;
-                    statusMessage += distanceWarning;
-                }
-                
-                statusDisplay.textContent = statusMessage;
-            }
-            
-            // 保存建筑信息并显示地图
-            if (locationInfo.building) {
-                this.currentBuildingInfo = locationInfo.building;
-                this.showMapSection();
-            }
-        } else {
-            courseInfoSection.style.display = 'none';
-            this.hideMapSection();
         }
+        
+        // 显示课程信息
+        if (currentCourseDisplay) {
+            currentCourseDisplay.textContent = locationInfo.course?.name || Utils.t('no_current_course');
+        }
+        
+        // 显示教学楼信息
+        if (buildingDisplay) {
+            let buildingText = Utils.t('unknown_location');
+            if (locationInfo.building) {
+                const buildingName = appState.currentLanguage === 'zh' ? 
+                    locationInfo.building.name : 
+                    (locationInfo.building.name_en || locationInfo.building.name);
+                
+                if (locationInfo.is_valid_location) {
+                    buildingText = buildingName;
+                } else {
+                    const distanceText = appState.currentLanguage === 'zh' ? 
+                        `距离${locationInfo.distance}米` : 
+                        `${locationInfo.distance}m away`;
+                    buildingText = `${buildingName} (${distanceText})`;
+                }
+            }
+            buildingDisplay.textContent = buildingText;
+        }
+        
+        // 显示签到状态
+        if (statusDisplay) {
+            const statusText = {
+                'present': Utils.t('status_present'),
+                'late': Utils.t('status_late'),
+                'absent': Utils.t('status_absent'),
+                'no_class': Utils.t('status_no_class')
+            };
+            
+            let statusMessage = statusText[locationInfo.status] || locationInfo.status || Utils.t('unknown_status');
+            
+            // 如果位置无效，添加位置提示
+            if (!locationInfo.is_valid_location && locationInfo.building) {
+                const distanceWarning = ` (${Utils.t('location_too_far')})`;
+                statusMessage += distanceWarning;
+            }
+            
+            statusDisplay.textContent = statusMessage;
+        }
+        
+        // 保存建筑信息并显示地图（即使没有建筑信息也显示地图）
+        if (locationInfo.building) {
+            this.currentBuildingInfo = locationInfo.building;
+        }
+        // 始终显示地图区域，即使没有建筑信息
+        this.showMapSection();
     }
     
     // 隐藏签到模态框
