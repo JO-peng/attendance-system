@@ -25,16 +25,16 @@ class SignInPage {
         // 先加载用户信息，再加载课程表
         await this.loadUserInfo();
         
-        // 用户信息加载完成后再加载课程表
-        this.loadCourseSchedule();
-        
-        // 获取位置信息
-        this.getCurrentLocation();
-        
         // 如果已有用户信息，直接更新显示
         if (appState.userInfo) {
             this.updateUserInfo();
         }
+        
+        // 用户信息加载完成后再加载课程表，并等待课程表加载完成
+        await this.loadCourseSchedule();
+        
+        // 课程表加载完成后再获取位置信息，确保所有依赖课程数据的功能都能正常工作
+        this.getCurrentLocation();
         
         // 监听语言切换事件
         document.addEventListener('languageChanged', () => {
@@ -292,12 +292,15 @@ class SignInPage {
             buildingNameElement.innerHTML = `${loadingText}<br><small style="font-size: 0.75em; color: #666;">${coordsLabel}${coordsText}</small>`;
         }
         
-        // 优先检查当前课程或下一节课程
-        const targetCourse = this.getCurrentOrNextCourse();
-        if (targetCourse && targetCourse.building_name) {
-            // 如果有当前课程或下一节课程，优先显示该课程的建筑
-            await this.displayCourseBasedBuilding(targetCourse, coordsText);
-            return;
+        // 检查课程数据是否已加载完成
+        if (this.courseDataLoaded !== false) { // 只有明确设置为false时才跳过课程检查
+            // 优先检查当前课程或下一节课程
+            const targetCourse = this.getCurrentOrNextCourse();
+            if (targetCourse && targetCourse.building_name) {
+                // 如果有当前课程或下一节课程，优先显示该课程的建筑
+                await this.displayCourseBasedBuilding(targetCourse, coordsText);
+                return;
+            }
         }
         
         try {
@@ -713,13 +716,19 @@ class SignInPage {
         const buildingDisplay = document.getElementById('buildingDisplay');
         const statusDisplay = document.getElementById('statusDisplay');
         
-        // 始终显示课程信息区域，即使没有课程或建筑信息
+        // 显示课程信息区域
         if (courseInfoSection) {
             courseInfoSection.style.display = 'block';
         }
         
-        // 检查是否有当前课程
-        const hasCourse = locationInfo.course && locationInfo.course.name;
+        // 只有在课程数据加载完成后才应用样式
+        if (this.courseDataLoaded === false) {
+            return; // 课程数据还未加载完成，跳过样式更新
+        }
+        
+        // 获取当前或下一节课程信息
+        const currentCourse = this.getCurrentOrNextCourse();
+        const hasCourse = currentCourse && currentCourse.name;
         
         // 根据是否有课程调整样式
         if (courseInfoSection) {
@@ -739,7 +748,7 @@ class SignInPage {
         // 显示课程信息
         if (currentCourseDisplay) {
             if (hasCourse) {
-                currentCourseDisplay.textContent = locationInfo.course.name;
+                currentCourseDisplay.textContent = currentCourse.name;
                 currentCourseDisplay.style.color = '#0d6efd';
                 currentCourseDisplay.style.fontWeight = '600';
             } else {
@@ -795,8 +804,6 @@ class SignInPage {
                 }
                 
                 // 检查是否超时（这里可以根据实际业务逻辑调整）
-                const now = new Date();
-                const currentCourse = this.getCurrentOrNextCourse();
                 if (currentCourse) {
                     const courseStatus = this.calculateCourseStatus(currentCourse);
                     if (courseStatus === 'past') {
@@ -827,8 +834,10 @@ class SignInPage {
             statusDisplay.style.fontWeight = hasCourse ? '600' : '500';
         }
         
-        // 自动填充签到表单
-        this.autoFillSigninForm(locationInfo);
+        // 只有在课程数据加载完成后才执行自动填充
+        if (this.courseDataLoaded !== false) {
+            this.autoFillSigninForm(locationInfo);
+        }
         
         // 保存建筑信息并显示地图（即使没有建筑信息也显示地图）
         if (locationInfo.building) {
@@ -843,28 +852,31 @@ class SignInPage {
         const courseInput = document.getElementById('courseName');
         const classroomInput = document.getElementById('classroom');
         
+        // 获取当前或下一节课程信息
+        const currentCourse = this.getCurrentOrNextCourse();
+        
         // 自动填充课程名称
-        if (courseInput && locationInfo.course?.name) {
+        if (courseInput && currentCourse?.name) {
             // 只有当输入框为空时才自动填充，允许用户手动修改
             if (!courseInput.value.trim()) {
-                courseInput.value = locationInfo.course.name;
-                console.log('自动填充课程名称:', locationInfo.course.name);
+                courseInput.value = currentCourse.name;
+                console.log('自动填充课程名称:', currentCourse.name);
             }
         }
         
         // 自动填充教室位置
-        if (classroomInput && locationInfo.course) {
+        if (classroomInput && currentCourse) {
             // 只有当输入框为空时才自动填充，允许用户手动修改
             if (!classroomInput.value.trim()) {
                 let classroomLocation = '';
                 
                 // 优先使用课程中的教室信息
-                if (locationInfo.course.classroom) {
-                    classroomLocation = locationInfo.course.classroom;
-                } else if (locationInfo.course.building_name && locationInfo.course.room) {
+                if (currentCourse.classroom) {
+                    classroomLocation = currentCourse.classroom;
+                } else if (currentCourse.building_name && currentCourse.room) {
                     // 组合建筑名称和房间号
-                    classroomLocation = `${locationInfo.course.building_name}${locationInfo.course.room}`;
-                } else if (locationInfo.building) {
+                    classroomLocation = `${currentCourse.building_name}${currentCourse.room}`;
+                } else if (locationInfo?.building) {
                     // 使用建筑信息
                     const buildingName = appState.currentLanguage === 'zh' ? 
                         locationInfo.building.name : 
@@ -2186,10 +2198,14 @@ class SignInPage {
     // 加载课程表信息
     async loadCourseSchedule() {
         try {
+            // 标记课程数据正在加载
+            this.courseDataLoaded = false;
+            
             // 检查是否有有效的用户信息
             if (!appState.userInfo || !appState.userInfo.student_id) {
                 console.log('没有有效的用户信息，显示空课程表');
                 this.displayEmptyCourseCards();
+                this.courseDataLoaded = true; // 即使没有课程，也标记为加载完成
                 return;
             }
             
@@ -2206,9 +2222,16 @@ class SignInPage {
                 console.error('获取课程表失败:', response.message);
                 this.displayEmptyCourseCards();
             }
+            
+            // 标记课程数据加载完成
+            this.courseDataLoaded = true;
+            console.log('课程数据加载完成，courseDataLoaded =', this.courseDataLoaded);
+            
         } catch (error) {
             console.error('加载课程表时出错:', error);
             this.displayEmptyCourseCards();
+            // 即使出错，也标记为加载完成，避免无限等待
+            this.courseDataLoaded = true;
         }
     }
 
