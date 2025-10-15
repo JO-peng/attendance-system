@@ -490,6 +490,35 @@ class AppState {
             const lang = option.getAttribute('data-lang');
             option.classList.toggle('active', lang === this.currentLanguage);
         });
+        
+        // 触发语言切换回调
+        if (this.languageChangeCallbacks) {
+            this.languageChangeCallbacks.forEach(callback => {
+                try {
+                    callback(this.currentLanguage);
+                } catch (error) {
+                    console.warn('Language change callback error:', error);
+                }
+            });
+        }
+    }
+    
+    // 添加语言切换监听器
+    addLanguageChangeListener(callback) {
+        if (!this.languageChangeCallbacks) {
+            this.languageChangeCallbacks = [];
+        }
+        this.languageChangeCallbacks.push(callback);
+    }
+    
+    // 移除语言切换监听器
+    removeLanguageChangeListener(callback) {
+        if (this.languageChangeCallbacks) {
+            const index = this.languageChangeCallbacks.indexOf(callback);
+            if (index > -1) {
+                this.languageChangeCallbacks.splice(index, 1);
+            }
+        }
     }
 }
 
@@ -1412,15 +1441,15 @@ const PageUpdateManager = {
                 .data-loss-prompt {
                     position: fixed;
                     top: 80px;
-                    left: 50%;
-                    transform: translateX(-50%);
+                    left: 20px;
+                    right: 20px;
                     background: #fff3cd;
                     border: 1px solid #ffeaa7;
                     border-radius: 8px;
                     padding: 12px 16px;
                     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
                     z-index: 9999;
-                    max-width: 90%;
+                    text-align: center;
                     animation: slideDown 0.3s ease;
                 }
                 .prompt-content {
@@ -1443,8 +1472,8 @@ const PageUpdateManager = {
                     margin-left: 8px;
                 }
                 @keyframes slideDown {
-                    from { transform: translateX(-50%) translateY(-20px); opacity: 0; }
-                    to { transform: translateX(-50%) translateY(0); opacity: 1; }
+                    from { transform: translateY(-20px); opacity: 0; }
+                    to { transform: translateY(0); opacity: 1; }
                 }
             `;
             document.head.appendChild(style);

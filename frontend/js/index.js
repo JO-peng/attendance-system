@@ -16,16 +16,21 @@ class SignInPage {
         this.customLocationContainer = null;
         this.allCourses = []; // 存储所有课程数据
         this.currentFilter = 'all'; // 当前筛选状态
-        
-        this.init();
     }
    // 初始化方法
-    init() {
+    async init() {
         this.bindEvents();
         this.startTimeUpdate();
-        this.loadUserInfo();
-        this.getCurrentLocation();
+        
+        // 先加载用户信息，再加载课程表
+        await this.loadUserInfo();
+        
+        // 用户信息加载完成后再加载课程表
         this.loadCourseSchedule();
+        
+        // 获取位置信息
+        this.getCurrentLocation();
+        
         // 如果已有用户信息，直接更新显示
         if (appState.userInfo) {
             this.updateUserInfo();
@@ -534,6 +539,10 @@ class SignInPage {
         if (this.currentLocation && this.locationInfo) {
             // 如果有位置信息，重新显示建筑信息
             this.displayCachedBuildingInfo(this.locationInfo);
+            // 如果有课程信息，也重新更新课程信息显示
+            if (this.locationInfo) {
+                this.updateCourseInfo(this.locationInfo);
+            }
         } else if (this.currentLocation) {
             // 如果只有位置坐标，重新获取建筑信息
             this.updateBuildingInfo();
@@ -2216,8 +2225,9 @@ class SignInPage {
 // 页面加载完成后初始化
 document.addEventListener('DOMContentLoaded', () => {
     // 确保DOM完全加载后再初始化
-    setTimeout(() => {
+    setTimeout(async () => {
         window.signinPage = new SignInPage();
+        await window.signinPage.init();
     }, 200);
 });
 
