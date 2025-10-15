@@ -303,14 +303,21 @@ class SignInPage {
             buildingNameElement.innerHTML = `${loadingText}<br><small style="font-size: 0.75em; color: #666;">${coordsLabel}${coordsText}</small>`;
         }
         
-        // 检查课程数据是否已加载完成
-        if (this.courseDataLoaded === true) { // 只有明确加载完成时才检查课程
-            // 优先检查当前课程或下一节课程
-            const targetCourse = this.getCurrentOrNextCourse();
-            if (targetCourse && targetCourse.building_name) {
-                // 如果有当前课程或下一节课程，优先显示该课程的建筑
-                await this.displayCourseBasedBuilding(targetCourse, coordsText);
-                return;
+        // 优先检查当前课程或下一节课程（无论课程数据是否完全加载）
+        const targetCourse = this.getCurrentOrNextCourse();
+        
+        if (targetCourse && targetCourse.building_name) {
+            // 如果有当前课程或下一节课程，优先显示该课程的建筑
+            await this.displayCourseBasedBuilding(targetCourse, coordsText);
+            return;
+        } else {
+            // 如果课程数据未加载完成，等待一段时间后重试
+            if (this.courseDataLoaded !== true) {
+                setTimeout(() => {
+                    if (this.courseDataLoaded === true) {
+                        this.updateBuildingInfo(retryCount, maxRetries);
+                    }
+                }, 1000);
             }
         }
         
@@ -724,7 +731,7 @@ class SignInPage {
     updateCourseInfo(locationInfo) {
         const courseInfoSection = document.getElementById('courseInfoSection');
         const currentCourseDisplay = document.getElementById('currentCourseDisplay');
-        const buildingDisplay = document.getElementById('buildingDisplay');
+        const classroomInfoDisplay = document.getElementById('classroomInfoDisplay');
         const statusDisplay = document.getElementById('statusDisplay');
         
         // 显示课程信息区域
@@ -769,40 +776,41 @@ class SignInPage {
             }
         }
         
-        // 显示教学楼信息
-        if (buildingDisplay) {
-            let buildingText = Utils.t('unknown_location');
-            let buildingColor = 'var(--gray-600)';
+        // 显示教室信息
+        if (classroomInfoDisplay) {
+            let classroomText = Utils.t('unknown_location');
+            let classroomColor = 'var(--gray-600)';
             
             if (hasCourse && currentCourse.building_name) {
-                // 优先显示当前课程的建筑信息
+                // 优先显示当前课程的教室信息（建筑名+教室号）
                 const buildingName = appState.currentLanguage === 'zh' ? 
                     currentCourse.building_name : 
                     (currentCourse.building_name_en || currentCourse.building_name);
                 
-                buildingText = buildingName;
-                buildingColor = '#0d6efd'; // 蓝色表示课程建筑
+                const classroom = currentCourse.classroom || '';
+                classroomText = classroom ? `${buildingName} ${classroom}` : buildingName;
+                classroomColor = '#0d6efd'; // 蓝色表示课程教室
             } else if (locationInfo.building) {
-                // 如果没有课程建筑信息，显示位置信息
+                // 如果没有课程教室信息，显示位置信息
                 const buildingName = appState.currentLanguage === 'zh' ? 
                     locationInfo.building.name : 
                     (locationInfo.building.name_en || locationInfo.building.name);
                 
                 if (locationInfo.is_valid_location) {
-                    buildingText = buildingName;
-                    buildingColor = '#198754'; // 绿色表示在范围内
+                    classroomText = buildingName;
+                    classroomColor = '#198754'; // 绿色表示在范围内
                 } else {
                     const distanceText = appState.currentLanguage === 'zh' ? 
                         `距离${locationInfo.distance}米` : 
                         `${locationInfo.distance}m away`;
-                    buildingText = `${buildingName} (${distanceText})`;
-                    buildingColor = '#ffc107'; // 黄色表示距离过远
+                    classroomText = `${buildingName} (${distanceText})`;
+                    classroomColor = '#ffc107'; // 黄色表示距离过远
                 }
             }
             
-            buildingDisplay.textContent = buildingText;
-            buildingDisplay.style.color = buildingColor;
-            buildingDisplay.style.fontWeight = hasCourse ? '600' : '500';
+            classroomInfoDisplay.textContent = classroomText;
+            classroomInfoDisplay.style.color = classroomColor;
+            classroomInfoDisplay.style.fontWeight = hasCourse ? '600' : '500';
         }
         
         // 显示签到状态
@@ -1147,14 +1155,24 @@ class SignInPage {
             let buildingInfo = null;
             if (this.currentLocation?.latitude && this.currentLocation?.longitude) {
                 try {
+                    // 获取当前或下一节课程信息
+                    const targetCourse = this.getCurrentOrNextCourse();
+                    
+                    const checkRequestBody = {
+                        longitude: this.currentLocation.longitude,
+                        latitude: this.currentLocation.latitude,
+                        timestamp: Math.floor(Date.now() / 1000),
+                        student_id: appState.userInfo?.student_id
+                    };
+                    
+                    // 如果有课程信息，添加目标建筑参数
+                    if (targetCourse && targetCourse.building_name) {
+                        checkRequestBody.target_building = targetCourse.building_name;
+                    }
+                    
                     const checkResult = await Utils.request('/api/v1/check-in', {
                         method: 'POST',
-                        body: JSON.stringify({
-                            longitude: this.currentLocation.longitude,
-                            latitude: this.currentLocation.latitude,
-                            timestamp: Math.floor(Date.now() / 1000),
-                            student_id: appState.userInfo?.student_id
-                        })
+                        body: JSON.stringify(checkRequestBody)
                     });
                     
                     if (checkResult.success && checkResult.data) {
