@@ -733,8 +733,8 @@
 .course-card.current::after {
     content: '进行中';
     position: absolute;
-    top: var(--spacing-3);
-    right: var(--spacing-3);
+    bottom: var(--spacing-1);
+    left: var(--spacing-3);
     background: var(--warning-color);
     color: white;
     padding: var(--spacing-1) var(--spacing-2);
@@ -762,8 +762,8 @@
 .course-card.upcoming::after {
     content: '即将开始';
     position: absolute;
-    top: var(--spacing-3);
-    right: var(--spacing-3);
+    bottom: var(--spacing-1);
+    left: var(--spacing-3);
     background: var(--primary-color);
     color: white;
     padding: var(--spacing-1) var(--spacing-2);
