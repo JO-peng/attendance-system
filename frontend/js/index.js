@@ -1551,7 +1551,8 @@ class SignInPage {
             icon: new AMap.Icon({
                 size: new AMap.Size(32, 42),
                 image: 'icon/user_pin.png',
-                imageOffset: new AMap.Pixel(-16, -42)
+                imageSize: new AMap.Size(32, 42),
+                imageOffset: new AMap.Pixel(0, 0)
             }),
             anchor: 'bottom-center',
             zIndex: 100
@@ -1589,7 +1590,8 @@ class SignInPage {
                 icon: new AMap.Icon({
                     size: new AMap.Size(36, 46),
                     image: 'icon/pin.png',
-                    imageOffset: new AMap.Pixel(-18, -46)
+                    imageSize: new AMap.Size(36, 46),
+                    imageOffset: new AMap.Pixel(0, 0)
                 }),
                 anchor: 'bottom-center',
                 zIndex: 99
@@ -1631,18 +1633,16 @@ class SignInPage {
             const distance = AMap.GeometryUtil.distance([userLng, userLat], [buildingLng, buildingLat]);
             const isInRange = distance <= radius;
 
-            // 如果用户在签到范围内，添加连接线
-            if (isInRange) {
-                this.connectionLine = new AMap.Polyline({
-                    path: [[userLng, userLat], [buildingLng, buildingLat]],
-                    strokeColor: '#52c41a',
-                    strokeWeight: 3,
-                    strokeOpacity: 0.8,
-                    strokeStyle: 'solid',
-                    zIndex: 60
-                });
-                this.map.add(this.connectionLine);
-            }
+            // 总是显示连接线，但根据是否在范围内使用不同颜色和样式
+            this.connectionLine = new AMap.Polyline({
+                path: [[userLng, userLat], [buildingLng, buildingLat]],
+                strokeColor: isInRange ? '#52c41a' : '#ff7875', // 范围内绿色，范围外红色
+                strokeWeight: isInRange ? 3 : 2, // 范围内粗一些，范围外细一些
+                strokeOpacity: isInRange ? 0.8 : 0.6, // 范围内不透明度高一些
+                strokeStyle: isInRange ? 'solid' : 'dashed', // 范围内实线，范围外虚线
+                zIndex: 60
+            });
+            this.map.add(this.connectionLine);
 
             // 调整地图视野以包含所有标记
             const bounds = new AMap.Bounds([userLng, userLat], [buildingLng, buildingLat]);
@@ -1681,7 +1681,8 @@ class SignInPage {
             const userIcon = new AMap.Icon({
                 size: new AMap.Size(newUserSize.width, newUserSize.height),
                 image: 'icon/user_pin.png',
-                imageOffset: new AMap.Pixel(-newUserSize.width / 2, -newUserSize.height)
+                imageSize: new AMap.Size(newUserSize.width, newUserSize.height),
+                imageOffset: new AMap.Pixel(0, 0)
             });
             this.userMarker.setIcon(userIcon);
         }
@@ -1697,7 +1698,8 @@ class SignInPage {
             const buildingIcon = new AMap.Icon({
                 size: new AMap.Size(newBuildingSize.width, newBuildingSize.height),
                 image: 'icon/pin.png',
-                imageOffset: new AMap.Pixel(-newBuildingSize.width / 2, -newBuildingSize.height)
+                imageSize: new AMap.Size(newBuildingSize.width, newBuildingSize.height),
+                imageOffset: new AMap.Pixel(0, 0)
             });
             this.buildingMarker.setIcon(buildingIcon);
         }
@@ -1714,7 +1716,8 @@ class SignInPage {
                 const buildingIcon = new AMap.Icon({
                     size: new AMap.Size(newBuildingSize.width, newBuildingSize.height),
                     image: 'icon/pin.png',
-                    imageOffset: new AMap.Pixel(-newBuildingSize.width / 2, -newBuildingSize.height)
+                    imageSize: new AMap.Size(newBuildingSize.width, newBuildingSize.height),
+                    imageOffset: new AMap.Pixel(0, 0)
                 });
                 marker.setIcon(buildingIcon);
             });
@@ -1766,7 +1769,8 @@ class SignInPage {
                 icon: new AMap.Icon({
                     size: new AMap.Size(32, 40),
                     image: 'icon/pin.png',
-                    imageOffset: new AMap.Pixel(-16, -40)
+                    imageSize: new AMap.Size(32, 40),
+                    imageOffset: new AMap.Pixel(0, 0)
                 }),
                 anchor: 'bottom-center',
                 zIndex: 98
@@ -1844,6 +1848,53 @@ class SignInPage {
         });
 
         console.log(`已显示 ${buildings.length} 个建筑标记`);
+        
+        // 如果有用户位置，显示与最近建筑的连线
+        if (this.userMarker && this.currentLocation) {
+            const userLng = parseFloat(this.currentLocation.longitude);
+            const userLat = parseFloat(this.currentLocation.latitude);
+            
+            // 找到最近的建筑
+            let nearestBuilding = null;
+            let minDistance = Infinity;
+            
+            buildings.forEach(building => {
+                const buildingLng = parseFloat(building.longitude);
+                const buildingLat = parseFloat(building.latitude);
+                const distance = AMap.GeometryUtil.distance([userLng, userLat], [buildingLng, buildingLat]);
+                
+                if (distance < minDistance) {
+                    minDistance = distance;
+                    nearestBuilding = building;
+                }
+            });
+            
+            // 如果找到最近的建筑，显示连线
+            if (nearestBuilding) {
+                const buildingLng = parseFloat(nearestBuilding.longitude);
+                const buildingLat = parseFloat(nearestBuilding.latitude);
+                const radius = nearestBuilding.radius || 75;
+                const isInRange = minDistance <= radius;
+                
+                // 清除之前的连线
+                if (this.connectionLine) {
+                    this.map.remove(this.connectionLine);
+                }
+                
+                // 创建与最近建筑的连线
+                this.connectionLine = new AMap.Polyline({
+                    path: [[userLng, userLat], [buildingLng, buildingLat]],
+                    strokeColor: isInRange ? '#52c41a' : '#ff7875', // 范围内绿色，范围外红色
+                    strokeWeight: isInRange ? 3 : 2, // 范围内粗一些，范围外细一些
+                    strokeOpacity: isInRange ? 0.8 : 0.6, // 范围内不透明度高一些
+                    strokeStyle: isInRange ? 'solid' : 'dashed', // 范围内实线，范围外虚线
+                    zIndex: 60
+                });
+                this.map.add(this.connectionLine);
+                
+                console.log(`显示与最近建筑 ${nearestBuilding.name} 的连线，距离: ${minDistance.toFixed(2)}米，${isInRange ? '在范围内' : '在范围外'}`);
+            }
+        }
     }
 
     // 清除所有建筑标记
@@ -1865,6 +1916,11 @@ class SignInPage {
                 this.map.remove(circle);
             });
             this.allBuildingCircles = [];
+        }
+        // 清除连线
+        if (this.connectionLine) {
+            this.map.remove(this.connectionLine);
+            this.connectionLine = null;
         }
     }
 
