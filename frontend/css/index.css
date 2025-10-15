@@ -746,16 +746,16 @@
 
 /* 即将开始课程样式 */
 .course-card.upcoming {
-    border: 1px solid var(--primary-color);
-    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+    border: 1px solid #f59e0b;
+    background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
 }
 
 .course-card.upcoming::before {
-    background: linear-gradient(90deg, var(--primary-color), var(--primary-light));
+    background: linear-gradient(90deg, #f59e0b, #fbbf24);
 }
 
 .course-card.upcoming .time-slot {
-    background: var(--primary-color);
+    background: #f59e0b;
     color: white;
 }
 
@@ -764,7 +764,7 @@
     position: absolute;
     top: var(--spacing-3);
     right: var(--spacing-3);
-    background: var(--primary-color);
+    background: #f59e0b;
     color: white;
     padding: var(--spacing-1) var(--spacing-2);
     border-radius: var(--radius-sm);
@@ -856,7 +856,7 @@
 }
 
 .status-indicator.upcoming {
-    background: var(--primary-color);
+    background: #f59e0b;
 }
 
 .status-indicator.loading {

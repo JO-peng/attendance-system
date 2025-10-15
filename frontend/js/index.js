@@ -1899,6 +1899,7 @@ class SignInPage {
 
     // 清除所有建筑标记
     clearAllBuildingMarkers() {
+        // 清除多个建筑标记
         if (this.allBuildingMarkers) {
             this.allBuildingMarkers.forEach(marker => {
                 this.map.remove(marker);
@@ -1917,6 +1918,17 @@ class SignInPage {
             });
             this.allBuildingCircles = [];
         }
+        
+        // 清除单个建筑标记，避免重复显示
+        if (this.buildingMarker) {
+            this.map.remove(this.buildingMarker);
+            this.buildingMarker = null;
+        }
+        if (this.buildingCircle) {
+            this.map.remove(this.buildingCircle);
+            this.buildingCircle = null;
+        }
+        
         // 清除连线
         if (this.connectionLine) {
             this.map.remove(this.connectionLine);
