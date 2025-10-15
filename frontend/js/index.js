@@ -609,7 +609,7 @@ class SignInPage {
                         longitude: this.currentLocation.longitude,
                         latitude: this.currentLocation.latitude,
                         timestamp: Math.floor(Date.now() / 1000),
-                        student_id: appState.userInfo?.student_id || '2020000319'
+                        student_id: appState.userInfo?.student_id
                     })
                 });
                 
@@ -904,8 +904,8 @@ class SignInPage {
             
             // 准备签到数据
             const signinData = {
-                student_id: appState.userInfo?.student_id || '2020000319',
-                name: appState.userInfo?.name || '胡凯峰',
+                student_id: appState.userInfo?.student_id,
+                name: appState.userInfo?.name,
                 course_name: document.getElementById('courseName').value.trim(),
                 classroom: document.getElementById('classroom').value.trim(),
                 photo: photoData,
@@ -929,7 +929,7 @@ class SignInPage {
                             longitude: this.currentLocation.longitude,
                             latitude: this.currentLocation.latitude,
                             timestamp: Math.floor(Date.now() / 1000),
-                            student_id: appState.userInfo?.student_id || '2020000319'
+                            student_id: appState.userInfo?.student_id
                         })
                     });
                     
@@ -1046,8 +1046,8 @@ class SignInPage {
                 name: error.name,
                 stack: error.stack,
                 signinData: {
-                    student_id: appState.userInfo?.student_id || '2020000319',
-                    name: appState.userInfo?.name || '胡凯峰',
+                    student_id: appState.userInfo?.student_id,
+                    name: appState.userInfo?.name,
                     course_name: document.getElementById('courseName').value.trim(),
                     classroom: document.getElementById('classroom').value.trim(),
                     hasPhoto: !!this.currentPhoto
@@ -1931,14 +1931,22 @@ class SignInPage {
     // 加载课程表信息
     async loadCourseSchedule() {
         try {
-            // 获取学生ID，优先使用appState中的用户信息
-            const studentId = appState.userInfo?.student_id || '2023280108';
+            // 检查是否有有效的用户信息
+            if (!appState.userInfo || !appState.userInfo.student_id) {
+                console.log('没有有效的用户信息，显示空课程表');
+                this.displayEmptyCourseCards();
+                return;
+            }
+            
+            const studentId = appState.userInfo.student_id;
+            console.log('加载课程表，学号:', studentId);
             
             const response = await Utils.request(`/api/v1/student-schedule?student_id=${studentId}&days=7`);
             
             if (response.success) {
                 this.allCourses = response.data.schedule || [];
                 this.filterAndDisplayCourses();
+                console.log(`成功加载 ${this.allCourses.length} 门课程`);
             } else {
                 console.error('获取课程表失败:', response.message);
                 this.displayEmptyCourseCards();
