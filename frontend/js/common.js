@@ -62,6 +62,8 @@ const LANGUAGES = {
         // 位置相关
         location_success: '位置获取成功',
         location_check_failed: '位置检查失败，继续签到流程',
+        location_service_init_failed: '定位服务初始化失败，请刷新页面重试',
+        location_permission_failed: '定位失败，请检查定位权限或刷新页面重试',
         
         // 拍照相关
         camera_opening: '正在打开相机...',
@@ -137,9 +139,27 @@ const LANGUAGES = {
         image_too_large_specific: '{filename} 文件过大，请选择小于5MB的图片',
         submit_failed_retry: '提交失败，请稍后重试',
         
-        // 确认对话框
+        // 重置确认对话框
         reset_confirm_title: '确认重置',
-        reset_confirm_message: '确定要重置表单吗？所有已填写的内容将被清除。'
+        reset_confirm_message: '确定要重置表单吗？所有已填写的内容将被清除。',
+        
+        // 课程信息相关
+        course_status_current: '正在进行',
+        course_status_upcoming: '即将开始',
+        course_status_past: '已结束',
+        course_today: '今天',
+        course_tomorrow: '明天',
+        course_sunday: '周日',
+        course_monday: '周一',
+        course_tuesday: '周二',
+        course_wednesday: '周三',
+        course_thursday: '周四',
+        course_friday: '周五',
+        course_saturday: '周六',
+        no_current_course: '无当前课程',
+        unknown_location: '未知位置',
+        location_too_far: '位置距离过远',
+        unknown_status: '未知状态'
     },
     en: {
         // Common
@@ -189,9 +209,11 @@ const LANGUAGES = {
         auth_expired: 'Authorization expired, please refresh page to login again',
         auth_expired_stats: 'Authorization expired, statistics data cannot be loaded',
         
-        // Location related
+        // 位置相关
         location_success: 'Location obtained successfully',
         location_check_failed: 'Location check failed, continue sign-in process',
+        location_service_init_failed: 'Location service initialization failed, please refresh page and try again',
+        location_permission_failed: 'Location failed, please check location permissions or refresh page and try again',
         
         // Camera related
         camera_opening: 'Opening camera...',
@@ -267,9 +289,27 @@ const LANGUAGES = {
         image_too_large_specific: '{filename} is too large, please select image smaller than 5MB',
         submit_failed_retry: 'Submit failed, please try again later',
         
-        // Confirm dialog
+        // 重置确认对话框
         reset_confirm_title: 'Confirm Reset',
-        reset_confirm_message: 'Are you sure you want to reset the form? All filled content will be cleared.'
+        reset_confirm_message: 'Are you sure you want to reset the form? All filled content will be cleared.',
+        
+        // 课程信息相关
+        course_status_current: 'In Progress',
+        course_status_upcoming: 'Upcoming',
+        course_status_past: 'Completed',
+        course_today: 'Today',
+        course_tomorrow: 'Tomorrow',
+        course_sunday: 'Sun',
+        course_monday: 'Mon',
+        course_tuesday: 'Tue',
+        course_wednesday: 'Wed',
+        course_thursday: 'Thu',
+        course_friday: 'Fri',
+        course_saturday: 'Sat',
+        no_current_course: 'No current course',
+        unknown_location: 'Unknown location',
+        location_too_far: 'Location too far',
+        unknown_status: 'Unknown status'
     }
 };
 
@@ -573,8 +613,8 @@ const Utils = {
         messageEl.style.cssText = `
             position: fixed;
             top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
+            left: 20px;
+            right: 20px;
             background: ${colors[type] || colors.info};
             color: white;
             padding: 12px 24px;
@@ -582,10 +622,10 @@ const Utils = {
             z-index: 9999;
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
             animation: slideDown 0.3s ease;
-            max-width: 90%;
             word-wrap: break-word;
             font-size: 14px;
             line-height: 1.4;
+            text-align: center;
         `;
         
         // 添加图标
@@ -1138,7 +1178,7 @@ const WeChatAPI = {
                 if (!appState.isWeChatReady || typeof wx === 'undefined') {
                     const errorMsg = !appState.isWeChatReady ? 'SDK未准备好' : 'wx对象不存在';
                     console.error(`❌ 企业微信定位失败: ${errorMsg}`);
-                    Utils.showMessage('定位服务初始化失败，请刷新页面重试', 'error', 3000);
+                    Utils.showMessage(Utils.t('location_service_init_failed'), 'error', 3000);
                     reject(new Error(`企业微信环境中定位失败: ${errorMsg}`));
                     return;
                 }
@@ -1163,7 +1203,7 @@ const WeChatAPI = {
                     },
                     fail: (error) => {
                         console.error('❌ 定位失败:', error);
-                        Utils.showMessage('定位失败，请检查定位权限或刷新页面重试', 'error', 5000);
+                        Utils.showMessage(Utils.t('location_permission_failed'), 'error', 5000);
                         reject(new Error(`企业微信定位失败: ${JSON.stringify(error)}`));
                     }
                 });

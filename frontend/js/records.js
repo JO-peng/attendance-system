@@ -310,9 +310,9 @@ class RecordsPage {
                     recordsContainer.innerHTML = `
                         <div class="empty-state">
                             <div class="empty-icon">🔐</div>
-                            <h3>授权已过期</h3>
-                            <p>您的登录状态已过期，请刷新页面重新登录</p>
-                            <button onclick="location.reload()" class="btn btn-primary">刷新页面</button>
+                            <h3>${appState.currentLanguage === 'zh' ? '授权已过期' : 'Authorization Expired'}</h3>
+                            <p>${Utils.t('auth_expired')}</p>
+                            <button onclick="location.reload()" class="btn btn-primary">${appState.currentLanguage === 'zh' ? '刷新页面' : 'Refresh Page'}</button>
                         </div>
                     `;
                 }

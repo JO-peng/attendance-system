@@ -759,18 +759,28 @@
     color: white;
 }
 
-.course-card.upcoming::after {
-    content: '即将开始';
+.course-card .status-label {
     position: absolute;
     bottom: var(--spacing-3);
     left: var(--spacing-3);
-    background: #f59e0b;
-    color: white;
     padding: var(--spacing-1) var(--spacing-2);
     border-radius: var(--radius-sm);
     font-size: var(--font-size-xs);
     font-weight: 600;
     z-index: 1;
+    color: white;
+}
+
+.course-card.upcoming .status-label {
+    background: #f59e0b;
+}
+
+.course-card.current .status-label {
+    background: var(--warning-color);
+}
+
+.course-card.past .status-label {
+    background: var(--gray-500);
 }
 
 @keyframes pulse-glow {

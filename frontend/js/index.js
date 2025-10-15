@@ -638,13 +638,12 @@ class SignInPage {
             
             // 显示课程信息
             if (currentCourseDisplay) {
-                const noCourseText = appState.currentLanguage === 'zh' ? '无当前课程' : 'No current course';
-                currentCourseDisplay.textContent = locationInfo.course?.name || noCourseText;
+                currentCourseDisplay.textContent = locationInfo.course?.name || Utils.t('no_current_course');
             }
             
             // 显示教学楼信息
             if (buildingDisplay) {
-                let buildingText = appState.currentLanguage === 'zh' ? '未知位置' : 'Unknown location';
+                let buildingText = Utils.t('unknown_location');
                 if (locationInfo.building) {
                     const buildingName = appState.currentLanguage === 'zh' ? 
                         locationInfo.building.name : 
@@ -665,20 +664,17 @@ class SignInPage {
             // 显示签到状态
             if (statusDisplay) {
                 const statusText = {
-                    'present': appState.currentLanguage === 'zh' ? '正常签到' : 'Present',
-                    'late': appState.currentLanguage === 'zh' ? '迟到签到' : 'Late',
-                    'absent': appState.currentLanguage === 'zh' ? '缺席' : 'Absent',
-                    'no_class': appState.currentLanguage === 'zh' ? '当前无课程' : 'No class'
+                    'present': Utils.t('status_present'),
+                    'late': Utils.t('status_late'),
+                    'absent': Utils.t('status_absent'),
+                    'no_class': Utils.t('status_no_class')
                 };
                 
-                const unknownStatusText = appState.currentLanguage === 'zh' ? '未知状态' : 'Unknown status';
-                let statusMessage = statusText[locationInfo.status] || locationInfo.status || unknownStatusText;
+                let statusMessage = statusText[locationInfo.status] || locationInfo.status || Utils.t('unknown_status');
                 
                 // 如果位置无效，添加位置提示
                 if (!locationInfo.is_valid_location && locationInfo.building) {
-                    const distanceWarning = appState.currentLanguage === 'zh' ? 
-                        ' (位置距离过远)' : 
-                        ' (Location too far)';
+                    const distanceWarning = ` (${Utils.t('location_too_far')})`;
                     statusMessage += distanceWarning;
                 }
                 
@@ -2095,13 +2091,28 @@ class SignInPage {
 
         let dateDisplay = '';
         if (courseDate.toDateString() === today.toDateString()) {
-            dateDisplay = '今天';
+            dateDisplay = Utils.t('course_today');
         } else if (courseDate.toDateString() === tomorrow.toDateString()) {
-            dateDisplay = '明天';
+            dateDisplay = Utils.t('course_tomorrow');
         } else {
-            const weekdays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+            const weekdays = [
+                Utils.t('course_sunday'),
+                Utils.t('course_monday'),
+                Utils.t('course_tuesday'),
+                Utils.t('course_wednesday'),
+                Utils.t('course_thursday'),
+                Utils.t('course_friday'),
+                Utils.t('course_saturday')
+            ];
             dateDisplay = weekdays[courseDate.getDay()];
         }
+
+        // 获取状态文本
+        const statusTexts = {
+            'current': Utils.t('course_status_current'),
+            'upcoming': Utils.t('course_status_upcoming'),
+            'past': Utils.t('course_status_past')
+        };
 
         card.innerHTML = `
             <div class="course-time">
@@ -2121,6 +2132,7 @@ class SignInPage {
             <div class="course-status">
                 <span class="status-indicator ${courseStatus}"></span>
             </div>
+            ${statusTexts[courseStatus] ? `<span class="status-label">${statusTexts[courseStatus]}</span>` : ''}
         `;
 
         return card;
