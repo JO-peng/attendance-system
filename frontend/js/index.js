@@ -14,6 +14,8 @@ class SignInPage {
         this.currentBuildingInfo = null;
         this.customLocationBtn = null;
         this.customLocationContainer = null;
+        this.allCourses = []; // 存储所有课程数据
+        this.currentFilter = 'all'; // 当前筛选状态
         
         this.init();
     }
@@ -80,6 +82,15 @@ class SignInPage {
         
         if (classroomInput) {
             classroomInput.addEventListener('input', () => this.validateForm());
+        }
+        
+        // 课程筛选器事件
+        const courseFilter = document.getElementById('courseFilter');
+        if (courseFilter) {
+            courseFilter.addEventListener('change', (e) => {
+                this.currentFilter = e.target.value;
+                this.filterAndDisplayCourses();
+            });
         }
     }
     
@@ -1926,7 +1937,8 @@ class SignInPage {
             const response = await Utils.request(`/api/v1/student-schedule?student_id=${studentId}&days=7`);
             
             if (response.success) {
-                this.displayCourseCards(response.data.schedule);
+                this.allCourses = response.data.schedule || [];
+                this.filterAndDisplayCourses();
             } else {
                 console.error('获取课程表失败:', response.message);
                 this.displayEmptyCourseCards();
@@ -1935,6 +1947,21 @@ class SignInPage {
             console.error('加载课程表时出错:', error);
             this.displayEmptyCourseCards();
         }
+    }
+
+    // 筛选并显示课程
+    filterAndDisplayCourses() {
+        let filteredCourses = [...this.allCourses];
+        
+        if (this.currentFilter === 'today') {
+            const today = new Date().toDateString();
+            filteredCourses = this.allCourses.filter(course => {
+                const courseDate = new Date(course.date).toDateString();
+                return courseDate === today;
+            });
+        }
+        
+        this.displayCourseCards(filteredCourses);
     }
 
     // 显示课程卡片
@@ -1972,9 +1999,16 @@ class SignInPage {
         const card = document.createElement('div');
         card.className = 'course-card';
         
+        // 计算课程状态
+        const courseStatus = this.calculateCourseStatus(course);
+        
         // 根据课程状态添加相应的类
-        if (course.status === 'current') {
-            card.classList.add('current-course');
+        if (courseStatus === 'current') {
+            card.classList.add('current');
+        } else if (courseStatus === 'upcoming') {
+            card.classList.add('upcoming');
+        } else if (courseStatus === 'past') {
+            card.classList.add('past');
         }
 
         // 格式化日期显示
@@ -2009,11 +2043,39 @@ class SignInPage {
                 </div>
             </div>
             <div class="course-status">
-                <span class="status-indicator ${course.status}"></span>
+                <span class="status-indicator ${courseStatus}"></span>
             </div>
         `;
 
         return card;
+    }
+
+    // 计算课程状态
+    calculateCourseStatus(course) {
+        const now = new Date();
+        const courseDate = new Date(course.date);
+        const startTime = new Date(`${course.date} ${course.start_time}`);
+        const endTime = new Date(`${course.date} ${course.end_time}`);
+        
+        // 如果是今天的课程
+        if (courseDate.toDateString() === now.toDateString()) {
+            if (now >= startTime && now <= endTime) {
+                return 'current'; // 正在进行
+            } else if (now < startTime) {
+                // 即将开始（距离开始时间1小时内）
+                const timeDiff = startTime - now;
+                if (timeDiff <= 60 * 60 * 1000) { // 1小时内
+                    return 'upcoming';
+                }
+                return 'upcoming';
+            } else {
+                return 'past'; // 已结束
+            }
+        } else if (courseDate > now) {
+            return 'upcoming'; // 未来的课程
+        } else {
+            return 'past'; // 过去的课程
+        }
     }
 
     // 显示空状态课程卡片

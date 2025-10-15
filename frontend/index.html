@@ -55,7 +55,15 @@
         <!-- 课表信息卡片条 -->
         <div class="course-schedule-section">
             <div class="section-header">
-                <h3 class="section-title" data-zh="今日课程" data-en="Today's Courses">今日课程</h3>
+                <h3 class="section-title" data-zh="课程安排" data-en="Course Schedule">课程安排</h3>
+                <div class="course-filter-container">
+                    <select id="courseFilter" class="course-filter">
+                        <option value="all" data-zh="全部课程" data-en="All Courses">全部课程</option>
+                        <option value="today" data-zh="今日课程" data-en="Today's Courses">今日课程</option>
+                    </select>
+                </div>
+            </div>
+            <div class="filter-subtitle">
                 <span class="section-subtitle" data-zh="向右滑动查看更多" data-en="Swipe right for more">向右滑动查看更多</span>
             </div>
             <div class="course-cards-container">

@@ -587,6 +587,46 @@
     margin: 0;
 }
 
+/* 课程筛选器样式 */
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-2);
+}
+
+.course-filter-container {
+    display: flex;
+    align-items: center;
+}
+
+.course-filter {
+    background: white;
+    border: 1px solid var(--gray-300);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-2) var(--spacing-3);
+    font-size: var(--font-size-sm);
+    color: var(--gray-700);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    outline: none;
+    min-width: 120px;
+}
+
+.course-filter:hover {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.course-filter:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.filter-subtitle {
+    margin-bottom: var(--spacing-3);
+}
+
 .section-subtitle {
     font-size: var(--font-size-xs);
     color: var(--gray-500);
@@ -640,6 +680,109 @@
     right: 0;
     height: 3px;
     background: linear-gradient(90deg, var(--primary-color), var(--primary-light));
+}
+
+/* 已结束课程样式 */
+.course-card.past {
+    background: #f8f9fa;
+    border-color: var(--gray-300);
+    opacity: 0.7;
+}
+
+.course-card.past::before {
+    background: linear-gradient(90deg, var(--gray-400), var(--gray-300));
+}
+
+.course-card.past .course-name {
+    color: var(--gray-500);
+}
+
+.course-card.past .course-location {
+    color: var(--gray-400);
+}
+
+.course-card.past .time-slot {
+    background: var(--gray-200);
+    color: var(--gray-500);
+}
+
+.course-card.past:hover {
+    transform: none;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    border-color: var(--gray-300);
+}
+
+/* 当前进行中课程样式 */
+.course-card.current {
+    border: 2px solid var(--warning-color);
+    box-shadow: 0 4px 16px rgba(251, 191, 36, 0.2);
+    background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+}
+
+.course-card.current::before {
+    background: linear-gradient(90deg, var(--warning-color), #f59e0b);
+    height: 4px;
+}
+
+.course-card.current .time-slot {
+    background: var(--warning-color);
+    color: white;
+    animation: pulse-glow 2s infinite;
+}
+
+.course-card.current::after {
+    content: '进行中';
+    position: absolute;
+    top: var(--spacing-3);
+    right: var(--spacing-3);
+    background: var(--warning-color);
+    color: white;
+    padding: var(--spacing-1) var(--spacing-2);
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-xs);
+    font-weight: 600;
+    z-index: 1;
+}
+
+/* 即将开始课程样式 */
+.course-card.upcoming {
+    border: 1px solid var(--primary-color);
+    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+}
+
+.course-card.upcoming::before {
+    background: linear-gradient(90deg, var(--primary-color), var(--primary-light));
+}
+
+.course-card.upcoming .time-slot {
+    background: var(--primary-color);
+    color: white;
+}
+
+.course-card.upcoming::after {
+    content: '即将开始';
+    position: absolute;
+    top: var(--spacing-3);
+    right: var(--spacing-3);
+    background: var(--primary-color);
+    color: white;
+    padding: var(--spacing-1) var(--spacing-2);
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-xs);
+    font-weight: 600;
+    z-index: 1;
+}
+
+@keyframes pulse-glow {
+    0% {
+        box-shadow: 0 0 5px rgba(251, 191, 36, 0.5);
+    }
+    50% {
+        box-shadow: 0 0 15px rgba(251, 191, 36, 0.8);
+    }
+    100% {
+        box-shadow: 0 0 5px rgba(251, 191, 36, 0.5);
+    }
 }
 
 .course-time {
