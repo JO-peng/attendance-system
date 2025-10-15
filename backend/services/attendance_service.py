@@ -291,24 +291,22 @@ class AttendanceService:
             for student_course in student_courses:
                 course_schedule = student_course.course_schedule
                 if course_schedule.day_of_week == weekday:
-                    # 获取建筑信息
-                    building = db.session.query(Building).filter_by(
-                        name_en=course_schedule.building
-                    ).first()
+                    # 获取建筑信息（course_schedule.building已经是Building对象）
+                    building = course_schedule.building
                     
                     # 构建课程信息
                     course_info = {
                         'course_id': student_course.course.id,
-                        'course_name': student_course.course.name,
-                        'course_code': student_course.course.code,
-                        'teacher': student_course.course.teacher,
+                        'course_name': student_course.course.course_name,
+                        'course_code': student_course.course.course_code,
+                        'teacher': student_course.course.teacher_name,
                         'classroom': course_schedule.classroom,
-                        'building': course_schedule.building,
-                        'building_name': building.name if building else course_schedule.building,
-                        'building_name_en': building.name_en if building else course_schedule.building,
+                        'building': building.name_en if building else 'Unknown',
+                        'building_name': building.name if building else 'Unknown',
+                        'building_name_en': building.name_en if building else 'Unknown',
                         'start_time': course_schedule.start_time.strftime('%H:%M'),
                         'end_time': course_schedule.end_time.strftime('%H:%M'),
-                        'time_slot': course_schedule.time_slot,
+                        'time_slot': getattr(course_schedule, 'time_slot', 1),
                         'day_of_week': weekday,
                         'date': current_date.strftime('%Y-%m-%d'),
                         'status': AttendanceService._get_course_status(current_date, course_schedule.start_time, tz)
