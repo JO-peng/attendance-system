@@ -23,6 +23,7 @@ class SignInPage {
         this.startTimeUpdate();
         this.loadUserInfo();
         this.getCurrentLocation();
+        this.loadCourseSchedule();
         // 如果已有用户信息，直接更新显示
         if (appState.userInfo) {
             this.updateUserInfo();
@@ -1914,6 +1915,140 @@ class SignInPage {
         if (mapSection) {
             mapSection.style.display = 'none';
         }
+    }
+
+    // 加载课程表信息
+    async loadCourseSchedule() {
+        try {
+            // 获取学生ID，优先使用appState中的用户信息
+            const studentId = appState.userInfo?.student_id || '2023280108';
+            
+            const response = await Utils.request(`/api/v1/student-schedule?student_id=${studentId}&days=7`);
+            
+            if (response.success) {
+                this.displayCourseCards(response.data.schedule);
+            } else {
+                console.error('获取课程表失败:', response.message);
+                this.displayEmptyCourseCards();
+            }
+        } catch (error) {
+            console.error('加载课程表时出错:', error);
+            this.displayEmptyCourseCards();
+        }
+    }
+
+    // 显示课程卡片
+    displayCourseCards(courses) {
+        const wrapper = document.getElementById('courseCardsWrapper');
+        if (!wrapper) return;
+
+        // 清空现有内容
+        wrapper.innerHTML = '';
+
+        if (!courses || courses.length === 0) {
+            this.displayEmptyCourseCards();
+            return;
+        }
+
+        // 按时间排序课程，优先显示即将到来的课程
+        const sortedCourses = courses.sort((a, b) => {
+            const dateA = new Date(`${a.date} ${a.start_time}`);
+            const dateB = new Date(`${b.date} ${b.start_time}`);
+            return dateA - dateB;
+        });
+
+        // 生成课程卡片
+        sortedCourses.forEach(course => {
+            const courseCard = this.createCourseCard(course);
+            wrapper.appendChild(courseCard);
+        });
+
+        // 添加滚动事件监听
+        this.addScrollEvents(wrapper);
+    }
+
+    // 创建单个课程卡片
+    createCourseCard(course) {
+        const card = document.createElement('div');
+        card.className = 'course-card';
+        
+        // 根据课程状态添加相应的类
+        if (course.status === 'current') {
+            card.classList.add('current-course');
+        }
+
+        // 格式化日期显示
+        const courseDate = new Date(course.date);
+        const today = new Date();
+        const tomorrow = new Date(today);
+        tomorrow.setDate(today.getDate() + 1);
+
+        let dateDisplay = '';
+        if (courseDate.toDateString() === today.toDateString()) {
+            dateDisplay = '今天';
+        } else if (courseDate.toDateString() === tomorrow.toDateString()) {
+            dateDisplay = '明天';
+        } else {
+            const weekdays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+            dateDisplay = weekdays[courseDate.getDay()];
+        }
+
+        card.innerHTML = `
+            <div class="course-time">
+                <span class="time-slot">${dateDisplay} ${course.start_time}-${course.end_time}</span>
+            </div>
+            <div class="course-info">
+                <h4 class="course-name">${course.course_name}</h4>
+                <div class="course-details">
+                    <span class="course-location">
+                        <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
+                            <path d="M6 0C2.7 0 0 2.7 0 6c0 4.5 6 6 6 6s6-1.5 6-6c0-3.3-2.7-6-6-6zm0 8.25c-1.24 0-2.25-1.01-2.25-2.25S4.76 3.75 6 3.75s2.25 1.01 2.25 2.25S7.24 8.25 6 8.25z"/>
+                        </svg>
+                        ${course.building_name} ${course.classroom}
+                    </span>
+                </div>
+            </div>
+            <div class="course-status">
+                <span class="status-indicator ${course.status}"></span>
+            </div>
+        `;
+
+        return card;
+    }
+
+    // 显示空状态课程卡片
+    displayEmptyCourseCards() {
+        const wrapper = document.getElementById('courseCardsWrapper');
+        if (!wrapper) return;
+
+        wrapper.innerHTML = `
+            <div class="course-card empty-state">
+                <svg class="empty-icon" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/>
+                </svg>
+                <div class="empty-text">暂无课程安排</div>
+            </div>
+        `;
+    }
+
+    // 添加滚动事件
+    addScrollEvents(wrapper) {
+        let isScrolling = false;
+        
+        // 添加触摸滚动支持
+        wrapper.addEventListener('touchstart', (e) => {
+            isScrolling = true;
+        });
+
+        wrapper.addEventListener('touchend', (e) => {
+            isScrolling = false;
+        });
+
+        // 添加鼠标滚动支持
+        wrapper.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            wrapper.scrollLeft += e.deltaY;
+        });
     }
 
     // 页面销毁时清理

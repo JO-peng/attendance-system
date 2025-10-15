@@ -134,3 +134,48 @@ def get_location_info():
             'success': False,
             'message': f'获取位置信息失败: {str(e)}'
         }), 500
+
+
+@attendance_api.route('/student-schedule', methods=['GET'])
+def get_student_schedule():
+    """
+    获取学生课程表信息
+    
+    请求参数:
+        student_id: 学生ID（可选，默认为测试学生）
+        date: 日期（可选，格式：YYYY-MM-DD，默认为今天）
+        days: 获取天数（可选，默认为7天）
+    
+    返回:
+        学生的课程表信息
+    """
+    try:
+        # 获取请求参数
+        student_id = request.args.get('student_id', '2023280108')  # 使用我们创建的测试学生ID
+        date = request.args.get('date')
+        days = int(request.args.get('days', 7))
+        
+        # 调用服务获取课程表
+        schedule_info = AttendanceService.get_student_schedule(
+            student_id, 
+            date, 
+            days
+        )
+        
+        # 返回课程表信息
+        return jsonify({
+            'success': True,
+            'data': {
+                'student_id': student_id,
+                'schedule': schedule_info['schedule'],
+                'total_courses': schedule_info['total_courses'],
+                'date_range': schedule_info['date_range']
+            }
+        }), 200
+        
+    except Exception as e:
+        current_app.logger.error(f"获取学生课程表失败: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': f'获取学生课程表失败: {str(e)}'
+        }), 500

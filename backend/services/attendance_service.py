@@ -240,3 +240,122 @@ class AttendanceService:
             'status': attendance_status.get('status'),
             'message': attendance_status.get('message')
         }
+    
+    @staticmethod
+    def get_student_schedule(student_id, date=None, days=7):
+        """
+        获取学生课程表信息
+        
+        Args:
+            student_id: 学生ID
+            date: 开始日期（YYYY-MM-DD格式），默认为今天
+            days: 获取天数，默认为7天
+            
+        Returns:
+            dict: 课程表信息
+                {
+                    'schedule': 课程列表,
+                    'total_courses': 总课程数,
+                    'date_range': 日期范围
+                }
+        """
+        # 设置时区
+        tz = pytz.timezone('Asia/Shanghai')
+        
+        # 处理日期参数
+        if date:
+            start_date = datetime.strptime(date, '%Y-%m-%d').date()
+        else:
+            start_date = datetime.now(tz).date()
+        
+        end_date = start_date + timedelta(days=days-1)
+        
+        # 获取学生的所有课程
+        student_courses = db.session.query(StudentCourse).join(
+            CourseSchedule, StudentCourse.course_schedule_id == CourseSchedule.id
+        ).join(
+            Course, StudentCourse.course_id == Course.id
+        ).filter(
+            StudentCourse.student_id == student_id
+        ).all()
+        
+        # 构建课程表数据
+        schedule = []
+        current_date = start_date
+        
+        while current_date <= end_date:
+            weekday = current_date.weekday()  # 0-6, 0是星期一
+            
+            # 获取当天的课程
+            daily_courses = []
+            for student_course in student_courses:
+                course_schedule = student_course.course_schedule
+                if course_schedule.day_of_week == weekday:
+                    # 获取建筑信息
+                    building = db.session.query(Building).filter_by(
+                        name_en=course_schedule.building
+                    ).first()
+                    
+                    # 构建课程信息
+                    course_info = {
+                        'course_id': student_course.course.id,
+                        'course_name': student_course.course.name,
+                        'course_code': student_course.course.code,
+                        'teacher': student_course.course.teacher,
+                        'classroom': course_schedule.classroom,
+                        'building': course_schedule.building,
+                        'building_name': building.name if building else course_schedule.building,
+                        'building_name_en': building.name_en if building else course_schedule.building,
+                        'start_time': course_schedule.start_time.strftime('%H:%M'),
+                        'end_time': course_schedule.end_time.strftime('%H:%M'),
+                        'time_slot': course_schedule.time_slot,
+                        'day_of_week': weekday,
+                        'date': current_date.strftime('%Y-%m-%d'),
+                        'status': AttendanceService._get_course_status(current_date, course_schedule.start_time, tz)
+                    }
+                    daily_courses.append(course_info)
+            
+            # 按时间排序
+            daily_courses.sort(key=lambda x: x['start_time'])
+            
+            # 添加到课程表
+            if daily_courses:  # 只添加有课的日期
+                schedule.extend(daily_courses)
+            
+            current_date += timedelta(days=1)
+        
+        return {
+            'schedule': schedule,
+            'total_courses': len(schedule),
+            'date_range': {
+                'start_date': start_date.strftime('%Y-%m-%d'),
+                'end_date': end_date.strftime('%Y-%m-%d')
+            }
+        }
+    
+    @staticmethod
+    def _get_course_status(course_date, start_time, tz):
+        """
+        获取课程状态
+        
+        Args:
+            course_date: 课程日期
+            start_time: 开始时间
+            tz: 时区
+            
+        Returns:
+            str: 课程状态 ('upcoming', 'current', 'past')
+        """
+        now = datetime.now(tz)
+        course_datetime = datetime.combine(course_date, start_time)
+        course_datetime = tz.localize(course_datetime)
+        
+        # 计算时间差
+        time_diff = (course_datetime - now).total_seconds()
+        
+        if time_diff > 3600:  # 超过1小时
+            return 'upcoming'
+        elif time_diff > -3600:  # 1小时内（包括正在进行的课程）
+            return 'current'
+        else:
+            return 'past'
