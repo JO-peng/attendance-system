@@ -194,8 +194,6 @@ class SignInPage {
             if (appState.userInfo && appState.userInfo.student_id && appState.userInfo.name) {
                 console.log('Using cached user info:', appState.userInfo);
                 this.displayUserInfo(appState.userInfo);
-                // 通知PopupManager用户信息已加载
-                PopupManager.updateSystemState('userInfoLoaded', true);
                 return;
             }
             
@@ -207,20 +205,47 @@ class SignInPage {
                 appState.setUserInfo(userInfo);
                 this.displayUserInfo(userInfo);
                 console.log('User info loaded and cached:', userInfo);
-                // 通知PopupManager用户信息已加载
-                PopupManager.updateSystemState('userInfoLoaded', true);
             } else {
-                // 显示获取用户信息失败的状态
-                console.error('无法获取用户信息');
+                // 用户信息获取失败，启动3秒延迟检测机制
+                console.error('无法获取用户信息，启动延迟检测机制');
+                this.startDelayedUserInfoCheck();
+            }
+        } catch (error) {
+            console.error('加载用户信息失败:', error);
+            // 异常情况也启动延迟检测机制
+            this.startDelayedUserInfoCheck(error);
+        }
+    }
+    
+    // 启动3秒延迟检测机制
+    startDelayedUserInfoCheck(error = null) {
+        // 设置3秒后检测用户信息状态
+        setTimeout(() => {
+            // 3秒后再次检查用户信息是否已加载成功
+            if (!appState.userInfo || !appState.userInfo.student_id || !appState.userInfo.name) {
+                // 用户信息仍未加载成功，显示失败提示
+                console.error('3秒后检测：用户信息仍未加载成功');
+                
+                if (error) {
+                    // 如果是异常导致的失败，显示异常错误信息
+                    Utils.showMessage(Utils.t('user_info_not_available'), 'error');
+                    this.updateUserInfo({
+                        name: '用户信息加载失败',
+                        student_id: '请刷新页面重试'
+                    });
+                } else {
+                    // 如果是正常获取失败，显示标准错误信息
+                    Utils.showMessage(Utils.t('user_info_not_available'), 'error');
+                }
                 
                 // 显示错误状态
                 const userIdElement = document.getElementById('userId');
                 const userNameElement = document.getElementById('userName');
                 
-                if (userIdElement) {
+                if (userIdElement && userIdElement.textContent !== '获取失败') {
                     userIdElement.textContent = '获取失败';
                 }
-                if (userNameElement) {
+                if (userNameElement && userNameElement.textContent !== '获取失败') {
                     userNameElement.textContent = '获取失败';
                 }
                 
@@ -230,28 +255,11 @@ class SignInPage {
                     signinBtn.disabled = true;
                     signinBtn.title = '请在企业微信环境中访问以获取用户信息';
                 }
-                
-                // 通过PopupManager添加用户信息加载失败提示（会有3秒延迟）
-                PopupManager.addPopup('user_info_not_available', Utils.t('user_info_not_available'), 'error');
+            } else {
+                // 用户信息已成功加载，无需显示错误提示
+                console.log('3秒后检测：用户信息已成功加载');
             }
-        } catch (error) {
-            console.error('加载用户信息失败:', error);
-            // 显示错误提示
-            this.updateUserInfo({
-                name: '用户信息加载失败',
-                student_id: '请刷新页面重试'
-            });
-            
-            // 禁用签到按钮
-            const signinBtn = document.getElementById('signinBtn');
-            if (signinBtn) {
-                signinBtn.disabled = true;
-                signinBtn.title = '用户信息加载失败，无法签到';
-            }
-            
-            // 通过PopupManager添加用户信息加载失败提示（会有3秒延迟）
-            PopupManager.addPopup('user_info_not_available', Utils.t('user_info_not_available'), 'error');
-        }
+        }, 3000); // 3秒延迟
     }
     
     // 更新首页用户信息 - 完全按照弹窗的方式实现
@@ -540,11 +548,7 @@ class SignInPage {
             console.log('Location obtained and cached:', location);
             
             Utils.hideLoading(loadingMessage);
-            
-            // 通知PopupManager定位已成功
-            PopupManager.updateSystemState('locationLoaded', true);
-            // 通过PopupManager添加定位成功提示（会等待用户信息加载完成）
-            PopupManager.addPopup('location_success', Utils.t('location_success'), 'success');
+            Utils.showMessage(Utils.t('location_success'), 'success', 2000);
             
             // 立即更新建筑信息
             await this.updateBuildingInfo();
@@ -589,11 +593,14 @@ class SignInPage {
                 }
             }
             
-            // 通过PopupManager添加定位失败提示（会等待用户信息加载完成）
+            // 显示错误提示，并提供重试选项
             const retryText = appState.currentLanguage === 'zh' ? '重试' : 'Retry';
-            const messageWithRetry = errorMessage + ` <button onclick="window.signinPage.getCurrentLocation()" style="margin-left: 12px; padding: 4px 8px; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); color: white; border-radius: 4px; cursor: pointer;">${retryText}</button>`;
-            
-            PopupManager.addPopup('location_failed', messageWithRetry, errorType, 8000, { html: true });
+            Utils.showMessage(
+                errorMessage + ` <button onclick="window.signinPage.getCurrentLocation()" style="margin-left: 12px; padding: 4px 8px; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); color: white; border-radius: 4px; cursor: pointer;">${retryText}</button>`,
+                errorType,
+                8000,
+                { html: true }
+            );
             
             // 不再使用模拟位置，让用户知道定位失败了
             this.currentLocation = null;
