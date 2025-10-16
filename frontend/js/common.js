@@ -975,7 +975,20 @@ const WeChatAPI = {
                 });
             }).catch(error => {
                 console.error('❌ [WeChat Init] 获取配置失败:', error);
-                Utils.showMessage(`获取企业微信配置失败: ${error.message}`, 'error', 5000);
+                
+                // 如果存在全局的加载管理器，使用它来延迟显示错误
+                if (window.signinPage && window.signinPage.loadingManager) {
+                    window.signinPage.loadingManager.addPendingError(
+                        'wechat_config', 
+                        `获取企业微信配置失败: ${error.message}`, 
+                        'error', 
+                        5000
+                    );
+                } else {
+                    // 如果没有加载管理器，直接显示错误（兼容性处理）
+                    Utils.showMessage(`获取企业微信配置失败: ${error.message}`, 'error', 5000);
+                }
+                
                 reject(error);
             });
         });
