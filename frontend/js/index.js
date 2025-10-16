@@ -1151,52 +1151,7 @@ class SignInPage {
     
             console.log('提交签到数据:', signinData);
             
-            // 首先检查当前位置和课程
-            let buildingInfo = null;
-            if (this.currentLocation?.latitude && this.currentLocation?.longitude) {
-                try {
-                    // 获取当前或下一节课程信息
-                    const targetCourse = this.getCurrentOrNextCourse();
-                    
-                    const checkRequestBody = {
-                        longitude: this.currentLocation.longitude,
-                        latitude: this.currentLocation.latitude,
-                        timestamp: Math.floor(Date.now() / 1000),
-                        student_id: appState.userInfo?.student_id
-                    };
-                    
-                    // 如果有课程信息，添加目标建筑参数
-                    if (targetCourse && targetCourse.building_name) {
-                        checkRequestBody.target_building = targetCourse.building_name;
-                    }
-                    
-                    const checkResult = await Utils.request('/api/v1/check-in', {
-                        method: 'POST',
-                        body: JSON.stringify(checkRequestBody)
-                    });
-                    
-                    if (checkResult.success && checkResult.data) {
-                        buildingInfo = checkResult.data;
-                        console.log('位置检查结果:', buildingInfo);
-                        
-                        // 显示建筑信息
-                        if (buildingInfo.building) {
-                            Utils.showMessage(`检测到您在${buildingInfo.building.name}(${buildingInfo.building.name_en})`, 'info', 2000);
-                        }
-                        
-                        // 如果有课程信息，显示课程状态
-                        if (buildingInfo.course) {
-                            const statusKey = `status_${buildingInfo.status}`;
-                            const statusText = Utils.t(statusKey) !== statusKey ? Utils.t(statusKey) : buildingInfo.status;
-                            const courseLabel = appState.currentLanguage === 'zh' ? '课程' : 'Course';
-                            Utils.showMessage(`${courseLabel}: ${buildingInfo.course.name} - ${statusText}`, 'info', 2000);
-                        }
-                    }
-                } catch (error) {
-                     console.warn('位置检查失败:', error);
-                     Utils.showMessage(Utils.t('location_check_failed'), 'warning', 2000);
-                 }
-            }
+            // 位置验证功能已移除，直接进行签到
             
             // 提交到后端
             const result = await Utils.request('/signin', {

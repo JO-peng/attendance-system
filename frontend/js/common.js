@@ -61,7 +61,6 @@ const LANGUAGES = {
         
         // 位置相关
         location_success: '位置获取成功',
-        location_check_failed: '位置检查失败，继续签到流程',
         location_service_init_failed: '定位服务初始化失败，请刷新页面重试',
         location_permission_failed: '定位失败，请检查定位权限或刷新页面重试',
         
@@ -211,7 +210,6 @@ const LANGUAGES = {
         
         // 位置相关
         location_success: 'Location obtained successfully',
-        location_check_failed: 'Location check failed, continue sign-in process',
         location_service_init_failed: 'Location service initialization failed, please refresh page and try again',
         location_permission_failed: 'Location failed, please check location permissions or refresh page and try again',
         

@@ -221,7 +221,7 @@
     z-index: 1000;
     max-height: 70vh;
     overflow-y: auto;
-    animation: slideUp 0.3s ease;
+    /* 动画已移除，点击直接显示 */
 }
 
 /* 确保在小屏幕上的居中显示 */
@@ -231,15 +231,6 @@
         transform: none;
         width: 100%;
         max-width: none;
-    }
-}
-
-@keyframes slideUp {
-    from {
-        transform: translateX(-50%) translateY(100%);
-    }
-    to {
-        transform: translateX(-50%) translateY(0);
     }
 }
 
