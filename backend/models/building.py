@@ -129,7 +129,7 @@ class Building(db.Model):
                 "description": "深圳大学沧海校区教学楼"
             },
             {
-                "name": "汇子楼",
+                "name": "汇紫楼",
                 "name_en": "Huizi Building",
                 "campus": "沧海校区",
                 "address": "深圳大学沧海校区",
@@ -156,7 +156,7 @@ class Building(db.Model):
                 "description": "深圳大学沧海校区教学楼"
             },
             {
-                "name": "汇行楼",
+                "name": "汇星楼",
                 "name_en": "Huixing Building",
                 "campus": "沧海校区",
                 "address": "深圳大学沧海校区",
@@ -174,7 +174,7 @@ class Building(db.Model):
                 "description": "深圳大学沧海校区教学楼"
             },
             {
-                "name": "汇园楼",
+                "name": "汇元楼",
                 "name_en": "Huiyuan Building",
                 "campus": "沧海校区",
                 "address": "深圳大学沧海校区",
