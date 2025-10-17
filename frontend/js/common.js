@@ -1212,28 +1212,8 @@ const WeChatAPI = {
                 
                 console.log('📍 使用企业微信定位...');
                 
-                wx.getLocation({
-                    type: 'gcj02',
-                    success: (res) => {
-                        console.log('✅ 定位成功:', res);
-                        
-                        const location = {
-                            latitude: res.latitude,
-                            longitude: res.longitude,
-                            accuracy: res.accuracy,
-                            speed: res.speed,
-                            altitude: res.altitude,
-                            source: 'wechat_work'
-                        };
-                        appState.location = location;
-                        resolve(location);
-                    },
-                    fail: (error) => {
-                        console.error('❌ 定位失败:', error);
-                        Utils.showMessage(Utils.t('location_permission_failed'), 'error', 5000);
-                        reject(new Error(`企业微信定位失败: ${JSON.stringify(error)}`));
-                    }
-                });
+                // 使用延迟机制，给用户时间处理权限请求
+                this._getWeChatLocationWithDelay().then(resolve).catch(reject);
             } else {
                 // 非企业微信环境，使用浏览器原生定位
                 console.log('📍 使用浏览器定位');
@@ -1243,6 +1223,90 @@ const WeChatAPI = {
                     resolve(result);
                 }).catch(reject);
             }
+        });
+    },
+
+    // 企业微信定位（带延迟检测机制）
+    async _getWeChatLocationWithDelay() {
+        return new Promise((resolve, reject) => {
+            let hasResolved = false;
+            let permissionCheckTimer = null;
+            
+            // 立即尝试获取定位
+            wx.getLocation({
+                type: 'gcj02',
+                success: (res) => {
+                    if (hasResolved) return;
+                    hasResolved = true;
+                    
+                    if (permissionCheckTimer) {
+                        clearTimeout(permissionCheckTimer);
+                    }
+                    
+                    console.log('✅ 定位成功:', res);
+                    
+                    const location = {
+                        latitude: res.latitude,
+                        longitude: res.longitude,
+                        accuracy: res.accuracy,
+                        speed: res.speed,
+                        altitude: res.altitude,
+                        source: 'wechat_work'
+                    };
+                    appState.location = location;
+                    resolve(location);
+                },
+                fail: (error) => {
+                    if (hasResolved) return;
+                    
+                    console.log('📍 首次定位失败，等待用户处理权限...', error);
+                    
+                    // 如果是权限相关错误，等待5秒后再次检查
+                    if (error && (error.errMsg?.includes('permission') || error.errMsg?.includes('denied') || error.errMsg?.includes('auth'))) {
+                        console.log('🔄 检测到权限问题，等待用户授权...');
+                        
+                        permissionCheckTimer = setTimeout(() => {
+                            if (hasResolved) return;
+                            
+                            // 5秒后再次尝试获取定位
+                            console.log('🔄 重新检查定位权限...');
+                            wx.getLocation({
+                                type: 'gcj02',
+                                success: (res) => {
+                                    if (hasResolved) return;
+                                    hasResolved = true;
+                                    
+                                    console.log('✅ 延迟检查定位成功:', res);
+                                    
+                                    const location = {
+                                        latitude: res.latitude,
+                                        longitude: res.longitude,
+                                        accuracy: res.accuracy,
+                                        speed: res.speed,
+                                        altitude: res.altitude,
+                                        source: 'wechat_work'
+                                    };
+                                    appState.location = location;
+                                    resolve(location);
+                                },
+                                fail: (retryError) => {
+                                    if (hasResolved) return;
+                                    hasResolved = true;
+                                    
+                                    console.error('❌ 延迟检查定位仍然失败:', retryError);
+                                    // 现在才显示错误提示，因为确认用户已经处理了权限请求
+                                    reject(new Error(`企业微信定位失败: ${JSON.stringify(retryError)}`));
+                                }
+                            });
+                        }, 5000); // 等待5秒
+                    } else {
+                        // 非权限问题，立即失败
+                        hasResolved = true;
+                        console.error('❌ 定位失败（非权限问题）:', error);
+                        reject(new Error(`企业微信定位失败: ${JSON.stringify(error)}`));
+                    }
+                }
+            });
         });
     },
     

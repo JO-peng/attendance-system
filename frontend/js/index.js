@@ -596,7 +596,7 @@ class SignInPage {
             // 显示错误提示，并提供重试选项
             const retryText = appState.currentLanguage === 'zh' ? '重试' : 'Retry';
             Utils.showMessage(
-                errorMessage + ` <button onclick="window.signinPage.getCurrentLocation()" style="margin-left: 12px; padding: 4px 8px; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); color: white; border-radius: 4px; cursor: pointer;">${retryText}</button>`,
+                errorMessage + ` <button onclick="window.signinPage.retryLocationPermission()" style="margin-left: 12px; padding: 4px 8px; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); color: white; border-radius: 4px; cursor: pointer;">${retryText}</button>`,
                 errorType,
                 8000,
                 { html: true }
@@ -604,6 +604,94 @@ class SignInPage {
             
             // 不再使用模拟位置，让用户知道定位失败了
             this.currentLocation = null;
+        }
+    }
+
+    // 重试定位权限（智能重试机制）
+    async retryLocationPermission() {
+        console.log('🔄 用户点击重试定位权限...');
+        
+        // 检查是否在企业微信环境
+        const isInWeChat = navigator.userAgent.includes('wxwork') || navigator.userAgent.includes('micromessenger');
+        
+        if (isInWeChat) {
+            // 企业微信环境：清除缓存并重新获取定位
+            console.log('🔄 企业微信环境重试定位...');
+            
+            // 清除位置缓存
+            appState.clearStoredLocation();
+            this.currentLocation = null;
+            
+            // 显示加载状态
+            const loadingMessage = Utils.showLoading('正在重新获取位置权限...');
+            
+            try {
+                // 直接调用企业微信定位API，不使用延迟机制
+                await new Promise((resolve, reject) => {
+                    if (typeof wx === 'undefined') {
+                        reject(new Error('企业微信SDK未准备好'));
+                        return;
+                    }
+                    
+                    wx.getLocation({
+                        type: 'gcj02',
+                        success: (res) => {
+                            console.log('✅ 重试定位成功:', res);
+                            
+                            const location = {
+                                latitude: res.latitude,
+                                longitude: res.longitude,
+                                accuracy: res.accuracy,
+                                speed: res.speed,
+                                altitude: res.altitude,
+                                source: 'wechat_work'
+                            };
+                            
+                            this.currentLocation = location;
+                            appState.setLocation(location);
+                            resolve(location);
+                        },
+                        fail: (error) => {
+                            console.error('❌ 重试定位失败:', error);
+                            reject(new Error(`重试定位失败: ${JSON.stringify(error)}`));
+                        }
+                    });
+                });
+                
+                Utils.hideLoading(loadingMessage);
+                Utils.showMessage(Utils.t('location_success'), 'success', 2000);
+                
+                // 立即更新建筑信息
+                await this.updateBuildingInfo();
+                
+            } catch (error) {
+                Utils.hideLoading(loadingMessage);
+                console.error('重试定位失败:', error);
+                
+                // 如果重试仍然失败，提供刷新页面选项
+                const refreshText = appState.currentLanguage === 'zh' ? '刷新页面' : 'Refresh Page';
+                const errorMsg = appState.currentLanguage === 'zh' ? 
+                    '定位权限获取失败，请尝试刷新页面' : 
+                    'Failed to get location permission, please try refreshing the page';
+                
+                Utils.showMessage(
+                    errorMsg + ` <button onclick="window.location.reload()" style="margin-left: 12px; padding: 4px 8px; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); color: white; border-radius: 4px; cursor: pointer;">${refreshText}</button>`,
+                    'error',
+                    10000,
+                    { html: true }
+                );
+            }
+        } else {
+            // 浏览器环境：刷新页面重新申请权限
+            console.log('🔄 浏览器环境，刷新页面重新申请权限...');
+            
+            const confirmMsg = appState.currentLanguage === 'zh' ? 
+                '将刷新页面以重新申请定位权限，确定继续吗？' : 
+                'The page will be refreshed to request location permission again. Continue?';
+            
+            if (confirm(confirmMsg)) {
+                window.location.reload();
+            }
         }
     }
     
