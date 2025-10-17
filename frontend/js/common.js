@@ -314,7 +314,7 @@ const LANGUAGES = {
 // 应用状态管理
 class AppState {
     constructor() {
-        this.currentLanguage = this.getStoredLanguage();
+        this.currentLanguage = this.initializeLanguage();
         this.userInfo = this.getStoredUserInfo();
         this.location = this.getStoredLocation();
         this.isWeChatReady = false;
@@ -325,8 +325,121 @@ class AppState {
         };
     }
     
+    // 初始化语言设置
+    initializeLanguage() {
+        const storedLanguage = localStorage.getItem('language');
+        
+        // 如果用户之前没有手动设置过语言，则使用系统检测
+        if (!storedLanguage) {
+            const systemLanguage = this.detectSystemLanguage();
+            console.log('Auto-detected system language:', systemLanguage);
+            
+            // 自动设置为检测到的系统语言，但不立即保存到localStorage
+            // 这样用户首次手动切换语言时才会保存偏好
+            return systemLanguage;
+        }
+        
+        // 如果用户之前设置过语言，则使用用户的偏好
+        console.log('Using stored user language preference:', storedLanguage);
+        return storedLanguage;
+    }
+    
     getStoredLanguage() {
-        return localStorage.getItem('language') || CONFIG.DEFAULT_LANGUAGE;
+        return localStorage.getItem('language') || this.detectSystemLanguage();
+    }
+    
+    // 检测系统语言
+    detectSystemLanguage() {
+        try {
+            let detectedLanguage = null;
+            
+            // 1. 首先尝试检测企业微信环境的语言设置
+            if (this.isInWeChatWork()) {
+                detectedLanguage = this.detectWeChatLanguage();
+                if (detectedLanguage) {
+                    console.log('Detected WeChat Work language:', detectedLanguage);
+                    return detectedLanguage;
+                }
+            }
+            
+            // 2. 检测浏览器语言设置
+            const browserLang = navigator.language || navigator.userLanguage || navigator.browserLanguage;
+            
+            if (browserLang) {
+                const langCode = browserLang.toLowerCase();
+                console.log('Browser language detected:', browserLang);
+                
+                // 检测中文相关的语言代码
+                if (langCode.startsWith('zh') || 
+                    langCode.includes('chinese') || 
+                    langCode === 'cn') {
+                    return 'zh';
+                }
+                // 检测英文相关的语言代码
+                else if (langCode.startsWith('en') || 
+                         langCode.includes('english')) {
+                    return 'en';
+                }
+            }
+            
+            // 3. 检查navigator.languages数组（更准确的语言偏好）
+            if (navigator.languages && navigator.languages.length > 0) {
+                for (const lang of navigator.languages) {
+                    const langCode = lang.toLowerCase();
+                    if (langCode.startsWith('zh')) {
+                        return 'zh';
+                    } else if (langCode.startsWith('en')) {
+                        return 'en';
+                    }
+                }
+            }
+            
+            // 如果无法检测到支持的语言，返回默认语言
+            return CONFIG.DEFAULT_LANGUAGE;
+        } catch (error) {
+            console.warn('Failed to detect system language:', error);
+            return CONFIG.DEFAULT_LANGUAGE;
+        }
+    }
+    
+    // 检测企业微信环境的语言设置
+    detectWeChatLanguage() {
+        try {
+            // 检查企业微信的用户代理字符串
+            const userAgent = navigator.userAgent.toLowerCase();
+            
+            // 企业微信可能在用户代理中包含语言信息
+            if (userAgent.includes('wxwork')) {
+                // 尝试从URL参数获取语言信息
+                const urlParams = new URLSearchParams(window.location.search);
+                const langParam = urlParams.get('lang') || urlParams.get('language');
+                if (langParam) {
+                    const langCode = langParam.toLowerCase();
+                    if (langCode.startsWith('zh') || langCode === 'cn') {
+                        return 'zh';
+                    } else if (langCode.startsWith('en')) {
+                        return 'en';
+                    }
+                }
+                
+                // 检查企业微信是否提供了语言信息
+                if (window.wx && window.wx.config) {
+                    // 企业微信环境下，通常中文用户较多，可以作为默认推测
+                    // 但仍然依赖浏览器语言设置进行最终判断
+                }
+            }
+            
+            return null; // 无法从企业微信获取语言信息
+        } catch (error) {
+            console.warn('Failed to detect WeChat Work language:', error);
+            return null;
+        }
+    }
+    
+    // 检查是否在企业微信环境中
+    isInWeChatWork() {
+        const userAgent = navigator.userAgent.toLowerCase();
+        return userAgent.includes('wxwork') || userAgent.includes('micromessenger');
     }
     
     getStoredUserInfo() {
@@ -444,15 +557,21 @@ class AppState {
         }
     }
     
-    setLanguage(lang) {
+    setLanguage(lang, saveToStorage = true) {
         if (CONFIG.SUPPORTED_LANGUAGES.includes(lang)) {
             this.currentLanguage = lang;
-            localStorage.setItem('language', lang);
+            
+            // 只有在用户手动切换语言时才保存到localStorage
+            if (saveToStorage) {
+                localStorage.setItem('language', lang);
+                console.log('User language preference saved:', lang);
+            }
+            
             this.updateUI();
             
             // 触发语言切换事件，通知其他组件
             const event = new CustomEvent('languageChanged', {
-                detail: { language: lang }
+                detail: { language: lang, userSet: saveToStorage }
             });
             document.dispatchEvent(event);
         }
@@ -1614,7 +1733,8 @@ const PageUpdateManager = {
 
 // DOM加载完成后初始化
 document.addEventListener('DOMContentLoaded', async () => {
-    // 初始化UI语言
+    // 确保语言已正确初始化并更新UI
+    console.log('Application initialized with language:', appState.currentLanguage);
     appState.updateUI();
     
     // 绑定语言切换事件
