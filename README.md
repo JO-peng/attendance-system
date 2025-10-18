@@ -18,7 +18,7 @@
 ## 技术栈
 - **前端**: HTML5 + CSS3 + JavaScript (ES6+)
 - **后端**: Python 3.8+ + Flask 2.3.3
-- **数据库**: SQLite 3
+- **数据库**: MySQL 9.4.0
 - **API集成**: 企业微信API
 - **地理位置**: Geopy + Haversine
 - **安全**: HTTPS + SSL证书
@@ -134,8 +134,12 @@ WECHAT_SECRET = 'ui7lI26sXjVq7BKm_esRm_3s5ZTOpJPpxmf_AO8qPd0'
 
 ### 数据库配置
 ```python
-SQLALCHEMY_DATABASE_URI = 'sqlite:///instance/attendance.db'
+# MySQL数据库配置
+SQLALCHEMY_DATABASE_URI = 'mysql+pymysql://attendance_user:attendance123456@localhost:3306/attendance_system?charset=utf8mb4'
 SQLALCHEMY_TRACK_MODIFICATIONS = False
+
+# 备用SQLite配置（如需回退）
+# SQLALCHEMY_DATABASE_URI = 'sqlite:///instance/attendance.db'
 ```
 
 ### HTTPS配置

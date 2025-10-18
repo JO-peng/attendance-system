@@ -74,9 +74,12 @@ class DevelopmentConfig(Config):
     
     DEBUG = True
     
-    # 开发环境数据库 - 使用原来的attendance.db
+    # 开发环境数据库 - 使用MySQL
     SQLALCHEMY_DATABASE_URI = os.environ.get('DEV_DATABASE_URL') or \
-        'sqlite:///' + os.path.join(os.path.dirname(os.path.abspath(__file__)), 'instance', 'attendance.db')
+        'mysql+pymysql://attendance_user:attendance123456@localhost:3306/attendance_system?charset=utf8mb4'
+    
+    # 备用SQLite数据库配置（如果需要回退）
+    SQLITE_DATABASE_URI = 'sqlite:///' + os.path.join(os.path.dirname(os.path.abspath(__file__)), 'instance', 'attendance.db')
     
     # 开发环境日志级别
     LOG_LEVEL = 'DEBUG'
@@ -103,9 +106,9 @@ class ProductionConfig(Config):
     
     DEBUG = False
     
-    # 生产环境数据库
+    # 生产环境数据库配置 - 使用MySQL
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
-        'sqlite:///' + os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data.db')
+        'mysql+pymysql://attendance_user:attendance123456@localhost:3306/attendance_system?charset=utf8mb4'
     
     # 生产环境日志级别
     LOG_LEVEL = 'WARNING'
